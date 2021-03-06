@@ -1,0 +1,2002 @@
+
+
+
+Macro SPITBOL Version 3.7(ver 1.30.17)
+80386  03/05/21 23:35:57
+
+
+                                                                                                                                                                                                                      Page 1
+
+        *//------------------------------------------------------------------------------------------------------
+        *// $Workfile: ebnf.sno $ $Revision: 15 $ $Date: 3/10/05 11:45a $
+        *//------------------------------------------------------------------------------------------------------
+        *//
+        *// Program: Extended BNF Processing
+        *// Author:  Lon Cherryholmes
+        *//
+        *//----------- -------------------------------------------------------------------- ---------------------
+1       START
+        -INCLUDE 'global.inc'
+     1  *--------------------------------------------------------------------------------------------------
+2    1      &ALPHABET      POS(0)  LEN(1) . nul    ;* null character
+3    1      &ALPHABET      POS(8)  LEN(1) . bs     ;* backspace
+4    1      &ALPHABET      POS(9)  LEN(1) . ht     ;* horizontal tab
+5    1      &ALPHABET      POS(9)  LEN(1) . tab    ;* tab
+6    1      &ALPHABET      POS(10) LEN(1) . nl     ;* new line
+7    1      &ALPHABET      POS(10) LEN(1) . lf     ;* line feed
+8    1      &ALPHABET      POS(11) LEN(1) . vt     ;* vertical tab
+9    1      &ALPHABET      POS(12) LEN(1) . ff     ;* form feed
+10   1      &ALPHABET      POS(13) LEN(1) . cr     ;* carriage return
+11   1      &ALPHABET      POS(47) LEN(1) . fSlash ;* forward slash
+12   1      &ALPHABET      POS(92) LEN(1) . bSlash ;* back slash
+13   1  
+14   1      &ALPHABET      POS(0)                      LEN(128) . X0xxxxxxx
+15   1      &ALPHABET      POS(128)                    LEN(128) . X1xxxxxxx
+16   1      &ALPHABET      POS(128)                    LEN(64)  . X10xxxxxx
+17   1      &ALPHABET      POS(128 + 64)               LEN(32)  . X110xxxxx
+18   1      &ALPHABET      POS(128 + 64 + 32)          LEN(16)  . X1110xxxx
+19   1      &ALPHABET      POS(128 + 64 + 32 + 16)     LEN(8)   . X11110xxx
+20   1      &ALPHABET      POS(128 + 64 + 32 + 16 + 8) LEN(8)   . X11111xxx
+21   1  
+22   1      TRUE           =   1
+23   1      FALSE          =   0
+24   1      digits         =  '0123456789'
+25   1  
+26   1      UTF = TABLE()
+27   1  
+28   1      UTF[CHAR(194) CHAR(160)] = 'NO_BREAK_SPACE'
+29   1      UTF[CHAR(194) CHAR(162)] = 'CENT_SIGN'
+30   1      UTF[CHAR(194) CHAR(167)] = 'SECTION_SIGN'
+31   1      UTF[CHAR(194) CHAR(169)] = 'COPYRIGHT_SIGN'
+32   1      UTF[CHAR(194) CHAR(170)] = 'FEMININE_ORDINAL_INDICATOR'
+33   1      UTF[CHAR(194) CHAR(173)] = 'SOFT_HYPHEN'
+34   1      UTF[CHAR(194) CHAR(174)] = 'REGISTERED_SIGN'
+35   1      UTF[CHAR(194) CHAR(176)] = 'DEGREE_SIGN'
+36   1      UTF[CHAR(194) CHAR(177)] = 'PLUS_MINUS_SIGN'
+37   1      UTF[CHAR(194) CHAR(182)] = 'PILCROW_SIGN'
+38   1      UTF[CHAR(194) CHAR(188)] = 'VULGAR_FRACTION_ONE_QUARTER'
+39   1      UTF[CHAR(194) CHAR(189)] = 'VULGAR_FRACTION_ONE_HALF'
+40   1      UTF[CHAR(194) CHAR(190)] = 'VULGAR_FRACTION_THREE_QUARTERS'
+41   1      UTF[CHAR(195) CHAR(144)] = 'LATIN_CAPITAL_LETTER_ETH'
+
+
+
+                                                                                                                                                                                                                      Page 2
+
+42   1      UTF[CHAR(195) CHAR(151)] = 'MULTIPLICATION_SIGN'
+43   1      UTF[CHAR(195) CHAR(183)] = 'DIVISION_SIGN'
+44   1      UTF[CHAR(197) CHAR(141)] = 'LATIN_SMALL_LETTER_O_WITH_MACRON'
+45   1      UTF[CHAR(202) CHAR(187)] = 'MODIFIER_LETTER_TURNED_COMMA'
+46   1      UTF[CHAR(204) CHAR(128)] = 'COMBINING_GRAVE_ACCENT'
+47   1      UTF[CHAR(204) CHAR(129)] = 'COMBINING_ACUTE_ACCENT'
+48   1      UTF[CHAR(204) CHAR(130)] = 'COMBINING_CIRCUMFLEX_ACCENT'
+49   1      UTF[CHAR(204) CHAR(131)] = 'COMBINING_TILDE'
+50   1      UTF[CHAR(204) CHAR(133)] = 'COMBINING_OVERLINE'
+51   1      UTF[CHAR(204) CHAR(136)] = 'COMBINING_DIAERESIS'
+52   1      UTF[CHAR(206) CHAR(166)] = 'GREEK_CAPITAL_LETTER_PHI'
+53   1      UTF[CHAR(206) CHAR(177)] = 'GREEK_SMALL_LETTER_ALPHA'
+54   1      UTF[CHAR(206) CHAR(178)] = 'GREEK_SMALL_LETTER_BETA'
+55   1      UTF[CHAR(206) CHAR(188)] = 'GREEK_SMALL_LETTER_MU'
+56   1      UTF[CHAR(207) CHAR(149)] = 'GREEK_PHI_SYMBOL'
+57   1  
+58   1      UTF[CHAR(226) CHAR(128) CHAR(128)] = 'EN_QUAD'
+59   1      UTF[CHAR(226) CHAR(128) CHAR(129)] = 'EM_QUAD'
+60   1      UTF[CHAR(226) CHAR(128) CHAR(147)] = 'EN_DASH'
+61   1      UTF[CHAR(226) CHAR(128) CHAR(148)] = 'EM_DASH'
+62   1      UTF[CHAR(226) CHAR(128) CHAR(152)] = 'LEFT_SINGLE_QUOTATION_MARK'
+63   1      UTF[CHAR(226) CHAR(128) CHAR(153)] = 'RIGHT_SINGLE_QUOTATION_MARK'
+64   1      UTF[CHAR(226) CHAR(128) CHAR(156)] = 'LEFT_DOUBLE_QUOTATION_MARK'
+65   1      UTF[CHAR(226) CHAR(128) CHAR(157)] = 'RIGHT_DOUBLE_QUOTATION_MARK'
+66   1      UTF[CHAR(226) CHAR(128) CHAR(162)] = 'BULLET'
+67   1      UTF[CHAR(226) CHAR(128) CHAR(166)] = 'HORIZONTAL_ELLIPSIS'
+68   1      UTF[CHAR(226) CHAR(128) CHAR(175)] = 'NARROW_NO_BREAK_SPACE'
+69   1      UTF[CHAR(226) CHAR(128) CHAR(178)] = 'PRIME'
+70   1      UTF[CHAR(226) CHAR(129) CHAR(132)] = 'FRACTION_SLASH'
+71   1      UTF[CHAR(226) CHAR(132) CHAR(151)] = 'SOUND_RECORDING_COPYRIGHT'
+72   1      UTF[CHAR(226) CHAR(133) CHAR(144)] = 'VULGAR_FRACTION_ONE_SEVENTH'
+73   1      UTF[CHAR(226) CHAR(133) CHAR(145)] = 'VULGAR_FRACTION_ONE_NINTH'
+74   1      UTF[CHAR(226) CHAR(133) CHAR(146)] = 'VULGAR_FRACTION_ONE_TENTH'
+75   1      UTF[CHAR(226) CHAR(133) CHAR(147)] = 'VULGAR_FRACTION_ONE_THIRD'
+76   1      UTF[CHAR(226) CHAR(133) CHAR(148)] = 'VULGAR_FRACTION_TWO_THIRDS'
+77   1      UTF[CHAR(226) CHAR(133) CHAR(149)] = 'VULGAR_FRACTION_ONE_FIFTH'
+78   1      UTF[CHAR(226) CHAR(133) CHAR(150)] = 'VULGAR_FRACTION_TWO_FIFTHS'
+79   1      UTF[CHAR(226) CHAR(133) CHAR(151)] = 'VULGAR_FRACTION_THREE_FIFTHS'
+80   1      UTF[CHAR(226) CHAR(133) CHAR(152)] = 'VULGAR_FRACTION_FOUR_FIFTHS'
+81   1      UTF[CHAR(226) CHAR(133) CHAR(153)] = 'VULGAR_FRACTION_ONE_SIXTH'
+82   1      UTF[CHAR(226) CHAR(133) CHAR(154)] = 'VULGAR_FRACTION_FIVE_SIXTHS'
+83   1      UTF[CHAR(226) CHAR(133) CHAR(155)] = 'VULGAR_FRACTION_ONE_EIGHTH'
+84   1      UTF[CHAR(226) CHAR(133) CHAR(156)] = 'VULGAR_FRACTION_THREE_EIGHTHS'
+85   1      UTF[CHAR(226) CHAR(133) CHAR(157)] = 'VULGAR_FRACTION_FIVE_EIGHTHS'
+86   1      UTF[CHAR(226) CHAR(133) CHAR(158)] = 'VULGAR_FRACTION_SEVEN_EIGHTHS'
+87   1      UTF[CHAR(226) CHAR(136) CHAR(146)] = 'MINUS_SIGN'
+88   1      UTF[CHAR(226) CHAR(137) CHAR(164)] = 'LESS_THAN_OR_EQUAL_TO'
+89   1      UTF[CHAR(226) CHAR(147) CHAR(130)] = 'CIRCLED_LATIN_CAPITAL_LETTER_M'
+90   1      UTF[CHAR(226) CHAR(151) CHAR(166)] = 'WHITE_BULLET'
+91   1      UTF[CHAR(226) CHAR(152) CHAR(144)] = 'BALLOT_BOX'
+92   1      UTF[CHAR(238) CHAR(131) CHAR(169)] = 'PRIVATE_UNKNOWN_1'
+93   1      UTF[CHAR(238) CHAR(134) CHAR(171)] = 'PRIVATE_UNKNOWN_2'
+94   1  
+95   1      UTF[CHAR(225) CHAR(154) CHAR(128)] = 'OGHAM_SPACE_MARK'
+96   1      UTF[CHAR(225) CHAR(160) CHAR(142)] = 'MONGOLIAN_VOWEL_SEPARATOR'
+
+
+
+                                                                                                                                                                                                                      Page 3
+
+97   1      UTF[CHAR(226) CHAR(128) CHAR(130)] = 'EN_SPACE'
+98   1      UTF[CHAR(226) CHAR(128) CHAR(131)] = 'EM_SPACE'
+99   1      UTF[CHAR(226) CHAR(128) CHAR(132)] = 'THREE_PER_EM_SPACE'
+100  1      UTF[CHAR(226) CHAR(128) CHAR(133)] = 'FOUR_PER_EM_SPACE'
+101  1      UTF[CHAR(226) CHAR(128) CHAR(134)] = 'SIX_PER_EM_SPACE'
+102  1      UTF[CHAR(226) CHAR(128) CHAR(135)] = 'FIGURE_SPACE'
+103  1      UTF[CHAR(226) CHAR(128) CHAR(136)] = 'PUNCTUATION_SPACE'
+104  1      UTF[CHAR(226) CHAR(128) CHAR(137)] = 'THIN_SPACE'
+105  1      UTF[CHAR(226) CHAR(128) CHAR(138)] = 'HAIR_SPACE'
+106  1      UTF[CHAR(226) CHAR(128) CHAR(168)] = 'LINE_SEPERATOR'
+107  1      UTF[CHAR(226) CHAR(128) CHAR(169)] = 'PARAGRAPH_SEPERATOR'
+108  1      UTF[CHAR(226) CHAR(129) CHAR(159)] = 'MEDIUM_MATHEMATICAL_SPACE'
+109  1      UTF[CHAR(227) CHAR(128) CHAR(128)] = 'IDEOGRAPHIC_SPACE'
+110  1  
+111  1      UTF[CHAR(226) CHAR(134) CHAR(144)] = 'LEFTWARDS_ARROW'
+112  1      UTF[CHAR(226) CHAR(134) CHAR(146)] = 'RIGHTWARDS_ARROW'
+113  1      UTF[CHAR(226) CHAR(135) CHAR(144)] = 'LEFTWARDS_DOUBLE_ARROW'
+114  1      UTF[CHAR(226) CHAR(135) CHAR(146)] = 'RIGHTWARDS_DOUBLE_ARROW'
+115  1      UTF[CHAR(226) CHAR(159) CHAR(181)] = 'LONG_LEFTWARDS_ARROW'
+116  1      UTF[CHAR(226) CHAR(159) CHAR(182)] = 'LONG_RIGHTWARDS_ARROW'
+117  1      UTF[CHAR(226) CHAR(159) CHAR(184)] = 'LONG_LEFTWARDS_DOUBLE_ARROW'
+118  1      UTF[CHAR(226) CHAR(159) CHAR(185)] = 'LONG_RIGHTWARDS_DOUBLE_ARROW'
+119  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(128)] = 'LEFTWARDS_ARROW_WITH_SMALL_TRIANGLE_ARROWHEAD'
+120  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(130)] = 'RIGHTWARDS_ARROW_WITH_SMALL_TRIANGLE_ARROWHEAD'
+121  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(132)] = 'LEFTWARDS_ARROW_WITH_MEDIUM_TRIANGLE_ARROWHEAD'
+122  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(134)] = 'RIGHTWARDS_ARROW_WITH_MEDIUM_TRIANGLE_ARROWHEAD'
+123  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(136)] = 'LEFTWARDS_ARROW_WITH_LARGE_TRIANGLE_ARROWHEAD'
+124  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(138)] = 'RIGHTWARDS_ARROW_WITH_LARGE_TRIANGLE_ARROWHEAD'
+125  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(144)] = 'LEFTWARDS_ARROW_WITH_SMALL_EQUILATERAL_ARROWHEAD'
+126  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(146)] = 'RIGHTWARDS_ARROW_WITH_SMALL_EQUILATERAL_ARROWHEAD'
+127  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(148)] = 'LEFTWARDS_ARROW_WITH_EQUILATERAL_ARROWHEAD'
+128  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(148)] = 'RIGHTWARDS_ARROW_WITH_EQUILATERAL_ARROWHEAD'
+129  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(152)] = 'HEAVY_LEFTWARDS_ARROW_WITH_EQUILATERAL_ARROWHEAD'
+130  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(154)] = 'HEAVY_RIGHTWARDS_ARROW_WITH_EQUILATERAL_ARROWHEAD'
+131  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(156)] = 'HEAVY_LEFTWARDS_ARROW_WITH_LARGE_EQUILATERAL_ARROWHEAD'
+132  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(158)] = 'HEAVY_RIGHTWARDS_ARROW_WITH_LARGE_EQUILATERAL_ARROWHEAD'
+133  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(160)] = 'LEFTWARDS_TRIANGLE_HEADED_ARROW_WITH_NARROW_SHAFT'
+134  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(162)] = 'RIGHTWARDS_TRIANGLE_HEADED_ARROW_WITH_NARROW_SHAFT'
+135  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(164)] = 'LEFTWARDS_TRIANGLE_HEADED_ARROW_WITH_MEDIUM_SHAFT'
+136  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(166)] = 'RIGHTWARDS_TRIANGLE_HEADED_ARROW_WITH_MEDIUM_SHAFT'
+137  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(168)] = 'LEFTWARDS_TRIANGLE_HEADED_ARROW_WITH_BOLD_SHAFT'
+138  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(170)] = 'RIGHTWARDS_TRIANGLE_HEADED_ARROW_WITH_BOLD_SHAFT'
+139  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(172)] = 'LEFTWARDS_TRIANGLE_HEADED_ARROW_WITH_HEAVY_SHAFT'
+140  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(174)] = 'RIGHTWARDS_TRIANGLE_HEADED_ARROW_WITH_HEAVY_SHAFT'
+141  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(176)] = 'LEFTWARDS_TRIANGLE_HEADED_ARROW_WITH_VERY_HEAVY_SHAFT'
+142  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(178)] = 'RIGHTWARDS_TRIANGLE_HEADED_ARROW_WITH_VERY_HEAVY_SHAFT'
+143  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(184)] = 'LEFTWARDS_SQUARED_ARROW'
+144  1      UTF[CHAR(240) CHAR(159) CHAR(160) CHAR(186)] = 'RIGHTWARDS_SQUARED_ARROW'
+145  1      UTF[CHAR(240) CHAR(159) CHAR(161) CHAR(132)] = 'LEFTWARDS_HEAVY_ARROW'
+146  1      UTF[CHAR(240) CHAR(159) CHAR(161) CHAR(134)] = 'RIGHTWARDS_HEAVY_ARROW'
+147  1      UTF[CHAR(240) CHAR(159) CHAR(161) CHAR(144)] = 'LEFTWARDS_SANS_SERIF_ARROW'
+148  1      UTF[CHAR(240) CHAR(159) CHAR(161) CHAR(146)] = 'RIGHTWARDS_SANS_SERIF_ARROW'
+149  1      UTF[CHAR(240) CHAR(159) CHAR(161) CHAR(160)] = 'WIDE_HEADED_LEFTWARDS_LIGHT_BARB_ARROW'
+150  1      UTF[CHAR(240) CHAR(159) CHAR(161) CHAR(162)] = 'WIDE_HEADED_RIGHTWARDS_LIGHT_BARB_ARROW'
+151  1      UTF[CHAR(240) CHAR(159) CHAR(161) CHAR(168)] = 'WIDE_HEADED_LEFTWARDS_BARB_ARROW'
+
+
+
+                                                                                                                                                                                                                      Page 4
+
+152  1      UTF[CHAR(240) CHAR(159) CHAR(161) CHAR(170)] = 'WIDE_HEADED_RIGHTWARDS_BARB_ARROW'
+153  1      UTF[CHAR(240) CHAR(159) CHAR(161) CHAR(176)] = 'WIDE_HEADED_LEFTWARDS_MEDIUM_BARB_ARROW'
+154  1      UTF[CHAR(240) CHAR(159) CHAR(161) CHAR(178)] = 'WIDE_HEADED_RIGHTWARDS_MEDIUM_BARB_ARROW'
+155  1  
+156  1      UTF_Array = SORT(UTF)
+157  1      i = 0
+158  1  G1  i = i + 1
+159  1      $UTF_Array[i, 2] = UTF_Array[i, 1]  :S(G1)
+160  1      UTF_Array =
+161  1      i =
+        -INCLUDE 'is.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * IsSpitbol() succeeds if the runtime environment is SPITBOL. It fails otherwise.
+     1  * IsSnobol4() succeeds if the runtime environment is SNOBOL4. It fails otherwise.
+     1  *---------------------------------------------------------------------------------------------------
+162  1                 DEFINE('IsSpitbol()')                                                :(IsSpitbolEnd)
+163  1  IsSpitbol      DIFFER(.NAME, 'NAME')                                                :S(RETURN)F(FRETURN)
+164  1  IsSpitbolEnd
+     1  *---------------------------------------------------------------------------------------------------
+165  1                 DEFINE('IsSnobol4()')                                                :(IsSnobol4End)
+166  1  IsSnobol4      IDENT(.NAME, 'NAME')                                                 :S(RETURN)F(FRETURN)
+167  1  IsSnobol4End
+     1  *---------------------------------------------------------------------------------------------------
+168  1                 DEFINE('IsType(it,types)type')                                       :(IsTypeEnd)
+169  1  IsType         types          POS(0) SPAN(&UCASE &LCASE) . type (',' | RPOS(0)) =   :F(FRETURN)
+170  1                 (IDENT(upr(type), 'NULL') IDENT(it))                                 :S(RETURN)
+171  1                 IDENT(DATATYPE(it), upr(type))                                       :S(RETURN)F(IsType)
+172  1  IsTypeEnd
+        -INCLUDE 'io.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Provide SPITBOL input/output semantics within SNOBOL4 programs.
+     1  * Make INPUT() and OUTPUT() functions still accessible.
+     1  * Map INPUT() and OUTPUT() functions to the following user defined functions.
+     1  * The recognition and interpretation of the options is incomplete.
+     1  *---------------------------------------------------------------------------------------------------
+173  1                 IsSnobol4()                                                          :F(io_end)
+174  1                 DEFINE('input_(name,channel,fileName)bch,cmd,maxreclen,opts,options')
+175  1                 DEFINE('output_(name,channel,fileName)bch,cmd,maxreclen,opts,options')
+176  1                 OPSYN('input__', 'INPUT')
+177  1                 OPSYN('output__', 'OUTPUT')
+178  1                 OPSYN('INPUT', 'input_')
+179  1                 OPSYN('OUTPUT', 'output_')
+180  1                 ioFileOptDash  =  (  '-l'
+     1  +                                   SPAN(digits) . maxreclen . *assign(.options, *(options maxreclen))
+     1  +                                |  '-m' SPAN(digits)
+     1  +                                |  '-a' . *assign(.options, *(options 'a'))
+     1  +                                |  '-w' . *assign(.options, *(options 'w'))
+     1  +                                )
+181  1                 ioFileOptList  =  *ioFileOptDash (SPAN(' ,') *ioFileOptList | epsilon)
+182  1                 ioFileOptPat   =  '[' *ioFileOptList ']'
+183  1                 ioFileOptPat0  =  *ioFileOptPat | epsilon
+184  1                 ioCmdDlmtPat1  =  LEN(1) $ bch BREAK(*bch) . cmd *bch
+185  1                 ioCmdDlmtPat2  =  LEN(1) REM . cmd                                   :(io_end)
+186  1  input_         io             =  .input__                                           :(io)
+187  1  output_        io             =  .output__                                          :(io)
+
+
+
+                                                                                                                                                                                                                      Page 5
+
+188  1  io             fileName       POS(0) '!' ioCmdDlmtPat1 ioFileOptPat0 = '|' cmd      :S(io1)
+189  1                 fileName       POS(0) '!' ioCmdDlmtPat2 = '|' cmd                    :S(io1)
+190  1                 fileName       ioFileOptPat =                                        :S(io1)
+191  1  io1            options        =  IDENT(maxreclen) options 1024
+192  1                 APPLY(io, name, channel, options, fileName)                          :S(RETURN)F(FRETURN)
+193  1  io_end
+        -INCLUDE 'assign.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Assignment during pattern matching: The unevaluated expression may fail
+     1  * which causes the assignment not to occur, but the pattern that invoked
+     1  * the assignment will always continue.
+     1  *
+     1  * pattern . *assign(name, expression)
+     1  *---------------------------------------------------------------------------------------------------
+194  1              DEFINE('assign(name,expression)')            :(assign_end)
+195  1  assign      assign   =     .dummy
+196  1              IDENT(DATATYPE(expression), 'EXPRESSION')    :F(assign1)
+197  1              $name    =     EVAL(expression)              :(NRETURN)
+198  1  assign1     $name    =     expression                    :(NRETURN)
+199  1  assign_end
+        -INCLUDE 'match.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Pattern matching during pattern matching:
+     1  * pattern $ variable $ *match(variable, pattern)
+     1  * pattern $ variable $ *notmatch(variable, pattern)
+     1  *---------------------------------------------------------------------------------------------------
+200  1                 DEFINE('match(subject,pattern)')                                      :(match_end)
+201  1  match          match          =  .dummy
+202  1                 subject        pattern                                                :S(NRETURN)F(FRETURN)
+203  1  match_end
+     1  *---------------------------------------------------------------------------------------------------
+204  1                 DEFINE('notmatch(subject,pattern)')                                   :(notmatch_end)
+205  1  notmatch       notmatch       =  .dummy
+206  1                 subject        pattern                                                :S(FRETURN)F(NRETURN)
+207  1  notmatch_end
+        -INCLUDE 'case.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Lower case string: string = lwr(string)
+208  1                 DEFINE('lwr(lwr)')                                                   :(lwr_end)
+209  1  lwr            lwr            =   REPLACE(lwr, &UCASE, &LCASE)                      :(RETURN)
+210  1  lwr_end
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Upper case string: string = upr(string)
+211  1                 DEFINE('upr(upr)')                                                   :(upr_end)
+212  1  upr            upr            =   REPLACE(upr, &LCASE, &UCASE)                      :(RETURN)
+213  1  upr_end
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Capitalize string: string = cap(string)
+214  1                 DEFINE('cap(cap)')                                                   :(cap_end)
+215  1  cap            cap            =   REPLACE(SUBSTR(cap, 1, 1), &LCASE, &UCASE)
+     1  +                                 REPLACE(SUBSTR(cap, 2), &UCASE, &LCASE)           :S(RETURN)F(error)
+216  1  cap_end
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Create pattern for case insensitive string match:
+     1  * pattern = icase(string)
+
+
+
+                                                                                                                                                                                                                      Page 6
+
+217  1                 DEFINE('icase(str)letter,character')                                 :(icase_end)
+218  1  icase          IDENT(str)                                                           :S(RETURN)
+219  1                 str            POS(0) ANY(&UCASE &LCASE) . letter =                  :F(icase1)
+220  1                 icase          =   icase (upr(letter) | lwr(letter))                 :(icase)
+221  1  icase1         str            POS(0) LEN(1) . character =
+222  1                 icase          =   icase character                                   :(icase)
+223  1  icase_end
+        -INCLUDE 'Qize.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Qize(s) - Quote-ize a string. Make a SNOBOL4 expression from the string.
+     1  *---------------------------------------------------------------------------------------------------
+224  1                 DEFINE('Qize(str)part')
+225  1                 QizeWierd      =    bSlash bs ff nl cr tab                           :(QizeEnd)
+226  1  Qize           Qize           =    IDENT(str) "''"                                  :S(RETURN)
+227  1  Qize0          IDENT(str)                                                           :S(RETURN)
+228  1                 Qize           =    DIFFER(Qize) Qize ' '
+229  1                 str            POS(0)
+     1  +                             (  bSlash . *assign(.part, *'bSlash')
+     1  +                             |  bs     . *assign(.part, *'bs')
+     1  +                             |  ff     . *assign(.part, *'ff')
+     1  +                             |  nl     . *assign(.part, *'nl')
+     1  +                             |  cr     . *assign(.part, *'cr')
+     1  +                             |  tab    . *assign(.part, *'tab')
+     1  +                             ) =                                                   :S(Qize3)
+230  1                 str            POS(0)
+     1  +                             (BREAK('"' "'" QizeWierd) '"' ARBNO(NOTANY("'" QizeWierd))) . part
+     1  +                             RTAB(0) . str                                         :S(Qize1)
+231  1                 str            POS(0)
+     1  +                             (BREAK("'" '"' QizeWierd) "'" ARBNO(NOTANY('"' QizeWierd))) . part
+     1  +                             RTAB(0) . str                                         :S(Qize2)
+232  1                 str            POS(0) BREAK(QizeWierd) . part =                      :S(Qize1)
+233  1                 str            POS(0) REM . part =                                   :S(Qize1)F(error)
+234  1  Qize1          Qize           =    Qize "'" part "'"                                :(Qize0)
+235  1  Qize2          Qize           =    Qize '"' part '"'                                :(Qize0)
+236  1  Qize3          Qize           =    Qize part                                        :(Qize0)
+237  1  QizeEnd
+     1  *---------------------------------------------------------------------------------------------------
+238  1                 DEFINE('SQize(str)part')                                             :(SQizeEnd)
+239  1  SQize          IDENT(str)                                                           :S(RETURN)
+240  1                 SQize          =    DIFFER(SQize) SQize ' '
+241  1                 str            POS(0) BREAK("'") . part "'" =                        :S(SQize1)
+242  1                 str            POS(0) REM . part =                                   :S(SQize2)F(error)
+243  1  SQize1         SQize          =    SQize "'" part "'" ' "' "'" '"'                  :(SQize)
+244  1  SQize2         SQize          =    SQize "'" part "'"                               :(SQize)
+245  1  SQizeEnd
+     1  *---------------------------------------------------------------------------------------------------
+246  1                 DEFINE('DQize(str)part')                                             :(DQizeEnd)
+247  1  DQize          IDENT(str)                                                           :S(RETURN)
+248  1                 DQize          =    DIFFER(DQize) DQize ' '
+249  1                 str            POS(0) BREAK('"') . part '"' =                        :S(DQize1)
+250  1                 str            POS(0) REM . part =                                   :S(DQize2)F(error)
+251  1  DQize1         DQize          =    DQize '"' part '"' " '" '"' "'"                  :(DQize)
+252  1  DQize2         DQize          =    DQize '"' part '"'                               :(DQize)
+253  1  DQizeEnd
+     1  *---------------------------------------------------------------------------------------------------
+
+
+
+                                                                                                                                                                                                                      Page 7
+
+254  1                 DEFINE('SqlSQize(str)part')                                          :(SqlSQizeEnd)
+255  1  SqlSQize       IDENT(str)                                                           :S(RETURN)
+256  1                 str            POS(0) BREAK("'") . part "'" =                        :S(SqlSQize1)
+257  1                 str            POS(0) REM . part =                                   :S(SqlSQize2)F(error)
+258  1  SqlSQize1      SqlSQize       =    SqlSQize part "''"                               :(SqlSQize)
+259  1  SqlSQize2      SqlSQize       =    SqlSQize part                                    :(SqlSQize)
+260  1  SqlSQizeEnd
+     1  *---------------------------------------------------------------------------------------------------
+261  1                 DEFINE('Intize(qqstr)iq,qqdlm')                                      :(IntizeEnd)
+262  1  Intize         qqstr          POS(0) ("'" | '"') $ qqdlm
+     1  +                             ARBNO(
+     1  +                                bSlash
+     1  +                                (  bSlash . *assign(.Intize, *(Intize bSlash))
+     1  +                                |  '"' . *assign(.Intize, *(Intize '"'))
+     1  +                                |  "'" . *assign(.Intize, *(Intize "'"))
+     1  +                                |  'b' . *assign(.Intize, *(Intize bs))
+     1  +                                |  'f' . *assign(.Intize, *(Intize ff))
+     1  +                                |  'n' . *assign(.Intize, *(Intize lf))
+     1  +                                |  'r' . *assign(.Intize, *(Intize cr))
+     1  +                                |  't' . *assign(.Intize, *(Intize tab))
+     1  +                                |  'u'
+     1  +                                   (  '00' LEN(2) . iq . *assign(.Intize, *(Intize Ucvt(iq)))
+     1  +                                   |  LEN(4) . iq . *assign(.Intize, *(Intize bSlash 'u' iq))
+     1  +                                   )
+     1  +                                )
+     1  +                             |  BREAK(*(qqdlm bSlash)) . iq . *assign(.Intize, *(Intize iq))
+     1  +                             )
+     1  +                             *qqdlm RPOS(0)                                        :S(RETURN)F(FRETURN)
+263  1  IntizeEnd
+     1  *---------------------------------------------------------------------------------------------------
+264  1              DEFINE('Extize(str)')                                                   :(ExtizeEnd)
+265  1  Extize
+266  1  ExtizeEnd
+        -INCLUDE 'XDump.inc'
+     1  *-----------------------------------------------------------------------------------------------------------------------
+     1  * XDump(object, nm) - Generic SNOBOL4 object dump routine. This recursive routine is useful
+     1  * from within the debugger or as debug code sprinkled throughout the SNOBOL4 application.
+     1  * Needs to be enhanced to handle 2+ dimensional arrays.
+     1  *-----------------------------------------------------------------------------------------------------------------------
+267  1                 DEFINE('XDump(object,nm)'
+     1  +                 'i,iMax,iMin,objArr,objField,objKey,objKeyNm,objType,objVal'
+     1  +              )                                                                    :(XDumpEnd)
+268  1  XDump          objType        =    DATATYPE(object)
+269  1                 IDENT(objType, 'CODE')                                               :S(XDump00)
+270  1                 IDENT(objType, 'EXPRESSION')                                         :S(XDump00)
+271  1                 IDENT(objType, 'INTEGER')                                            :S(XDump05)
+272  1                 IDENT(objType, 'NAME')                                               :S(XDump00)
+273  1                 IDENT(objType, 'PATTERN')                                            :S(XDump00)
+274  1                 IDENT(objType, 'REAL')                                               :S(XDump05)
+275  1                 IDENT(objType, 'STRING')                                             :S(XDump10)
+276  1                 IDENT(objType, 'ARRAY')                                              :S(XDump20)
+277  1                 IDENT(objType, 'TABLE')                                              :S(XDump30)F(XDump40)
+278  1  XDump00        OUTPUT         =    nm ' = ' objType                                 :(RETURN)
+279  1  XDump05        OUTPUT         =    nm ' = ' object                                  :(RETURN)
+280  1  XDump10        OUTPUT         =    nm ' = ' Qize(object)                            :(RETURN)
+
+
+
+                                                                                                                                                                                                                      Page 8
+
+281  1  XDump20        objProto       =    PROTOTYPE(object)
+282  1                 objProto       POS(0)
+     1  +                             (('+' | '-' | epsilon) SPAN(digits)) . iMin ':'
+     1  +                             (('+' | '-' | epsilon) SPAN(digits)) . iMax
+     1  +                             RPOS(0)
+283  1                 OUTPUT         =    nm ' = ' "ARRAY['" objProto "']"
+284  1                 i              =    iMin - 1
+285  1  XDump25        i              =    LT(i, iMax) i + 1                                :F(RETURN)
+286  1                 XDump(object[i], nm '[' i ']')                                       :(XDump25)
+287  1  XDump30        OUTPUT         =    nm ' = ' 'TABLE'
+     1  *              objArr         =    CONVERT(object, 'ARRAY')                         :F(RETURN)
+288  1                 objArr         =    SORT(object)                                     :F(RETURN)
+289  1                 i              =    0
+290  1  XDump35        i              =    i + 1
+291  1                 objKey         =    objArr[i, 1]                                     :F(RETURN)
+292  1                 objVal         =    objArr[i, 2]
+293  1                 objKeyNm       =    IDENT(DATATYPE(objKey), 'INTEGER') objKey        :S(XDump37)
+294  1                 objKeyNm       =    IDENT(DATATYPE(objKey), 'STRING') Qize(objKey)   :S(XDump37)
+295  1                 objKeyNm       =    DATATYPE(objKey)
+296  1  XDump37        XDump(objVal, nm '[' objKeyNm ']')                                   :(XDump35)
+297  1  XDump40        OUTPUT         =    nm ' = ' objType '()'
+298  1                 i              =    0
+299  1  XDump45        i              =    i + 1
+300  1                 objField       =    FIELD(objType, i)                                :F(RETURN)
+301  1                 XDump(APPLY(objField, object), objField '(' nm ')')                  :(XDump45)
+302  1  XDumpEnd
+        -INCLUDE 'counter.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * A stack of counters. To be used with conditional assignment within pattern matching.
+     1  * These routines are useful for counting items on the stack at multiple nesting levels which
+     1  * are suitable for reduction on the stack.
+     1  * Global: $'#N' -- link_counter()
+     1  *---------------------------------------------------------------------------------------------------
+303  1                DEFINE('InitCounter()')
+304  1                DEFINE('PushCounter()')
+305  1                DEFINE('IncCounter()')
+306  1                DEFINE('DecCounter()')
+307  1                DEFINE('TopCounter()')
+308  1                DEFINE('PopCounter()')
+309  1                DATA('link_counter(next,value)')                                      :(CounterEnd)
+310  1  InitCounter   $'#N'          =                                                      :(RETURN)
+311  1  PushCounter   OUTPUT         =    GT(xTrace, 4) 'PushCounter()'
+312  1                $'#N'          =    link_counter($'#N', 0)
+313  1                PushCounter    =    .dummy                                            :(NRETURN)
+314  1  IncCounter    value($'#N')   =    value($'#N') + 1
+315  1                OUTPUT         =    GT(xTrace, 4) value($'#N') ' = IncCounter()'
+316  1                IncCounter     =    .dummy                                            :(NRETURN)
+317  1  DecCounter    value($'#N')   =    value($'#N') - 1
+318  1                OUTPUT         =    GT(xTrace, 4) value($'#N') ' = DecCounter()'
+319  1                DecCounter     =    .dummy                                            :(NRETURN)
+320  1  PopCounter    OUTPUT         =    GT(xTrace, 4) 'PopCounter()'
+321  1                $'#N'          =    DIFFER($'#N') next($'#N')                         :F(FRETURN)
+322  1                PopCounter     =    .dummy                                            :(NRETURN)
+323  1  TopCounter    TopCounter     =    DIFFER($'#N') value($'#N')                        :F(FRETURN)
+324  1                OUTPUT         =    GT(xTrace, 4) TopCounter ' = TopCounter()'        :(RETURN)
+
+
+
+                                                                                                                                                                                                                      Page 9
+
+325  1  CounterEnd
+     1  *---------------------------------------------------------------------------------------------------
+     1  * A stack of XML or HTML begin and end tags. To be used with unconditional assignment within
+     1  * pattern matching.
+     1  * Global: $'@B' -- link_tag()
+     1  *         $'@E' -- link_tag()
+     1  *---------------------------------------------------------------------------------------------------
+326  1              DATA('link_tag(next,value)')
+     1  *---------------------------------------------------------------------------------------------------
+327  1              DEFINE('InitBegTag()')
+328  1              DEFINE('PushBegTag(t)')
+329  1              DEFINE('PopBegTag()')
+330  1              DEFINE('TopBegTag()')
+331  1              DEFINE('DumpBegTag()b,list,v')                                  :(BegTagEnd)
+332  1  InitBegTag  $'@B'           =                                               :(RETURN)
+333  1  PushBegTag  OUTPUT          =   GT(xTrace, 4) 'PushBegTag(' upr(t) ')'
+334  1              $'@B'           =   link_tag($'@B', upr(t))
+335  1              PushBegTag      =   IDENT(t)  .value($'@B')                     :S(NRETURN)
+336  1              PushBegTag      =   DIFFER(t) .dummy                            :(NRETURN)
+337  1  PopBegTag   OUTPUT          =   GT(xTrace, 4) (DIFFER($'@B') value($'@B'), 'FAIL') ' = PopBegTag()'
+338  1              $'@B'           =   DIFFER($'@B') next($'@B')                   :F(FRETURN)
+339  1              PopBegTag       =   .dummy                                      :(NRETURN)
+340  1  TopBegTag   TopBegTag       =   DIFFER($'@B') value($'@B')                  :F(FRETURN)
+341  1              OUTPUT          =   GT(xTrace, 4) TopBegTag ' = TopBegTag()'    :(RETURN)
+342  1  DumpBegTag  DumpBegTag      =   .dummy
+343  1              GT(xTrace, 5)                                                   :F(NRETURN)
+344  1              b               =   $'@B'
+345  1  DumpBegTag3 v               =   DIFFER(b) value(b)                          :F(DumpBegTag9)
+346  1              list            =   list (DIFFER(list) ', ', '') v
+347  1              b               =   next(b)                                     :(DumpBegTag3)
+348  1  DumpBegTag9 OUTPUT          =   '@B = (' list ')'                           :(NRETURN)
+349  1  BegTagEnd
+     1  *---------------------------------------------------------------------------------------------------
+350  1              DEFINE('InitEndTag()')
+351  1              DEFINE('PushEndTag(t)')
+352  1              DEFINE('PopEndTag()')
+353  1              DEFINE('TopEndTag()')
+354  1              DEFINE('DumpEndTag()e,list,v')                                  :(EndTagEnd)
+355  1  InitEndTag  $'@E'           =                                               :(RETURN)
+356  1  PushEndTag  OUTPUT          =   GT(xTrace, 4) 'PushEndTag(' upr(t) ')'
+357  1              $'@E'           =   link_tag($'@E', upr(t))
+358  1              PushEndTag      =   IDENT(t)  .value($'@E')                     :S(NRETURN)
+359  1              PushEndTag      =   DIFFER(t) .dummy                            :(NRETURN)
+360  1  PopEndTag   OUTPUT          =   GT(xTrace, 4) (DIFFER($'@E') value($'@E'), 'FAIL') ' = PopEndTag()'
+361  1              $'@E'           =   DIFFER($'@E') next($'@E')                   :F(FRETURN)
+362  1              PopEndTag       =   .dummy                                      :(NRETURN)
+363  1  TopEndTag   TopEndTag       =   DIFFER($'@E') value($'@E')                  :F(FRETURN)
+364  1              OUTPUT          =   GT(xTrace, 4) TopEndTag ' = TopEndTag()'    :(RETURN)
+365  1  DumpEndTag  DumpEndTag      =   .dummy
+366  1              GT(xTrace, 5)                                                   :F(NRETURN)
+367  1              e               =   $'@E'
+368  1  DumpEndTag3 v               =   DIFFER(e) value(e)                          :F(DumpEndTag9)
+369  1              list            =   list (DIFFER(list) ', ', '') v
+370  1              e               =   next(e)                                     :(DumpEndTag3)
+371  1  DumpEndTag9 OUTPUT          =   '@E = (' list ')'                           :(NRETURN)
+
+
+
+                                                                                                                                                                                                                      Page 10
+
+372  1  EndTagEnd
+     1  *---------------------------------------------------------------------------------------------------
+        -INCLUDE 'stack.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * A general purpose stack. To be used directly or with conditional assignment within pattern
+     1  * matching. This stack holds the values from the pattern match which were produced as a
+     1  * result of either a Shift() or a Reduce() operation.
+     1  * Global: $'@S' -- link()
+     1  *---------------------------------------------------------------------------------------------------
+373  1                 DEFINE('InitStack()')
+374  1                 DEFINE('Push(x)')
+375  1                 DEFINE('Pop(var)')
+376  1                 DEFINE('Top()')
+377  1                 DATA('link(next,value)')                                             :(StackEnd)
+378  1  InitStack      $'@S'          =                                                     :(RETURN)
+379  1  Push           OUTPUT         =    GT(xTrace, 4) 'Push(' t(x) ')'
+380  1                 $'@S'          =    link($'@S', x)
+381  1                 Push           =    IDENT(x)  .value($'@S')                          :S(NRETURN)
+382  1                 Push           =    DIFFER(x) .dummy                                 :(NRETURN)
+383  1  Pop            DIFFER($'@S')                                                        :F(FRETURN)
+384  1                 IDENT(var)                                                           :F(Pop1)
+385  1                 Pop            =    value($'@S')
+386  1                 OUTPUT         =    GT(xTrace, 4) 'Pop() = ' t(Pop)
+387  1                 $'@S'          =    next($'@S')                                      :(RETURN)
+388  1  Pop1           Pop            =    .dummy
+389  1                 $var           =    value($'@S')
+390  1                 OUTPUT         =    GT(xTrace, 4) 'Pop() = ' t($var)
+391  1                 $'@S'          =    next($'@S')                                      :(NRETURN)
+392  1  Top            DIFFER($'@S')                                                        :F(FRETURN)
+393  1                 Top            =    .value($'@S')
+394  1                 OUTPUT         =    GT(xTrace, 4) 'Top() = ' t(Top)                  :(NRETURN)
+395  1  StackEnd
+        -INCLUDE 'tree.inc'
+     1  *-----------------------------------------------------------------------------------------------------------------------
+     1  * tree: a general purpose tree datatype
+     1  *    t: type of tree (unique identification)
+     1  *    v: value of tree (for leaf node)
+     1  *    n: number of children (for internal node)
+     1  *    c: array of children trees
+     1  * Append(x,y)       -- insert y tree as the rightmost child of x tree
+     1  * Prepend(x,y)      -- insert y tree as the leftmost child of x tree
+     1  * Insert(x,y,place) -- insert y tree as child of x tree at the designated place
+     1  * Remove(x,place)   -- remove the child tree at the designated place
+     1  *-----------------------------------------------------------------------------------------------------------------------
+396  1                 DATA('tree(t,v,n,c)')
+397  1                 DEFINE('Append(x,y)')
+398  1                 DEFINE('Prepend(x,y)')
+399  1                 DEFINE('Insert(x,y,place)c,i')
+400  1                 DEFINE('Remove(x,place)c,i')                                         :(TreeEnd)
+401  1  Append         Append         =    Insert(x, y, n(x) + 1)                           :(RETURN)
+402  1  Prepend        Prepend        =    Insert(x, y, 1)                                  :(RETURN)
+403  1  Insert         Insert         =    x
+404  1                 c              =    ARRAY('1:' n(x) + 1)
+405  1                 i              =    0
+406  1  Insert1        i              =    LT(i, place - 1) i + 1                           :F(Insert2)
+
+
+
+                                                                                                                                                                                                                      Page 11
+
+407  1                 c[i]           =    c(x)[i]                                          :(Insert1)
+408  1  Insert2        c[i + 1]       =    y
+409  1  Insert3        i              =    LT(i, n(x)) i + 1                                :F(Insert4)
+410  1                 c[i + 1]       =    c(x)[i]                                          :(Insert3)
+411  1  Insert4        n(x)           =    n(x) + 1
+412  1                 c(x)           =    c                                                :(RETURN)
+413  1  Remove         Remove         =    x
+414  1                 c              =    GT(n(x) - 1, 0) ARRAY('1:' n(x) - 1)
+415  1                 i              =    0
+416  1  Remove1        i              =    LT(i, place - 1) i + 1                           :F(Remove2)
+417  1                 c[i]           =    c(x)[i]                                          :(Remove1)
+418  1  Remove2        i              =    i + 1
+419  1  Remove3        i              =    LT(i, n(x)) i + 1                                :F(Remove4)
+420  1                 c[i - 1]       =    c(x)[i]                                          :(Remove3)
+421  1  Remove4        n(x)           =    n(x) - 1
+422  1                 c(x)           =    c                                                :(RETURN)
+423  1  TreeEnd
+     1  *------------- -------------------------------------------------------------------- -----------------
+424  1                 DEFINE('Tree(t,v,n,c1,c2,c3,c4,c5,c6,c7,c8)i,nc')                    :(Tree_End)
+425  1  Tree           nc             =    8
+426  1  Tree1          nc             =    GT(nc, 0) IDENT($('c' nc)) nc - 1                :S(Tree1)
+427  1                 Tree           =    tree(t, v,
+     1  +                                      (GT(nc, 0) nc, NULL)
+     1  +                                  ,   (GT(nc, 0) ARRAY('1:' nc), NULL)
+     1  +                                  )
+428  1                 i              =    0
+429  1  Tree3          i              =    LT(i, nc) i + 1                                  :F(RETURN)
+430  1                 c(Tree)[i]     =    $('c' i)                                         :(Tree3)
+431  1  Tree_End
+     1  *------------- -------------------------------------------------------------------- -----------------
+432  1                 DEFINE('Equal(x,y)i')                                                :(EqualEnd)
+433  1  Equal          epsilon        *IDENT(x) *IDENT(y)                                   :S(RETURN)
+434  1                 epsilon        *IDENT(x) | *IDENT(y)                                 :F(FRETURN)
+435  1                 IDENT(t(x), t(y))                                                    :F(FRETURN)
+436  1                 IDENT(v(x), v(y))                                                    :F(FRETURN)
+437  1                 IDENT(n(x), n(y))                                                    :F(FRETURN)
+438  1                 i              =    0
+439  1  Equal5         i              =    LT(i, n(x)) i + 1                                :F(RETURN)
+440  1                 Equal(c(x)[i], c(y)[i])                                              :S(Equal5)F(FRETURN)
+441  1  EqualEnd
+     1  *------------- -------------------------------------------------------------------- -----------------
+442  1                 DEFINE('Equiv(x,y)i')                                                :(EquivEnd)
+443  1  Equiv          t(x)           POS(0) t(y) RPOS(0)                                   :F(FRETURN)
+444  1                 v(x)           POS(0) v(y) RPOS(0)                                   :F(FRETURN)
+445  1                 n(x)           POS(0) n(y) RPOS(0)                                   :F(FRETURN)
+446  1                 i              =    0
+447  1  Equiv5         i              =    i + 1
+448  1                 (DIFFER(c(y)) c(y)[i])                                               :F(RETURN)
+449  1                 Equiv(c(x)[i], c(y)[i])                                              :S(Equiv5)F(FRETURN)
+450  1  EquivEnd
+     1  *------------- -------------------------------------------------------------------- -----------------
+451  1                 DEFINE('Find(xn,y,f)i')                                              :(FindEnd)
+452  1  Find           DIFFER($xn)                                                          :F(RETURN)
+453  1                 (Equiv($xn, y) APPLY(f, xn))                                         :S(RETURN)
+454  1                 i              =    0
+
+
+
+                                                                                                                                                                                                                      Page 12
+
+455  1  Find5          i              =    LT(i, n($xn)) i + 1                              :F(RETURN)
+456  1                 Find(.c($xn)[i], y, f)                                               :(Find5)
+457  1  FindEnd
+     1  *------------- -------------------------------------------------------------------- ---------------------
+     1  *              Perform a pre-order traversal of tree x, and apply the function fnc at each node
+458  1                 DEFINE('Visit(x,fnc)i')                                              :(VisitEnd)
+459  1  Visit          APPLY(fnc, x)                                                        :F(RETURN)
+460  1                 i              =  0
+461  1  Visit_1        i              =  LT(i, n(x)) i + 1                                  :F(RETURN)
+462  1                 Visit(c(x)[i], fnc)                                                  :(Visit_1)
+463  1  VisitEnd
+        -INCLUDE 'ShiftReduce.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Shift(t,v) -- push a tree of type t with value v onto the stack
+     1  *
+     1  * Reduce(t, n) -- pop n trees from the stack and push a tree of type t that contains these
+     1  * n trees as children in the order they were stacked. If either the t or n parameters are
+     1  * unevaluated expressions they will be evaluated on-the-fly here within this routine. If the
+     1  * evaluation of an unevaluated expression fails then there is no reduction of the stack.
+     1  *---------------------------------------------------------------------------------------------------
+464  1                 DEFINE('Shift(t,v)s')                                                :(ShiftEnd)
+465  1  Shift          v              POS(0) whitespace =
+466  1                 s              =    tree(t, v)
+467  1                 Push(s)
+468  1                 OUTPUT         =    GT(xTrace, 3) 'Shift(' t ', ' v ')'
+     1  *--            OUTPUT         =    GT(xTrace, 4) ' = ' TLump(s, 1024)
+469  1                 Shift          =    IDENT(v) .v(s)                                   :S(NRETURN)
+470  1                 Shift          =    DIFFER(v) .dummy                                 :(NRETURN)
+471  1  ShiftEnd
+     1  *---------------------------------------------------------------------------------------------------
+472  1                 DEFINE('Reduce(t,n)c,i,r')                                           :(ReduceEnd)
+473  1  Reduce         Reduce         =    .dummy
+474  1                 IDENT(DATATYPE(t), 'EXPRESSION')                                     :F(Reduce0)
+475  1                 t              =    EVAL(t)                                          :F(NRETURN)
+476  1  Reduce0        IDENT(DATATYPE(n), 'EXPRESSION')                                     :F(Reduce1)
+477  1                 n              =    EVAL(n)                                          :F(NRETURN)
+478  1  Reduce1        OUTPUT         =    GT(xTrace, 3) 'Reduce(' t ', ' n ')'
+479  1                 c              =    GE(n, 1) ARRAY('1:' n)
+480  1                 i              =    n + 1
+481  1  Reduce2        i              =    GT(i, 1) i - 1                                   :F(Reduce3)
+482  1                 c[i]           =    Pop()                                            :(Reduce2)
+483  1  Reduce3        r              =    tree(t,, n, c)
+     1  *--            (GT(xTrace, 4) TDump(r))
+484  1                 Push(r)                                                              :(NRETURN)
+485  1  ReduceEnd
+        -INCLUDE 'detect.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Detect:
+     1  *   Multiply defined productions
+     1  *   Unreferenced productions
+     1  *   Undefined references
+     1  *---------------------------------------------------------------------------------------------------
+486  1              DEFINE('Xdef(x)prodNm')
+487  1              Tdefs             =     TABLE()
+488  1              Tdefs['at_at_identifier'] = 1
+
+
+
+                                                                                                                                                                                                                      Page 13
+
+489  1              Tdefs['at_identifier'] = 1
+490  1              Tdefs['identifier'] = 1
+491  1              Tdefs['binary_literal'] = 1
+492  1              Tdefs['integer_literal'] = 1
+493  1              Tdefs['money_literal'] = 1
+494  1              Tdefs['real_literal'] = 1
+495  1              Tdefs['string_literal'] = 1
+496  1              Tdefs['true']     = 1
+497  1              Tdefs['false']    = 1                                                            :(XdefEnd)
+498  1  Xdef        DIFFER(x)                                                                        :F(RETURN)
+499  1  Xdef10      IDENT(t(x), 'bnf_production')                                                    :F(RETURN)
+500  1              prodNm            =     v(c(x)[1])
+501  1              Tdefs[prodNm]     =     Tdefs[prodNm] + 1                                        :(RETURN)
+502  1  XdefEnd
+     1  *---------------------------------------------------------------------------------------------------
+503  1              DEFINE('Xref(x)idNm')
+504  1              Trefs             =     TABLE()
+505  1              Tundefs           =     TABLE()
+506  1              Tcaps             =     TABLE()                                                  :(XrefEnd)
+507  1  Xref        DIFFER(x)                                                                        :F(RETURN)
+508  1              IDENT(t(x), 'bnf_production')                                                    :F(Xref10)
+509  1              Visit(c(x)[2], .Xref)                                                            :(FRETURN)
+510  1  Xref10      IDENT(t(x), 'identifier')                                                        :F(Xref30)
+511  1              idNm              =     v(x)
+512  1              idNm              POS(0) SPAN(&UCASE '_' '0123456789') RPOS(0)                   :F(Xref20)
+513  1              Tcaps[idNm]       =     Tcaps[idNm] + 1                                          :(RETURN)
+514  1  Xref20      idNm              POS(0) '@' =                                                   :F(Xref25)
+515  1              v(x)              =     idNm                                                     :(RETURN)
+516  1  Xref25      Trefs[idNm]       =     Trefs[idNm] + 1
+517  1              IDENT(Tdefs[idNm])                                                               :F(RETURN)
+518  1              Tundefs[idNm]     =     Tundefs[idNm] + 1                                        :(RETURN)
+519  1  Xref30      IDENT(t(x), 'string')                                                            :F(RETURN)
+520  1              v(x)              POS(0) SPAN('~`!@#$%^&*()-+={}[]|\":;?/<>,.' "'") RPOS(0)      :(RETURN)
+521  1              v(x)              POS(0) "'" RTAB(1) . v(x) "'"
+522  1              OUTPUT            =     v(x)                                                     :(RETURN)
+523  1  XrefEnd
+     1  *---------------------------------------------------------------------------------------------------
+524  1              DEFINE('Xreport(x)i,idNm,prodCnt,prodNm,refCnt,tokenCnt,tokenNm')                :(XreportEnd)
+525  1  Xreport     Adefs             =     DIFFER(Tdefs) SORT(Tdefs)                                :F(Xreport20)
+526  1              i                 =     0
+527  1  Xreport10   i                 =     i + 1
+528  1              prodNm            =     Adefs[i, 1]                                              :F(Xreport20)
+529  1              prodCnt           =     Adefs[i, 2]
+530  1              refCnt            =     Trefs[prodNm]
+531  1              OUTPUT            =     GT(prodCnt, 1) 'Multiply defined: ' prodCnt ' ' prodNm
+532  1              OUTPUT            =     IDENT(refCnt) 'Unreferenced: ' prodNm                    :(Xreport10)
+533  1  
+534  1  Xreport20   Aundefs           =     DIFFER(Tundefs) SORT(Tundefs)                            :F(Xreport40)
+535  1              i                 =     0
+536  1  Xreport30   i                 =     i + 1
+537  1              prodNm            =     Aundefs[i, 1]                                            :F(Xreport40)
+538  1              prodCnt           =     Aundefs[i, 2]
+539  1              OUTPUT            =     'Undefined reference: ' LPAD(prodCnt, 3) ' ' prodNm      :(Xreport30)
+540  1  
+541  1  Xreport40   Acaps             =     DIFFER(Tcaps) SORT(Tcaps)                                :F(Xreport60)
+
+
+
+                                                                                                                                                                                                                      Page 14
+
+542  1              i                 =     0
+543  1  Xreport50   i                 =     i + 1
+544  1              tokenNm           =     Acaps[i, 1]                                              :F(Xreport60)
+545  1              tokenCnt          =     Acaps[i, 2]
+546  1              OUTPUT            =     LPAD(tokenCnt, 3) ' ' tokenNm                            :(Xreport50)
+547  1  
+548  1  Xreport60                                                                                    :(RETURN)
+549  1  XreportEnd
+        -INCLUDE 'instrument.inc'
+     1  *---------------------------------------------------------------------------------------------------
+550  1              DEFINE('Xinstr(x)c,t')                                                           :(XinstrEnd)
+551  1  Xinstr      DIFFER(x)                                                                        :F(RETURN)
+552  1  Xinstr10    IDENT(t(x), 'bnf_production')                                                    :F(Xinstr20)
+553  1              prodNm            =     v(c(x)[1])
+554  1              prodNm            POS(0) ('expression' | 'search_condition')                     :F(RETURN)
+555  1              subSeq            =     c(x)[2]
+556  1              IDENT(t(subSeq), '&')                                                            :F(RETURN)
+557  1              IDENT(t(c(subSeq)[2]), '*')                                                      :F(RETURN)
+558  1              c                 =     ARRAY('1:5')
+559  1              c[1]              =     tree('&nPush', 'nPush!')
+560  1              c[2]              =     c(subSeq)[1]
+561  1              c[3]              =     tree('*',, 1, ARRAY('1:1'))
+562  1              c(c[3])[1]        =     tree('&',, 2, ARRAY('1:2'))
+563  1              c(c(c[3])[1])[1]  =     c(c(subSeq)[2])[1]
+564  1              c(c(c[3])[1])[2]  =     tree('&nInc', 'nInc!')
+565  1              c[4]              =     tree('&reduce',, 2, ARRAY('1:2'))
+566  1              c(c[4])[1]        =     tree('string', "'~'")
+567  1              c(c[4])[2]        =     tree('string', "'*(GT(nTop(), 0) (2 * nTop() + 1))'")
+568  1              c[5]              =     tree('&nPop', 'nPop!')
+569  1              n(c(x)[2])        =     5
+570  1              c(c(x)[2])        =     c                                                        :(FRETURN)
+571  1  Xinstr20    IDENT(t(x), '&')                                                                 :F(Xinstr30)
+572  1              c                 =     ARRAY('1:2')
+573  1              c[1]              =     tree('string', "'&'")
+574  1              c[2]              =     tree('string', n(x))
+575  1              Append(x, tree('&reduce',, 2, c))                                                :(RETURN)
+576  1  Xinstr30    t(x)              POS(0) ANY('*+') . t RPOS(0)                                   :F(Xinstr40)
+577  1              c                 =     ARRAY('1:4')
+578  1              c[1]              =     tree('&nPush', 'nPush!')
+579  1              c[2]              =     tree(t,, 1, ARRAY('1:1'))
+580  1              c(c[2])[1]        =     tree('&',, 2, ARRAY('1:2'))
+581  1              c(c(c[2])[1])[1]  =     c(x)[1]
+582  1              c(c(c[2])[1])[2]  =     tree('&nInc', 'nInc!')
+583  1              c[3]              =     tree('&reduce',, 2, ARRAY('1:2'))
+584  1              c(c[3])[1]        =     tree('string', "'" t "'")
+585  1              c(c[3])[2]        =     tree('string', "'nTop()'")
+586  1              c[4]              =     tree('&nPop', 'nPop!')
+587  1              t(x)              =     '&'
+588  1              n(x)              =     4
+589  1              c(x)              =     c
+590  1              Visit(c(c(c[2])[1])[1], .Xinstr)                                                 :(FRETURN)
+591  1  Xinstr40    t(x)              POS(0) ',' . t RPOS(0)                                         :F(RETURN)
+592  1              c                 =     ARRAY('1:4')
+593  1              c[1]              =     tree('&nPush', 'nPush!')
+594  1              c[2]              =     tree(',',, 2, ARRAY('1:2'))
+
+
+
+                                                                                                                                                                                                                      Page 15
+
+595  1              c(c[2])[1]        =     tree('&',, 2, ARRAY('1:2'))
+596  1              c(c(c[2])[1])[1]  =     c(x)[1]
+597  1              c(c(c[2])[1])[2]  =     tree('&nInc', 'nInc!')
+598  1              c(c[2])[2]        =     c(x)[2]
+599  1              c[3]              =     tree('&reduce',, 2, ARRAY('1:2'))
+600  1              c(c[3])[1]        =     tree('string', "'" t "'")
+601  1              c(c[3])[2]        =     tree('string', "'nTop()'")
+602  1              c[4]              =     tree('&nPop', 'nPop!')
+603  1              t(x)              =     '&'
+604  1              n(x)              =     4
+605  1              c(x)              =     c
+606  1              Visit(c(c(c[2])[1])[1], .Xinstr)                                                 :(FRETURN)
+607  1  XinstrEnd
+        -INCLUDE 'normalize.inc'
+     1  *---------------------------------------------------------------------------------------------------
+608  1                 DEFINE('Norm(nm,x,place)p')                                          :(NormEnd)
+609  1  Norm           t(c(x)[place])    POS(0) ANY('|&?*+,') RPOS(0)                       :F(RETURN)
+610  1                 cnt               =     cnt + 1
+611  1                 p                 =     tree('bnf_production',, 2, ARRAY('1:2'))
+612  1                 c(p)[1]           =     tree('identifier', nm '$' cnt)
+613  1                 c(p)[2]           =     c(x)[place]
+614  1                 c(x)[place]       =     tree('identifier', nm '$' cnt)
+615  1                 Insert(bnf, p, i + cnt)                                              :(RETURN)
+616  1  NormEnd
+     1  *---------------------------------------------------------------------------------------------------
+617  1                 DEFINE('PNorm()cnt,i,j,k,name,np')                                   :(PNormEnd)
+618  1  PNorm          i                 =     0
+619  1  PNorm01        i                 =     LT(i, n(bnf)) i + 1                          :F(RETURN)
+620  1                 cnt               =     0
+621  1                 DIFFER(c(bnf)[i])                                                    :F(error)
+622  1                 IDENT(t(bnf), 'productions')                                         :F(error)
+623  1                 IDENT(t(c(bnf)[i]), 'bnf_production')                                :F(error)
+624  1                 IDENT(t(c(c(bnf)[i])[1]), 'identifier')                              :F(error)
+625  1                 np                =     c(c(bnf)[i])[2]
+626  1                 name              =     v(c(c(bnf)[i])[1])
+627  1                 IDENT(t(np), '|')                                                    :S(PNormAlt00)
+628  1                 IDENT(t(np), '&')                                                    :S(PNormSeq00)
+629  1                 IDENT(t(np), '?')                                                    :S(PNormOth00)
+630  1                 IDENT(t(np), '*')                                                    :S(PNormOth00)
+631  1                 IDENT(t(np), '+')                                                    :S(PNormOth00)
+632  1                 IDENT(t(np), ',')                                                    :S(PNormOth00)F(PNorm01)
+     1  *---------------------------------------------------------------------------------------------------
+633  1  PNormAlt00     j                 =     0
+634  1  PNormAlt01     j                 =     LT(j, n(np)) j + 1                           :F(PNorm01)
+635  1                 IDENT(t(c(np)[j]), '&')                                              :F(PNormAlt03)
+636  1                 k                 =     0
+637  1  PNormAlt02     k                 =     LT(k, n(c(np)[j])) k + 1                     :F(PNormAlt01)
+638  1                 Norm(name, c(np)[j], k)                                              :(PNormAlt02)
+639  1  PNormAlt03     Norm(name, np, j)                                                    :(PNormAlt01)
+     1  *---------------------------------------------------------------------------------------------------
+640  1  PNormSeq00     k                 =     0
+641  1  PNormSeq01     k                 =     LT(k, n(np)) k + 1                           :F(PNorm01)
+642  1                 Norm(name, np, k)                                                    :(PNormSeq01)
+     1  *---------------------------------------------------------------------------------------------------
+643  1  PNormOth00     IDENT(t(c(np)[1]), '|')                                              :F(PNormOth10)
+
+
+
+                                                                                                                                                                                                                      Page 16
+
+644  1                 j                 =     0
+645  1  PNormOth01     j                 =     LT(j, n(c(np)[1])) j + 1                     :F(PNorm01)
+646  1                 IDENT(t(c(c(np)[1])[j]), '&')                                        :F(PNormOth03)
+647  1                 k                 =     0
+648  1  PNormOth02     k                 =     LT(k, n(c(c(np)[1])[j])) k + 1               :F(PNormOth01)
+649  1                 Norm(name, c(c(np)[1])[j], k)                                        :(PNormOth02)
+650  1  PNormOth03     Norm(name, c(np)[1], j)                                              :(PNormOth01)
+651  1  PNormOth10     IDENT(t(c(np)[1]), '&')                                              :F(PNormOth20)
+652  1                 k                 =     0
+653  1  PNormOth11     k                 =     LT(k, n(c(np)[1])) k + 1                     :F(PNorm01)
+654  1                 Norm(name, c(np)[1], k)                                              :(PNormOth11)
+655  1  PNormOth20     Norm(name, np, 1)                                                    :(PNorm01)
+656  1  PNormEnd
+     1  *---------------------------------------------------------------------------------------------------
+657  1                 DEFINE('PPure()i,name,n,np,p')                                       :(PPureEnd)
+658  1  PPure          i                 =     0
+659  1  PPure1         i                 =     LT(i, n(bnf)) i + 1                          :F(RETURN)
+660  1                 DIFFER(c(bnf)[i])                                                    :F(error)
+661  1                 IDENT(t(bnf), 'productions')                                         :F(error)
+662  1                 IDENT(t(c(bnf)[i]), 'bnf_production')                                :F(error)
+663  1                 IDENT(t(c(c(bnf)[i])[1]), 'identifier')                              :F(error)
+664  1                 np                =     c(c(bnf)[i])[2]
+665  1                 name              =     v(c(c(bnf)[i])[1])
+666  1                 t(np)             POS(0) '?' RPOS(0)                                 :S(PPureOpt0)
+667  1                 t(np)             POS(0) ANY('*+,') RPOS(0)                          :F(PPure1)
+668  1                 sName             =     IDENT(t(c(np)[1]), 'identifier') v(c(np)[1])
+669  1                 sName             =     DIFFER(t(c(np)[1]), 'identifier') name '$' 0
+670  1                 p                 =     tree('bnf_production',, 2, ARRAY('1:2'))
+671  1                 c(p)[1]           =     tree('identifier', sName)
+672  1                 c(p)[2]           =     c(np)[1]
+673  1                 IDENT(t(np), '*')                                                    :S(PPureStr)
+674  1                 IDENT(t(np), '+')                                                    :S(PPurePls)
+675  1                 IDENT(t(np), ',')                                                    :S(PPureLst)
+676  1  PPureOpt0      n                 =     c(np)[1]
+677  1                 DIFFER(t(n), '|')                                                    :F(PPureOpt1)
+678  1                 p                 =     tree('|',, 1, ARRAY('1:1'))
+679  1                 c(p)[1]           =     n
+680  1                 n                 =     p
+681  1  PPureOpt1      c(c(bnf)[i])[2]   =     Prepend(n, tree('epsilon'))                  :(PPure1)
+682  1  PPureStr       n                 =     tree('|',, 2, ARRAY('1:2'))
+683  1                 c(n)[1]           =     tree('epsilon')
+684  1                 c(n)[2]           =     tree('&',, 2, ARRAY('1:2'))
+685  1                 c(c(n)[2])[1]     =     tree('identifier', name)
+686  1                 c(c(n)[2])[2]     =     tree('identifier', sName)                    :(PPure8)
+687  1  PPurePls       n                 =     tree('|',, 2, ARRAY('1:2'))
+688  1                 c(n)[1]           =     tree('identifier', sName)
+689  1                 c(n)[2]           =     tree('&',, 2, ARRAY('1:2'))
+690  1                 c(c(n)[2])[1]     =     tree('identifier', name)
+691  1                 c(c(n)[2])[2]     =     tree('identifier', sName)                    :(PPure8)
+692  1  PPureLst       n                 =     tree('|',, 2, ARRAY('1:2'))
+693  1                 c(n)[1]           =     tree('identifier', sName)
+694  1                 c(n)[2]           =     tree('&',, 3, ARRAY('1:3'))
+695  1                 c(c(n)[2])[1]     =     tree('identifier', name)
+696  1                 c(c(n)[2])[2]     =     tree('string', "','")
+697  1                 c(c(n)[2])[3]     =     tree('identifier', sName)                    :(PPure8)
+
+
+
+                                                                                                                                                                                                                      Page 17
+
+698  1  PPure8         DIFFER(t(c(np)[1]), 'identifier')                                    :F(PPure9)
+699  1                 Insert(bnf, p, i + 1)
+700  1  PPure9         c(c(bnf)[i])[2]   =     n                                            :(PPure1)
+701  1  PPureEnd
+        -INCLUDE 'Populate.inc'
+     1  *---------------------------------------------------------------------------------------------------
+702  1              DEFINE('Populate(fold,idpat,keywords,reswords,special,operators)op,peel,w')      :(PopulateEnd)
+703  1  Populate    peel              =     POS(0) (BREAK(' ') . w ' ' | (LEN(1) RTAB(0)) . w)
+704  1  Populate10  keywords          peel =                                                         :F(Populate20)
+705  1              $w                =     $' ' APPLY(fold, 2, idpat, w)                            :(Populate10)
+706  1  Populate20  reswords          peel =                                                         :F(Populate30)
+707  1              $w                =     $' ' APPLY(fold, 2, idpat, w)                            :(Populate20)
+708  1  Populate30  special           peel =                                                         :F(Populate40)
+709  1              $w                =     EQ(doParseTree, TRUE)  $' ' TZ(2, w, w ~ 'op')
+710  1              $w                =     EQ(doParseTree, FALSE) $' ' TZ(2, w, w)                  :(Populate30)
+711  1  Populate40  operators         peel =                                                         :F(Populate50)
+712  1              op                =     EQ(doParseTree, TRUE)  w ~ 'op'
+713  1              op                =     EQ(doParseTree, FALSE) w
+714  1              $w                =     $' ' TZ(2, w, op)
+715  1              operator          =     DIFFER(operator) operator | op                           :S(Populate40)
+716  1              operator          =     IDENT(operator) op                                       :(Populate40)
+717  1  Populate50                                                                                   :(RETURN)
+718  1  PopulateEnd
+        -INCLUDE 'semantic.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Semantic building routines. These functions are called while building the parser
+     1  * patterns, not during pattern matching.
+     1  *---------------------------------------------------------------------------------------------------
+719  1                 DEFINE('shift(p,t)')
+720  1                 DEFINE('reduce(t,n)')
+721  1                 OPSYN('~', 'shift', 2)
+722  1                 OPSYN('&', 'reduce', 2)
+723  1                 DEFINE('pop()')
+724  1                 DEFINE('nPush()')
+725  1                 DEFINE('nInc()')
+726  1                 DEFINE('nDec()')
+727  1                 DEFINE('nTop()')
+728  1                 DEFINE('nPop()')                                                  :(semanticEnd)
+     1  *---------------------------------------------------------------------------------------------------
+729  1  shift          shift          =  EVAL("p . thx . *Shift('" t "', thx)")          :(RETURN)
+730  1  reduce         reduce         =  EVAL("epsilon . *Reduce(" t ", " n ")")         :(RETURN)
+731  1  pop            pop            =  epsilon . *Pop(.dummy)                          :(RETURN)
+     1  *---------------------------------------------------------------------------------------------------
+732  1  nPush          nPush          =  epsilon . *PushCounter()                        :(RETURN)
+733  1  nInc           nInc           =  epsilon . *IncCounter()                         :(RETURN)
+734  1  nDec           nDec           =  epsilon . *DecCounter()                         :(RETURN)
+735  1  nTop           nTop           =  TopCounter()                                    :(RETURN)
+736  1  nPop           nPop           =  epsilon . *PopCounter()                         :(RETURN)
+     1  *---------------------------------------------------------------------------------------------------
+737  1  semanticEnd
+        -INCLUDE 'omega.inc'
+     1  *---------------------------------------------------------------------------------------------------
+738  1              DEFINE('TV(lvl,pat,name)omega')                                                  :(TVEnd)
+739  1  TV          omega             =     EQ(doParseTree, FALSE) "pat"
+740  1              omega             =     EQ(doParseTree, TRUE)  "(pat ~ 'identifier')"
+
+
+
+                                                                                                                                                                                                                      Page 18
+
+741  1              omega             =     omega ' $ tx *LEQ(lwr(tx), "' lwr(name) '")'
+742  1              TV                =     TZ(lvl, name, EVAL(omega))                               :S(RETURN)F(error)
+743  1  TVEnd
+     1  *---------------------------------------------------------------------------------------------------
+744  1              DEFINE('TW(lvl,pat,name)omega')                                                  :(TWEnd)
+745  1  TW          omega             =     EQ(doParseTree, FALSE) "pat"
+746  1              omega             =     EQ(doParseTree, TRUE)  "(pat ~ 'identifier')"
+747  1              omega             =     omega " $ tx *LEQ(upr(tx), '" upr(name) "')"
+748  1              TW                =     TZ(lvl, name, EVAL(omega))                               :S(RETURN)F(error)
+749  1  TWEnd
+     1  *---------------------------------------------------------------------------------------------------
+750  1              DEFINE('TX(lvl,pat,name)omega')                                                  :(TXEnd)
+751  1  TX          omega             =     EQ(doParseTree, FALSE) "pat"
+752  1              omega             =     EQ(doParseTree, TRUE)  "(pat ~ 'identifier')"
+753  1              omega             =     omega " $ tx *LEQ(tx, '" name "')"
+754  1              TX                =     TZ(lvl, name, EVAL(omega))                               :S(RETURN)F(error)
+755  1  TXEnd
+     1  *---------------------------------------------------------------------------------------------------
+756  1              DEFINE('TY(lvl,name,pat)omega')                                                  :(TYEnd)
+757  1  TY          TY                =     LE(xTrace, 0) pat
+     1  +                                   @txOfs $ *assign(.t8Max, *(GT(txOfs, t8Max) txOfs))      :S(RETURN)
+758  1              omega             =     "pat $ tz"
+     1  +                                   " @txOfs"
+     1  +                                   " $ *T8Trace(" lvl ", " Qize(name ': ') " tz, txOfs)"
+759  1              TY                =     EVAL(omega)                                              :S(RETURN)F(error)
+760  1  TYEnd
+     1  *---------------------------------------------------------------------------------------------------
+     1  *           Instrument parser patterns for tracing:
+     1  *           TZ(integer, string, pattern)
+761  1              DEFINE('TZ(lvl,name,pat)omega')                                                  :(TZEnd)
+762  1  TZ          TZ                =     LE(xTrace, 0) pat
+     1  +                                   @txOfs $ *assign(.t8Max, *(GT(txOfs, t8Max) txOfs))      :S(RETURN)
+763  1              omega             =     "@txOfs $ *T8Trace(" lvl ", '?' " Qize(name) ", txOfs)"
+     1  +                                   " pat $ tz"
+     1  +                                   " @txOfs"
+     1  +                                   " $ *T8Trace(" lvl ", " Qize(name ': ') " tz, txOfs)"
+764  1              TZ                =     EVAL(omega)                                              :S(RETURN)F(error)
+765  1  TZEnd
+        -INCLUDE 'ReadWrite.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Read(fileName, rdMapName) - Read the specified file into one string with lines seperated
+     1  * by newline characters. Also create a map table indexed by offsets of each line with its
+     1  * corresponding line number.
+     1  *---------------------------------------------------------------------------------------------------
+766  1                 DEFINE('Read(fileName,rdMapName)'
+     1  +                  'rdInput,rdIn,rdLine,rdLineNo,rdMap,rdOfs'
+     1  +              )                                                                     :(ReadEnd)
+767  1  Read           INPUT(.rdInput, 8, fileName '[-m10 -l131072]')                        :F(FRETURN)
+768  1                 rdMap          =    TABLE()
+769  1                 rdOfs          =    0
+770  1                 rdLineNo       =    1
+771  1                 Read           =
+772  1  Read3          rdMap[rdOfs]   =    rdLineNo
+773  1                 rdLine         =
+774  1  Read5          rdIn           =    rdInput                                          :F(Read9)
+
+
+
+                                                                                                                                                                                                                      Page 19
+
+775  1                 rdLine         =    rdLine rdIn
+776  1                 LT(SIZE(rdIn), 131072)                                               :F(Read5)
+777  1                 rdLine         RPOS(1) cr =
+778  1                 rdOfs          =    rdOfs + SIZE(rdLine) + 1
+779  1                 rdLineNo       =    rdLineNo + 1
+780  1                 Read           =    Read rdLine nl                                   :(Read3)
+781  1  Read9          ENDFILE(8)
+782  1                 DIFFER(rdMapName)                                                    :F(RETURN)
+783  1                 $rdMapName     =    rdMap                                            :(RETURN)
+784  1  ReadEnd
+     1  *---------------------------------------------------------------------------------------------------
+785  1                 DEFINE('Write(fileName,fileStr)wrLine,wrOutput')                     :(WriteEnd)
+786  1  Write          OUTPUT(.wrOutput, 8, fileName)                                       :F(FRETURN)
+787  1  Write1         fileStr        POS(0) RPOS(0)                                        :S(Write9)
+788  1                 fileStr        POS(0) BREAK(nl) . wrLine nl =                        :S(Write3)
+789  1                 fileStr        POS(0) RTAB(0) . wrLine =                             :S(Write3)F(err)
+790  1  Write3         wrOutput       =    wrLine                                           :(Write1)
+791  1  Write9         ENDFILE(8)                                                           :(RETURN)
+792  1  WriteEnd
+     1  *---------------------------------------------------------------------------------------------------
+793  1                 DEFINE('LineMap(str,lmMapName)lmLineNo,lmMap,lmOfs,xOfs')            :(LineMapEnd)
+794  1  LineMap        lmMap          =    TABLE()
+795  1                 lmOfs          =    0
+796  1                 lmLineNo       =    1
+797  1  LineMap3       lmMap[lmOfs]   =    lmLineNo
+798  1                 str            POS(0) BREAK(nl) nl @xOfs =                           :F(LineMap9)
+799  1                 lmOfs          =    lmOfs + xOfs
+800  1                 lmLineNo       =    lmLineNo + 1                                     :(LineMap3)
+801  1  LineMap9       $lmMapName     =    lmMap                                            :(RETURN)
+802  1  LineMapEnd
+        -INCLUDE 'Gen.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * Routines to manage generated output. Since SNOBOL4 naturally writes one line at a time,
+     1  * a way is needed to buffer up the output until a newline character is reached, and a way
+     1  * to automatically handle the indention of each line.
+     1  *
+     1  * IncLevel(delta) -- Increment indention level by delta
+     1  * DecLevel(delta) -- Decrement indention level by delta
+     1  * SetLevel(level) -- Set indention level
+     1  * GetLevel()      -- Get current indention level
+     1  *
+     1  * Gen(string) -- Generate string
+     1  * GenTab(integer) -- Generate tab (spaces) to specified or current margin level
+     1  * GenSetCont(character) -- Set continue character and begin with 1st line.
+     1  *
+     1  * Globals:
+     1  *    $'$B' -- buffer
+     1  *    $'$C' -- continuation character
+     1  *    $'$X' -- marks the spot for $'$C'
+     1  *    $'#L' -- indention level
+     1  *---------------------------------------------------------------------------------------------------
+803  1                 DEFINE('IncLevel(delta)')
+804  1                 DEFINE('DecLevel(delta)')
+805  1                 DEFINE('SetLevel(level)')
+806  1                 DEFINE('GetLevel()')                                                 :(LevelEnd)
+
+
+
+                                                                                                                                                                                                                      Page 20
+
+807  1  IncLevel       IncLevel       =  .dummy
+808  1                 delta          =  IDENT(delta) 2
+809  1                 $'#L'          =  $'#L' + delta                                      :(NRETURN)
+810  1  DecLevel       DecLevel       =  .dummy
+811  1                 delta          =  IDENT(delta) 2
+812  1                 $'#L'          =  $'#L' - delta                                      :(NRETURN)
+813  1  SetLevel       SetLevel       =  .dummy
+814  1                 $'#L'          =  level                                              :(NRETURN)
+815  1  GetLevel       GetLevel       =  $'#L'                                              :(RETURN)
+816  1  LevelEnd
+     1  *---------------------------------------------------------------------------------------------------
+817  1                 DEFINE('Gen(str,outNm)ind,outline')
+818  1                 DEFINE('GenTab(pos)')
+819  1                 DEFINE('GenSetCont(cont)')
+820  1                 indent         =  DUPL(' ', 120)                                     :(GenEnd)
+821  1  Gen            Gen            =  .dummy
+822  1                 outNm          =  IDENT(outNm) .OUTPUT
+823  1                 indent         GT($'#L', 0) LEN($'#L' - SIZE($'$X')) . ind
+824  1                 $'$B'          =  DIFFER($'$B') $'$B' str
+825  1                 $'$B'          =  IDENT($'$B') $'$X' ind str
+826  1                 $'$B'          BREAK(nl) . outline nl REM . $'$B'                    :F(NRETURN)
+827  1                 $'$X'          =  $'$C'
+828  1                 $outNm         =  outline
+829  1  Gen10          $'$B'          BREAK(nl) . outline nl REM . $'$B'                    :F(NRETURN)
+830  1                 $outNm         =  $'$C' ind outline                                  :(Gen10)
+831  1  GenTab         GenTab         =  .dummy
+832  1                 pos            =  IDENT(pos) $'#L'
+833  1                 $'$B'          =  $'$B' ' ' DUPL(' ', pos - SIZE($'$B') - 1)         :S(NRETURN)
+834  1                 $'$B'          =  $'$B' ' '                                          :(NRETURN)
+835  1  GenSetCont     GenSetCont     =  .dummy
+836  1                 $'$X'          =
+837  1                 $'$C'          =  cont                                               :(NRETURN)
+838  1  GenEnd
+        -INCLUDE 'TDump.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * TDump(x) - Recursive routine to dump tree x to output in a lisp-like parenthetical
+     1  * representation. Uses TLump(x, len) to build string for output on one line, but if it will
+     1  * not fit then uses multiple line format.
+     1  *
+     1  * TLump(x) - Recursive function to return as a string tree x in a
+     1  * lisp-like parenthetical representation.
+     1  *---------------------------------------------------------------------------------------------------
+839  1                 DEFINE('TValue(x)i')                                                 :(TValueEnd)
+840  1  TValue
+     1  *              DIFFER(t(x), '.')                                                    :F(TValue3)
+841  1                 TValue         =  IDENT(v(x)) "."                                    :S(TValue3)
+842  1                 TValue         =  IDENT(t(x), 'Name') v(x)                           :S(RETURN)
+843  1                 TValue         =  IDENT(t(x), 'float') v(x)                          :S(RETURN)
+844  1                 TValue         =  IDENT(t(x), 'integer') v(x)                        :S(RETURN)
+845  1                 TValue         =  IDENT(t(x), 'bool') v(x)                           :S(RETURN)
+846  1                 TValue         =  IDENT(t(x), 'datetime') "'" SqlSQize(v(x)) "'"     :S(RETURN)
+847  1                 TValue         =  IDENT(t(x), 'character') "'" SqlSQize(v(x)) "'"    :S(RETURN)
+848  1                 TValue         =  IDENT(t(x), 'string') "'" SqlSQize(v(x)) "'"       :S(RETURN)
+849  1                 TValue         =  IDENT(t(x), 'identifier') v(x)                     :S(RETURN)
+850  1                 TValue         =  t(x)                                               :S(RETURN)
+
+
+
+                                                                                                                                                                                                                      Page 21
+
+851  1  TValue3        i              =  0
+852  1  TValue5        i              =  LT(i, n(x)) i + 1                                  :F(RETURN)
+853  1                 TValue         =  TValue (DIFFER(TValue) '.', '') v(c(x)[i])         :(TValue5)
+854  1  TValueEnd
+     1  *---------------------------------------------------------------------------------------------------
+855  1                 DEFINE('TDump(x,outNm)i,t')                                          :(TDumpEnd)
+856  1  TDump          outNm          =  IDENT(outNm) .OUTPUT
+857  1                 x              =  IDENT(DATATYPE(x), 'NAME') $x
+858  1                 Gen(TLump(x, 140 - GetLevel()) nl, outNm)                            :S(RETURN)
+859  1                 NULL           *IDENT(n(x))                                          :F(TDump0);*  | *IDENT(t(x), '.')
+860  1                 Gen(TValue(x) nl, outNm)                                             :(RETURN)
+861  1  TDump0         t(x)           POS(0) ANY(&UCASE &LCASE)
+     1  +                             (SPAN( digits &UCASE '_' &LCASE) | epsilon) RPOS(0)   :F(TDump1)
+862  1                 t              =  t(x)                                               :(TDump2)
+863  1  TDump1         t              =  '"' t(x) '"'                                       :(TDump2)
+864  1  TDump2         Gen('(' t nl, outNm)
+865  1                 IncLevel()
+866  1                 i              =  0
+867  1  TDump3         i              =  LT(i, n(x)) i + 1                                  :F(TDump4)
+868  1                 TDump(c(x)[i], outNm)                                                :(TDump3)
+869  1  TDump4         DecLevel()
+870  1                 Gen(')' nl, outNm)                                                   :(RETURN)
+871  1  TDumpEnd
+     1  *---------------------------------------------------------------------------------------------------
+872  1                 DEFINE('TLump(x,len)i,t')                                            :(TLumpEnd)
+873  1  TLump          GT(len, 0)                                                           :F(FRETURN)
+874  1                 TLump          =  IDENT(x) '()'                                      :S(RETURN)
+875  1                 NULL           *IDENT(n(x))                                          :F(TLump0);* | *IDENT(t(x), '.')
+876  1                 TLump          =  TValue(x)
+877  1                 LE(SIZE(TLump), len)                                                 :S(RETURN)F(FRETURN)
+878  1  TLump0         TLump          =  '('
+879  1                 t(x)           POS(0) ANY(&UCASE &LCASE)
+     1  +                             (SPAN( digits &UCASE '_' &LCASE) | epsilon) RPOS(0)   :F(TLump1)
+880  1                 t              =  t(x)                                               :(TLump2)
+881  1  TLump1         t              =  '"' t(x) '"'                                       :(TLump2)
+882  1  TLump2         TLump          =  TLump t
+883  1                 i              =  0
+884  1  TLump3         i              =  LT(i, n(x)) i + 1                                  :F(TLump4)
+885  1                 TLump          =  TLump ' ' TLump(c(x)[i], len - SIZE(TLump) - 2)    :S(TLump3)F(FRETURN)
+886  1  TLump4         TLump          =  TLump ')'                                          :(RETURN)
+887  1  TLumpEnd
+        -INCLUDE 'TGen.inc'
+     1  *---------------------------------------------------------------------------------------------------
+     1  * This program will generate random test strings given a grammar.
+     1  *---------------------------------------------------------------------------------------------------
+     1  -INCLUDE 'tree.inc'
+     1  -INCLUDE 'RANDOM.INC'
+     2  *---------------------------------------------------------------------------------------------------
+     2  * RANDOM(N) will return an integer uniformly
+     2  * distributed on 1,2,...,N.  If N=0, it will
+     2  * return a real uniformly distributed in the
+     2  * interval [0,1).
+     2  *---------------------------------------------------------------------------------------------------
+888  2          DEFINE('RANDOM(N)')
+889  2          RAN_VAR  =  1                   :(RANDOM_END)
+
+
+
+                                                                                                                                                                                                                      Page 22
+
+890  2  RANDOM  RAN_VAR = REMDR(RAN_VAR * 4676, 414971)
+891  2          RANDOM  = RAN_VAR / 414971.0
+892  2          RANDOM  = NE(N, 0) CONVERT(RANDOM * N, 'INTEGER') + 1
+893  2                                          :(RETURN)
+894  2  RANDOM_END
+     2  *---------------------------------------------------------------------------------------------------
+     2  * SEED() will use the minutes and seconds to
+     2  * seed the pseudo random number generator
+     2  *---------------------------------------------------------------------------------------------------
+895  2          DEFINE('SEED()')                :(SEED_END)
+896  2  SEED    DATE() POS(0) BREAK(' ') ' ' BREAK(':') ':' BREAK(':') . RV1 ':' RTAB(0) . RV0
+897  2          RAN_VAR =  RV1 * 60 + RV0
+898  2                                          :(RETURN)
+899  2  SEED_END
+     1  *---------------------------------------------------------------------------------------------------
+900  1                 DEFINE('LookUp(bnf,name)i,tProd,tName,tBody')                  :(LookUpEnd)
+901  1  LookUp         IDENT(t(bnf), 'productions')                                   :F(error)
+902  1  LookUp10       i        =  LT(i, n(bnf)) i + 1                                :F(FRETURN)
+903  1                 tProd    =  c(bnf)[i]
+904  1                 IDENT(t(tProd), 'bnf_production')                              :F(error)
+905  1                 tName    =  c(tProd)[1]
+906  1                 tBody    =  c(tProd)[2]
+907  1                 IDENT(t(tName), 'identifier')                                  :F(error)
+908  1                 LookUp   =  IDENT(v(tName), name) tBody                        :S(RETURN)F(LookUp10)
+909  1  LookUpEnd
+     1  *---------------------------------------------------------------------------------------------------
+910  1                 DEFINE('TGen(tBnf,start)i,tStart')                             :(TGenEnd)
+911  1  TGen           SEED()
+912  1                 tStart   =  LookUp(tBnf, start)                                :F(error)
+913  1  TGen10         i        =  LT(i, 10) i + 1                                    :F(RETURN)
+914  1                 OUTPUT   =  tt(tStart)                                         :(TGen10)
+915  1  TGenEnd
+     1  *---------------------------------------------------------------------------------------------------
+916  1                 DEFINE('tt(x)i,r')                                             :(ttEnd)
+917  1  tt             DIFFER(x)                                                      :F(error)
+918  1                 DIFFER(t(x))                                                   :S($('tt_' t(x)))F(error)
+919  1  tt_string      v(x)     POS(0) "'" BREAK("'") . tt "'" RPOS(0)                :F(error)   ;* Literal string
+920  1                 tt       =  ' ' tt                                             :(RETURN)
+921  1  tt_identifier  tt       =  ' ' IDENT(v(x), 'identifier') 'x'                  :S(RETURN)  ;* Reference
+922  1                 tt       =  ' ' IDENT(v(x), 'at_identifier') '@x'              :S(RETURN)
+923  1                 tt       =  ' ' IDENT(v(x), 'at_at_identifier') '@@x'          :S(RETURN)
+924  1                 tt       =  ' ' IDENT(v(x), 'real_literal') RANDOM(0) * 100.0  :S(RETURN)
+925  1                 tt       =  ' ' IDENT(v(x), 'integer_literal') RANDOM(100) - 1 :S(RETURN)
+926  1                 tt       =  ' ' IDENT(v(x), 'binary_literal') '0x7FFF'         :S(RETURN)
+927  1                 tt       =  ' ' IDENT(v(x), 'string_literal') "'Hello World!'" :S(RETURN)
+928  1                 tt       =  ' ' IDENT(v(x), 'money_literal') '$10.99'          :S(RETURN)
+929  1                 tt       =  ' ' IDENT(v(x), 'true') 'TRUE'                     :S(RETURN)
+930  1                 tt       =  ' ' IDENT(v(x), 'false') 'FALSE'                   :S(RETURN)
+931  1                 tt       =  tt(LookUp(bnf, v(x)))                              :S(RETURN)F(tt_error)
+932  1  tt_&           i        =  LT(i, n(x)) i + 1                                  :F(RETURN)  ;* Subsequents
+933  1                 tt       =  tt tt(c(x)[i])                                     :($'tt_&')
+934  1  tt_|           tt       =  tt(c(x)[RANDOM(n(x))])                             :(RETURN)   ;* Alternates
+935  1  tt_?           tt       =  LT(RANDOM(0), 0.10) tt(c(x)[1])                    :(RETURN)   ;* Optional, Zero or one
+936  1  tt_*           r        =  LT(RANDOM(0), 0.10) RANDOM(3)                      :F(RETURN)  ;* Zero or more
+937  1  tt_*10         i        =  LT(i, r) i + 1                                     :F(RETURN)
+
+
+
+                                                                                                                                                                                                                      Page 23
+
+938  1                 tt       =  tt tt(c(x)[1])                                     :($'tt_*10')
+939  1  tt_+           r        =  RANDOM(3) ;* One or more
+940  1  tt_+10         i        =  LT(i, r) i + 1                                     :F(RETURN)
+941  1                 tt       =  tt tt(c(x)[1])                                     :($'tt_+10')
+942  1  tt_,           r        =  RANDOM(2) ;* Comma seperated list
+943  1                 tt       =  tt(c(x)[1])
+944  1  tt_,10         i        =  LT(i, r) i + 1                                     :F(RETURN)
+945  1                 tt       =  tt ',' tt(c(x)[1])                                 :($'tt_,10')
+946  1  tt_error       OUTPUT   =  'Lookup failure: ' v(x)                            :(END)
+947  1  ttEnd
+        -INCLUDE 'pp.inc'
+     1  *---------------------------------------------------------------------------------------------------
+948  1                       DEFINE('ppSetStyle(style)')
+949  1                       DEFINE('pp(x)c,i,n,s,t,v')                                              :(pp_end)
+950  1  ppSetStyle           ppStyle  =     style                                                    :(RETURN)
+951  1  pp                   DIFFER(x)                                                               :F(RETURN)
+952  1                       t        =     t(x)
+953  1                       v        =     v(x)
+954  1                       n        =     n(x)
+955  1                       c        =     c(x)
+     1  *                    OUTPUT = 'pp(' t ')' ', sz = ' level '+' SIZE(v) ', v = ' v
+956  1                       DIFFER(t)                                                               :F(RETURN)
+957  1                                                                                               :S($('pp_' t))F(END)
+     1  *---------------------------------------------------------------------------------------------------
+958  1  pp_identifier        Gen(qq(x))                                                              :S(RETURN)F(error)
+959  1  pp_string            Gen(qq(x))                                                              :S(RETURN)F(error)
+960  1  pp_epsilon           Gen(qq(x))                                                              :S(RETURN)F(error)
+961  1  pp_&reduce           Gen(qq(x))                                                              :S(RETURN)F(error)
+962  1  pp_&nPush            Gen(qq(x))                                                              :S(RETURN)F(error)
+963  1  pp_&nInc             Gen(qq(x))                                                              :S(RETURN)F(error)
+964  1  pp_&nDec             Gen(qq(x))                                                              :S(RETURN)F(error)
+965  1  pp_&nPop             Gen(qq(x))                                                              :S(RETURN)F(error)
+966  1  pp_Shift()           Gen(qq(x))                                                              :S(RETURN)F(error)
+967  1  pp_Shift[]           Gen(qq(x))                                                              :S(RETURN)F(error)
+968  1  pp_Reduce()          Gen(qq(x))                                                              :S(RETURN)F(error)
+969  1  pp_Pop()             Gen(qq(x))                                                              :S(RETURN)F(error)
+970  1  pp_#                 Gen(qq(x))                                                              :S(RETURN)F(error)
+971  1  pp_integer           Gen(qq(x))                                                              :S(RETURN)F(error)
+972  1  pp_+.                Gen(qq(x))                                                              :S(RETURN)F(error)
+973  1  pp_-.                Gen(qq(x))                                                              :S(RETURN)F(error)
+974  1  pp_.+.               Gen(qq(x))                                                              :S(RETURN)F(error)
+975  1  pp_.-.               Gen(qq(x))                                                              :S(RETURN)F(error)
+976  1  pp_.*.               Gen(qq(x))                                                              :S(RETURN)F(error)
+977  1  pp_./.               Gen(qq(x))                                                              :S(RETURN)F(error)
+978  1  pp_()                Gen(qq(x))                                                              :S(RETURN)F(error)
+979  1  pp_productions       ppStyle  =     IDENT(ppStyle) 'sno'
+980  1                       ppWidth  =     IDENT(ppStyle, 'sno') 164
+981  1                       ppWidth  =     IDENT(ppStyle, 'ebnf') 72
+982  1                       ppWidth  =     IDENT(ppStyle, 'yy') 80
+983  1                       (IDENT(ppStyle, 'sno') GenSetCont('+'))                                 :(pp_0)
+984  1  pp_re_production     (IDENT(v(c[1])) pp(c[2]))                                               :S(RETURN)
+985  1                       (IDENT(v(c[1]), 'TOKEN') pp(c[2]))                                      :(RETURN)
+986  1  pp_re_spec                                                                                   :(pp_0)
+     1  *---------------------------------------------------------------------------------------------------
+987  1  pp_re                ppMode   =     're'
+
+
+
+                                                                                                                                                                                                                      Page 24
+
+988  1                       (IDENT(t(c[2]), 'string') IDENT(v(c[2])))                               :S(RETURN)
+989  1                       v        =     v(c[1])
+990  1                       v        POS(0) '_' RTAB(0) = "$'" v "'"
+991  1                       SetLevel(0)
+992  1                       GenTab(12)
+993  1                       Gen(v)
+994  1                       GenTab(48)
+995  1                       SetLevel(48)
+996  1                       Gen('=')
+997  1                       IncLevel()
+998  1                       GenTab()
+999  1                       pp(c[2])
+1000 1                       Gen(nl)
+1001 1                       SetLevel(0)                                                             :(RETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1002 1  pp_bnf_production    ppMode   =     'bnf'
+1003 1                       v        =     v(c[1])
+1004 1                       v        POS(0) '<' BREAK('>') . v '>' RPOS(0)                          :F(pp_bnf_production1)
+1005 1                       v        =     REPLACE(v, ' -', '__')
+1006 1  pp_bnf_production1   SetLevel(0)
+1007 1                       IDENT(ppStyle, 'sno')                                                   :F(pp_bnf_production3)
+1008 1                       v        POS(0) '_' RTAB(0) = "$'" v "'"
+1009 1                       (GenTab(12) Gen(v) GenTab(48))
+1010 1                       (SetLevel(48) Gen('='))
+1011 1                       (IncLevel() GenTab() pp(c[2]))
+1012 1                       (Gen(' ') pp(c[3]))
+1013 1                       Gen(nl)
+1014 1                       SetLevel(0)                                                             :(RETURN)
+1015 1  pp_bnf_production3   IDENT(ppStyle, 'ebnf')                                                  :F(pp_bnf_production7)
+1016 1                       ''       (*LT(n(c[2]), 3))                                              :F(pp_bnf_production5)
+1017 1                       ''       (*LT(n(c[2]), 2) | *EQ(n(c(c[2])[2]), 0))                      :F(pp_bnf_production5)
+1018 1                       ''       (*LT(n(c[2]), 1) | *EQ(n(c(c[2])[1]), 0))                      :F(pp_bnf_production5)
+1019 1                       (Gen(v) Gen(' ::= ') pp(c[2]))
+1020 1                       (Gen(';' nl nl))                                                        :(RETURN)
+1021 1  pp_bnf_production5   (Gen(v) Gen(' ::=' nl))
+1022 1                       (IncLevel() GenTab() pp(c[2]) Gen(nl))
+1023 1                       (DecLevel() Gen(';' nl nl))                                             :(RETURN)
+1024 1  pp_bnf_production7   IDENT(ppStyle, 'yy')                                                    :F(error)
+1025 1                       ''       (*LT(n(c[2]), 3))                                              :F(pp_bnf_production9)
+1026 1                       ''       (*LT(n(c[2]), 2) | *EQ(n(c(c[2])[2]), 0))                      :F(pp_bnf_production9)
+1027 1                       ''       (*LT(n(c[2]), 1) | *EQ(n(c(c[2])[1]), 0))                      :F(pp_bnf_production9)
+1028 1                       (Gen(v) Gen(' : ') pp(c[2]))
+1029 1                       (Gen(';' nl nl))                                                        :(RETURN)
+1030 1  pp_bnf_production9   (Gen(v) Gen(' :' nl))
+1031 1                       (IncLevel() GenTab() pp(c[2]) Gen(nl))
+1032 1                       (DecLevel() Gen(';' nl nl))                                             :(RETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1033 1  pp_|                 Gen(qq(x, ppWidth - GetLevel()))                                        :S(RETURN)
+1034 1                       (EQ(n, 1) pp(c[1]))                                                     :S(RETURN)
+1035 1                       pp(c[1])
+1036 1                       i        =     1
+1037 1  pp_|0                i        =     LT(i, n) i + 1                                           :F($'pp_|1')
+1038 1                       Gen(nl)
+1039 1                       (DecLevel() Gen('|'))
+1040 1                       (IncLevel() GenTab() pp(c[i]))                                          :($'pp_|0')
+
+
+
+                                                                                                                                                                                                                      Page 25
+
+1041 1  pp_|1                                                                                        :(RETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1042 1  pp_&                 Gen(qq(x, ppWidth - GetLevel()))                                        :S(RETURN)
+1043 1                       i        =     0
+1044 1  pp_&0                i        =     LT(i, n) i + 1                                           :F($'pp_&3')
+1045 1                       (IDENT(t(c[i]), '|') GT(n(c[i]), 1))                                    :F($'pp_&1')
+1046 1                       Gen('(' qq(c[i], ppWidth - GetLevel() - 2) ')')                         :S($'pp_&2')
+1047 1                       Gen('(')
+1048 1                       (IncLevel() GenTab() pp(c[i]) Gen(nl))
+1049 1                       (DecLevel() Gen(')'))                                                   :($'pp_&2')
+1050 1  pp_&1                DIFFER(t(c[i]))                                                         :F($'pp_&0')
+1051 1                       pp(c[i])                                                                :($'pp_&2')
+1052 1  pp_&2                (LT(i, n) Gen(nl))                                                      :($'pp_&0')
+1053 1  pp_&3                                                                                        :(RETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1054 1  pp_?                 Gen(qq(x, ppWidth - GetLevel()))                                        :S(RETURN)
+1055 1                       IDENT(ppStyle, 'sno')                                                   :F($'pp_?7')
+1056 1                       EQ(ppOps, TRUE)                                                         :F($'pp_?5')
+1057 1                       LE(n(c[1]), 1)                                                          :F($'pp_?3')
+1058 1                       (Gen('!') pp(c[1]))                                                     :(RETURN)
+1059 1  pp_?3                Gen('!(')
+1060 1                       (IncLevel() GenTab() pp(c[1]) Gen(nl))
+1061 1                       (DecLevel() Gen(')'))                                                   :(RETURN)
+1062 1  pp_?5                Gen('(')
+1063 1                       (IncLevel() GenTab() pp(c[1]) Gen(nl))
+1064 1                       (DecLevel() Gen('|'))
+1065 1                       s        =     EQ(doInstrument, FALSE) "epsilon"
+1066 1                       s        =     EQ(doInstrument, TRUE)  "epsilon ~ ''"
+1067 1                       (IncLevel() GenTab() Gen(s nl))
+1068 1                       (DecLevel() Gen(')'))                                                   :(RETURN)
+1069 1  pp_?7                IDENT(ppStyle, 'ebnf')                                                  :F(error)
+1070 1                       Gen('[')
+1071 1                       (IncLevel() GenTab() pp(c[1]) Gen(nl))
+1072 1                       (DecLevel() Gen(']'))                                                   :(RETURN)
+1073 1  
+     1  *---------------------------------------------------------------------------------------------------
+1074 1  pp_,                 Gen(qq(x, ppWidth - GetLevel()))                                        :S(RETURN)
+1075 1                       IDENT(ppStyle, 'sno')                                                   :F($'pp_,7')
+1076 1                       LE(n(c[1]), 1)                                                          :F($'pp_,3')
+1077 1                       (pp(c[1]) Gen(" % $','"))                                               :(RETURN)
+1078 1  pp_,3                Gen('(')
+1079 1                       (IncLevel() GenTab() pp(c[1]) Gen(nl))
+1080 1                       (DecLevel() Gen(") % $','"))                                            :(RETURN)
+1081 1  pp_,7                IDENT(ppStyle, 'ebnf')                                                  :F(error)
+1082 1                       LE(n(c[1]), 1)                                                          :F($'pp_,9')
+1083 1                       (pp(c[1]) Gen(" ,,,"))                                                  :(RETURN)
+1084 1  pp_,9                Gen('(')
+1085 1                       (IncLevel() GenTab() pp(c[1]) Gen(nl))
+1086 1                       (DecLevel() Gen(") ,,,"))                                               :(RETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1087 1  pp_+                 (IDENT(ppMode, 're') IDENT(t(c[1]), '[]') Gen(qq(x)))                   :S(RETURN)
+1088 1                       Gen(qq(x, ppWidth - GetLevel()))                                        :S(RETURN)
+1089 1                       IDENT(ppStyle, 'sno')                                                   :F($'pp_+20')
+1090 1                       EQ(ppOps, TRUE)                                                         :F($'pp_+5')
+1091 1                       Gen('#(' qq(c[1], ppWidth - GetLevel() - 3) ')')                        :S(RETURN)
+
+
+
+                                                                                                                                                                                                                      Page 26
+
+1092 1                       Gen('#(')
+1093 1                       (IncLevel() GenTab() pp(c[1]) Gen(nl))
+1094 1                       (DecLevel() Gen(')'))                                                   :(RETURN)
+1095 1  pp_+5                (IDENT(t(c[1]), '|') GT(n(c[1]), 1))                                    :F($'pp_+10')
+1096 1                       Gen('(' qq(c[1], ppWidth - GetLevel() - 2) ')' nl)                      :S($'pp_+15')
+1097 1                       Gen('(')
+1098 1                       (IncLevel() GenTab() pp(c[1]) Gen(nl))
+1099 1                       (DecLevel() Gen(')' nl))                                                :($'pp_+15')
+1100 1  pp_+10               Gen(qq(c[1], ppWidth - GetLevel()) nl)                                  :S($'pp_+15')
+1101 1                       (pp(c[1]) Gen(nl))
+1102 1  pp_+15               t(x)     =     '*'                                                      :($'pp_*')
+1103 1  pp_+20               IDENT(ppStyle, 'ebnf')                                                  :F(error)
+1104 1                       Gen('(')
+1105 1                       (IncLevel() GenTab() pp(c[1]) Gen(nl))
+1106 1                       (DecLevel() Gen(') ...'))                                               :(RETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1107 1  pp_*                 (IDENT(ppMode, 're') IDENT(t(c[1]), '[]') Gen(qq(x)))                   :S(RETURN)
+1108 1                       Gen(qq(x, ppWidth - GetLevel()))                                        :S(RETURN)
+1109 1                       IDENT(ppStyle, 'sno')                                                   :F($'pp_*5')
+1110 1                       (EQ(ppOps, TRUE) Gen('%(' nl))
+1111 1                       (EQ(ppOps, FALSE) Gen('ARBNO(' nl))
+1112 1                       (IncLevel() pp(c[1]) Gen(nl))
+1113 1                       (DecLevel() Gen(')'))                                                   :(RETURN)
+1114 1  pp_*5                IDENT(ppStyle, 'ebnf')                                                  :F(error)
+1115 1                       Gen('[')
+1116 1                       (IncLevel() GenTab() pp(c[1]) Gen(nl))
+1117 1                       (DecLevel() Gen('] ...'))                                               :(RETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1118 1  pp_~[]
+1119 1  pp_[]                Gen(qq(x))                                                              :S(RETURN)F(error)
+1120 1  pp_-                                                                                         :(pp_0)
+     1  *---------------------------------------------------------------------------------------------------
+1121 1  pp_0                 i        =     0
+1122 1  pp_1                 i        =     LT(i, n) i + 1                                           :F(RETURN)
+1123 1                       pp(c[i])                                                                :(pp_1)
+1124 1  pp_end
+     1  *===================================================================================================
+1125 1                       DEFINE('qq(x,len)c,c1,c2,i,n,s,t,v')                                    :(qq_end)
+1126 1  qq                   len      =     IDENT(len) 1024
+1127 1                       GT(len, 0)                                                              :F(FRETURN)
+1128 1                       t        =     t(x)
+1129 1                       v        =     v(x)
+1130 1                       n        =     n(x)
+1131 1                       c        =     c(x)
+1132 1                       DIFFER(t)                                                               :S($('qq_' t))F(RETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1133 1  qq_identifier        v        POS(0) '<' BREAK('>') . v '>' RPOS(0)                          :F(qq_identifier1)
+1134 1                       v        =     REPLACE(v, ' -', '__')
+1135 1  qq_identifier1       IDENT(ppStyle, 'sno')                                                   :F(qq_identifier3)
+1136 1                       qq       =     IDENT(v, 'EOF') "$' ' RPOS(0)"                           :S(qq_atomic)
+1137 1                       v        POS(0) '_' RTAB(1) '_' = "$'" v "'"                            :S(qq_identifier2)
+1138 1                       v        POS(0) '_' =                                                   :S(qq_identifier2)
+1139 1                       qq       =     '*' v                                                    :(qq_atomic)
+1140 1  qq_identifier2       qq       =     v                                                        :(qq_atomic)
+1141 1  qq_identifier3       IDENT(ppStyle, 'ebnf')                                                  :F(qq_identifier4)
+
+
+
+                                                                                                                                                                                                                      Page 27
+
+1142 1                       qq       =     IDENT(v, 'EOF') "EOF"                                    :S(qq_atomic)
+1143 1                       v        POS(0) '_' RTAB(1) . v '_'                                     :S(qq_identifier2)
+1144 1                       v        POS(0) '_' RTAB(0) . v = "'" v "'"                             :S(qq_identifier2)
+1145 1                       v        POS(0) SPAN(&UCASE '_' '0123456789') RPOS(0)                   :F(qq_identifier2)
+1146 1                       v        =     "'" v "'"                                                :(qq_identifier2)
+1147 1  qq_identifier4       IDENT(ppStyle, 'yy')                                                    :S(qq_identifier2)F(error)
+1148 1  qq_string            v        =     Intize(v)
+1149 1                       qq       =     IDENT(ppMode, 're') Qize(v)                              :S(qq_atomic)
+1150 1                       IsType(v, 'NULL,STRING')                                                :F(qq_badguy)
+1151 1                       v        POS(0) SPAN(&LCASE '_' '0123456789') RPOS(0)                   :S(qq_string0)
+1152 1                       v        POS(0) *ident RPOS(0)                                          :F(qq_string0)
+1153 1                       qq       =     IDENT(ppStyle, 'sno') IDENT(v, 'GO') v ' FENCE'          :S(qq_atomic)
+1154 1                       qq       =     IDENT(ppStyle, 'sno') v                                  :S(qq_atomic)
+1155 1  qq_string0           qq       =     IDENT(ppStyle, 'sno') '$' Qize(v)                        :S(qq_atomic)
+1156 1                       qq       =     IDENT(ppStyle, 'ebnf') Qize(v)                           :S(qq_atomic)
+1157 1                       qq       =     IDENT(ppStyle, 'yy') Qize(v)                             :S(qq_atomic)F(error)
+1158 1  qq_badguy            OUTPUT   =     'Bad datatype for value field! ' DATATYPE(v)             :(qq_atomic)
+1159 1  qq_epsilon           qq       =     'epsilon'                                                :(qq_atomic)
+1160 1  qq_atomic            LE(SIZE(qq), len)                                                       :S(RETURN)F(FRETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1161 1  qq_&reduce           qq       =     IDENT(ppStyle, 'sno')  '("' v(c[1]) '" & ' v(c[2]) ')'               :S(qq_atomic)
+1162 1                       qq       =     IDENT(ppStyle, 'ebnf') 'Reduce(' v(c[1]) ', ' v(c[2]) ')'            :S(qq_atomic)
+1163 1                       qq       =     IDENT(ppStyle, 'yy')                                                 :S(qq_atomic)F(error)
+1164 1  qq_&nPush            qq       =     IDENT(ppStyle, 'sno')  'nPush()'                                     :S(qq_atomic)
+1165 1                       qq       =     IDENT(ppStyle, 'ebnf') '<'                                           :S(qq_atomic)
+1166 1                       qq       =     IDENT(ppStyle, 'yy')                                                 :S(qq_atomic)F(error)
+1167 1  qq_&nInc             qq       =     IDENT(ppStyle, 'sno')  'nInc()'                                      :S(qq_atomic)
+1168 1                       qq       =     IDENT(ppStyle, 'ebnf') '++'                                          :S(qq_atomic)
+1169 1                       qq       =     IDENT(ppStyle, 'yy')                                                 :S(qq_atomic)F(error)
+1170 1  qq_&nDec             qq       =     IDENT(ppStyle, 'sno')  'nDec()'                                      :S(qq_atomic)
+1171 1                       qq       =     IDENT(ppStyle, 'ebnf') '--'                                          :S(qq_atomic)
+1172 1                       qq       =     IDENT(ppStyle, 'yy')                                                 :S(qq_atomic)F(error)
+1173 1  qq_&nPop             qq       =     IDENT(ppStyle, 'sno')  'nPop()'                                      :S(qq_atomic)
+1174 1                       qq       =     IDENT(ppStyle, 'ebnf') '>'                                           :S(qq_atomic)
+1175 1                       qq       =     IDENT(ppStyle, 'yy')                                                 :S(qq_atomic)F(error)
+1176 1  qq_Shift()           qq       =     IDENT(ppStyle, 'sno')  EQ(n, 0) "epsilon ~ ''"                       :S(qq_atomic)
+1177 1                       qq       =     IDENT(ppStyle, 'sno')  EQ(n, 1) "epsilon ~ '" v(c[1]) "'"            :S(qq_atomic)
+1178 1                       qq       =     IDENT(ppStyle, 'sno')  EQ(n, 2) "(" qq(c[2]) ") ~ '" v(c[1]) "'"     :S(qq_atomic)
+1179 1                       qq       =     IDENT(ppStyle, 'ebnf') EQ(n, 0) "Shift()"                            :S(qq_atomic)
+1180 1                       qq       =     IDENT(ppStyle, 'ebnf') EQ(n, 1) "Shift(" v(c[1]) ")"                 :S(qq_atomic)
+1181 1                       qq       =     IDENT(ppStyle, 'ebnf') EQ(n, 2) "Shift(" v(c[1]) ", " qq(c[2]) ")"   :S(qq_atomic)
+1182 1                       qq       =     IDENT(ppStyle, 'yy')                                                 :S(qq_atomic)F(error)
+1183 1  qq_Shift[]           qq       =     IDENT(ppStyle, 'sno')  qq(c[2]) " ~ '" v(c[1]) "'"                   :S(qq_atomic)
+1184 1                       qq       =     IDENT(ppStyle, 'ebnf') "Shift[" v(c[1]) ", " qq(c[2]) "]"            :S(qq_atomic)
+1185 1                       qq       =     IDENT(ppStyle, 'yy')                                                 :S(qq_atomic)F(error)
+1186 1  qq_Reduce()          qq       =     IDENT(ppStyle, 'sno')  '("' "'" v(c[1]) "'" '" & ' "'" qq(c[2]) "')" :S(qq_atomic)
+1187 1                       qq       =     IDENT(ppStyle, 'yy')                                                 :S(qq_atomic)
+1188 1                       qq       =     IDENT(ppStyle, 'ebnf') "Reduce(" v(c[1]) ", " qq(c[2]) ")"           :S(qq_atomic)F(error)
+1189 1  qq_Pop()             qq       =     IDENT(ppStyle, 'sno')  'pop()'                                       :S(qq_atomic)
+1190 1                       qq       =     IDENT(ppStyle, 'ebnf') 'Pop()'                                       :S(qq_atomic)
+1191 1                       qq       =     IDENT(ppStyle, 'yy')                                                 :S(qq_atomic)F(error)
+     1  *---------------------------------------------------------------------------------------------------
+1192 1  qq_#                 qq       =     IDENT(ppStyle, 'sno')  'nTop()'                          :S(qq_atomic)
+1193 1                       qq       =     IDENT(ppStyle, 'ebnf') '#'                               :S(qq_atomic)
+1194 1                       qq       =     IDENT(ppStyle, 'yy')                                     :S(qq_atomic)F(error)
+
+
+
+                                                                                                                                                                                                                      Page 28
+
+1195 1  qq_integer           qq       =     v                                                        :(qq_atomic)
+1196 1  qq_+.                qq       =     '+' qq(c[1])                                             :S(RETURN)F(FRETURN)
+1197 1  qq_-.                qq       =     '-' qq(c[1])                                             :S(RETURN)F(FRETURN)
+1198 1  qq_.+.               qq       =     qq(c[1]) ' + ' qq(c[2])                                  :S(RETURN)F(FRETURN)
+1199 1  qq_.-.               qq       =     qq(c[1]) ' - ' qq(c[2])                                  :S(RETURN)F(FRETURN)
+1200 1  qq_.*.               qq       =     qq(c[1]) ' * ' qq(c[2])                                  :S(RETURN)F(FRETURN)
+1201 1  qq_./.               qq       =     qq(c[1]) ' / ' qq(c[2])                                  :S(RETURN)F(FRETURN)
+1202 1  qq_()                qq       =     '(' qq(c[1]) ')'                                         :S(RETURN)F(FRETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1203 1  qq_|                 qq       =     qq(c[1], len)                                            :F(FRETURN)
+1204 1                       i        =     1
+1205 1  qq_|0                i        =     LT(i, n) i + 1                                           :F(RETURN)
+1206 1                       qq       =     qq ' | ' qq(c[i], len - SIZE(qq) - 3)                    :S($'qq_|0')F(FRETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1207 1  qq_&                 i        =     0
+1208 1  qq_&0                i        =     LT(i, n) i + 1                                           :F(RETURN)
+1209 1                       qq       =     DIFFER(qq) qq ' '
+1210 1                       (IDENT(t(c[i]), '|') GT(n(c[i]), 1))                                    :F($'qq_&1')
+1211 1                       qq       =     qq '(' qq(c[i], len - SIZE(qq) - 3) ')'                  :S($'qq_&0')F(FRETURN)
+1212 1  qq_&1                qq       =     qq qq(c[i], len - SIZE(qq) - 1)                          :S($'qq_&0')F(FRETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1213 1  qq_?                 IDENT(ppStyle, 'sno')                                                   :F($'qq_?7')
+1214 1                       EQ(ppOps, TRUE)                                                         :F($'qq_?5')
+1215 1                       LE(n(c[1]), 1)                                                          :F($'qq_?3')
+1216 1                       qq       =     '!' qq(c[1], len - 1)                                    :S(RETURN)F(FRETURN)
+1217 1  qq_?3                qq       =     '!(' qq(c[1], len - 3) ')'                               :S(RETURN)F(FRETURN)
+1218 1  qq_?5                s        =     EQ(doInstrument, FALSE) "epsilon"
+1219 1                       s        =     EQ(doInstrument, TRUE)  "epsilon ~ ''"
+1220 1                       qq       =     '(' qq(c[1], len - SIZE(s) - 5) " | " s ")"              :S(RETURN)F(FRETURN)
+1221 1  qq_?7                IDENT(ppStyle, 'ebnf')                                                  :F(error)
+1222 1                       qq       =     '[' qq(c[1], len - 2) ']'                                :S(RETURN)F(FRETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1223 1  qq_,                 IDENT(ppStyle, 'sno')                                                   :F($'qq_,5')
+1224 1                       LE(n(c[1]), 1)                                                          :F($'qq_,3')
+1225 1                       qq       =     qq(c[1], len - SIZE(qq) - 7) " % $','"                   :S(RETURN)F(FRETURN)
+1226 1  qq_,3                qq       =     '(' qq(c[1], len - SIZE(qq) - 9) ") % $','"              :S(RETURN)F(FRETURN)
+1227 1  qq_,5                IDENT(ppStyle, 'ebnf')                                                  :F(error)
+1228 1                       LE(n(c[1]), 1)                                                          :F($'qq_,7')
+1229 1                       qq       =     qq(c[1], len - SIZE(qq) - 4) " ,,,"                      :S(RETURN)F(FRETURN)
+1230 1  qq_,7                qq       =     '(' qq(c[1], len - SIZE(qq) - 6) ") ,,,"                 :S(RETURN)F(FRETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1231 1  qq_+                 IDENT(ppMode, 're')                                                     :F($'qq_+5')
+1232 1                       IDENT(t(c[1]), '[]')                                                    :F($'qq_+5')
+1233 1                       n        =     n(c[1])
+1234 1                       c        =     c(c[1])
+1235 1                       i        =     0
+1236 1  qq_+0                i        =     LT(i, n) i + 1                                           :F($'qq_+1')
+1237 1                       qq       =     qq qq(c[i])                                              :($'qq_+0')
+1238 1  qq_+1                qq       =     'SPAN(' Qize(qq) ')'                                     :(qq_atomic)
+1239 1  qq_+5                IDENT(ppStyle, 'sno')                                                   :F($'qq_+30')
+1240 1                       EQ(ppOps, TRUE)                                                         :F($'qq_+10')
+1241 1                       LE(n(c[1]), 1)                                                          :F($'qq_+7')
+1242 1                       qq       =     '#' qq(c[1], len - 1)                                    :S(RETURN)F(FRETURN)
+1243 1  qq_+7                qq       =     '#(' qq(c[1], len - 3) ')'                               :S(RETURN)F(FRETURN)
+1244 1  qq_+10               (IDENT(t(c[1]), '|') GT(n(c[1]), 1))                                    :F($'qq_+15')
+
+
+
+                                                                                                                                                                                                                      Page 29
+
+1245 1                       qq       =     '(' qq(c[1], len - 2) ')'                                :S($'qq_+20')F(FRETURN)
+1246 1  qq_+15               qq       =     qq(c[1], len)                                            :S($'qq_+20')F(FRETURN)
+1247 1  qq_+20               qq       =     qq ' ARBNO(' qq(c[1], len - SIZE(qq) - 8) ')'            :S(RETURN)F(FRETURN)
+1248 1  qq_+30               IDENT(ppStyle, 'ebnf')                                                  :F(error)
+1249 1                       LE(n(c[1]), 1)                                                          :F($'qq_+37')
+1250 1                       qq       =     qq(c[1], len - 4) ' ...'                                 :S(RETURN)F(FRETURN)
+1251 1  qq_+37               qq       =     '(' qq(c[1], len - 6) ') ...'                            :S(RETURN)F(FRETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1252 1  qq_*                 IDENT(ppMode, 're')                                                     :F($'qq_*5')
+1253 1                       IDENT(t(c[1]), '[]')                                                    :F($'qq_*5')
+1254 1                       n        =     n(c[1])
+1255 1                       c        =     c(c[1])
+1256 1                       i        =     0
+1257 1  qq_*0                i        =     LT(i, n) i + 1                                           :F($'qq_*1')
+1258 1                       qq       =     qq qq(c[i])                                              :($'qq_*0')
+1259 1  qq_*1                qq       =     '(SPAN(' Qize(qq) ') | epsilon)'                         :(qq_atomic)
+1260 1  qq_*5                IDENT(ppStyle, 'sno')                                                   :F($'qq_*20')
+1261 1                       EQ(ppOps, TRUE)                                                         :F($'qq_*10')
+1262 1                       LE(n(c[1]), 1)                                                          :F($'qq_*7')
+1263 1                       qq       =     '%' qq(c[1], len - SIZE(qq) - 1)                         :S(RETURN)F(FRETURN)
+1264 1  qq_*7                qq       =     '%(' qq(c[1], len - SIZE(qq) - 3) ')'                    :S(RETURN)F(FRETURN)
+1265 1  qq_*10               qq       =     'ARBNO(' qq(c[1], len - SIZE(qq) - 7) ')'                :S(RETURN)F(FRETURN)
+1266 1  qq_*20               IDENT(ppStyle, 'ebnf')                                                  :F(error)
+1267 1                       qq       =     '[' qq(c[1], len - SIZE(qq) - 6) '] ...'                 :S(RETURN)F(FRETURN)
+     1  *---------------------------------------------------------------------------------------------------
+1268 1  qq_~[]               s        =     'NOT'
+1269 1  qq_[]                i        =     0
+1270 1  qq_[]0               i        =     LT(i, n) i + 1                                           :F($'qq_[]1')
+1271 1                       qq       =     qq qq(c[i])                                              :($'qq_[]0')
+1272 1  qq_[]1               qq       =     s 'ANY(' Qize(qq) ')'                                    :(qq_atomic)
+     1  *---------------------------------------------------------------------------------------------------
+1273 1  qq_-                 c1       =     Intize(v(c[1]))
+1274 1                       c1       POS(0) '\u'                                                    :S(FRETURN)
+1275 1  qq_-0                qq       =     EQ(n, 1) c1                                              :S(RETURN)
+1276 1                       c2       =     Intize(v(c[2]))
+1277 1                       c2       POS(0) '\u'                                                    :S(FRETURN)
+1278 1                       &ALPHABET  (c1 BREAK(c2) c2) . qq                                       :S(RETURN)F(error)
+     1  *---------------------------------------------------------------------------------------------------
+1279 1  qq0                  qq       =     '(' t
+1280 1                       i        =     0
+1281 1  qq1                  i        =     LT(i, n) i + 1                                           :F(qq2)
+1282 1                       qq       =     qq ' ' qq(c[i], len - SIZE(qq) - 2)                      :S(qq1)F(FRETURN)
+1283 1  qq2                  qq       =     qq ')'                                                   :(RETURN)
+1284 1  qq_end
+        -INCLUDE 'ebnf.inc'
+     1  *---------------------------------------------------------------------------------------------------
+1285 1              blanks            =     SPAN(' ' tab cr ff)
+1286 1              white             =     SPAN(' ' tab cr ff nl)
+1287 1              cStyleComment     =     '/*' BREAKX('*') '*/'
+1288 1              cppStyleComment   =     '//' BREAK(nl) nl
+1289 1              sqlStyleComment   =     '--' BREAK(nl) nl
+1290 1              space             =     (blanks | cStyleComment | cppStyleComment | sqlStyleComment)
+     1  +                                   FENCE(*space | epsilon)
+1291 1              whitespace        =     (white | cStyleComment | cppStyleComment | sqlStyleComment)
+     1  +                                   FENCE(*whitespace | epsilon)
+
+
+
+                                                                                                                                                                                                                      Page 30
+
+1292 1              $' '              =     FENCE(whitespace | epsilon)
+1293 1              $'  '             =     FENCE(space | epsilon)
+     1  *---------------------------------------------------------------------------------------------------
+1294 1              keywords          =
+1295 1              reswords          =     'SHIFT REDUCE POP'
+1296 1              operators         =     '} | ⋮ { ] [ ? ; ::= ... ,,, ) ( < > ++ -- # , + - * /'
+1297 1              ident             =     ANY(&UCASE '_' &LCASE) FENCE(SPAN('0123456789' &UCASE '_' &LCASE) | epsilon)
+1298 1              identifier        =     ident $ tx $ *notmatch(reswords, (POS(0) | ' ') upr(tx) (' ' | RPOS(0)))
+1299 1              resword           =     ident $ tx $ *match(reswords, (POS(0) | ' ') upr(tx) (' ' | RPOS(0)))
+1300 1              keyword           =     ident $ tx $ *match(keywords, (POS(0) | ' ') upr(tx) (' ' | RPOS(0)))
+1301 1              Populate(.TW, ident, keywords, reswords,, operators)
+     1  *---------------------------------------------------------------------------------------------------
+1302 1              u_left_arrow      =     LEFTWARDS_ARROW
+     1  +                             |     LEFTWARDS_DOUBLE_ARROW
+     1  +                             |     LONG_LEFTWARDS_ARROW
+     1  +                             |     LONG_LEFTWARDS_DOUBLE_ARROW
+     1  +                             |     LEFTWARDS_ARROW_WITH_SMALL_TRIANGLE_ARROWHEAD
+     1  +                             |     LEFTWARDS_ARROW_WITH_MEDIUM_TRIANGLE_ARROWHEAD
+     1  +                             |     LEFTWARDS_ARROW_WITH_LARGE_TRIANGLE_ARROWHEAD
+     1  +                             |     LEFTWARDS_ARROW_WITH_SMALL_EQUILATERAL_ARROWHEAD
+     1  +                             |     LEFTWARDS_ARROW_WITH_EQUILATERAL_ARROWHEAD
+     1  +                             |     HEAVY_LEFTWARDS_ARROW_WITH_EQUILATERAL_ARROWHEAD
+     1  +                             |     HEAVY_LEFTWARDS_ARROW_WITH_LARGE_EQUILATERAL_ARROWHEAD
+     1  +                             |     LEFTWARDS_TRIANGLE_HEADED_ARROW_WITH_NARROW_SHAFT
+     1  +                             |     LEFTWARDS_TRIANGLE_HEADED_ARROW_WITH_MEDIUM_SHAFT
+     1  +                             |     LEFTWARDS_TRIANGLE_HEADED_ARROW_WITH_BOLD_SHAFT
+     1  +                             |     LEFTWARDS_TRIANGLE_HEADED_ARROW_WITH_HEAVY_SHAFT
+     1  +                             |     LEFTWARDS_TRIANGLE_HEADED_ARROW_WITH_VERY_HEAVY_SHAFT
+     1  +                             |     LEFTWARDS_SQUARED_ARROW
+     1  +                             |     LEFTWARDS_HEAVY_ARROW
+     1  +                             |     LEFTWARDS_SANS_SERIF_ARROW
+     1  +                             |     WIDE_HEADED_LEFTWARDS_LIGHT_BARB_ARROW
+     1  +                             |     WIDE_HEADED_LEFTWARDS_BARB_ARROW
+     1  +                             |     WIDE_HEADED_LEFTWARDS_MEDIUM_BARB_ARROW
+     1  *---------------------------------------------------------------------------------------------------
+1303 1              u_right_arrow     =     RIGHTWARDS_ARROW
+     1  +                             |     RIGHTWARDS_DOUBLE_ARROW
+     1  +                             |     LONG_RIGHTWARDS_ARROW
+     1  +                             |     LONG_RIGHTWARDS_DOUBLE_ARROW
+     1  +                             |     RIGHTWARDS_ARROW_WITH_SMALL_TRIANGLE_ARROWHEAD
+     1  +                             |     RIGHTWARDS_ARROW_WITH_MEDIUM_TRIANGLE_ARROWHEAD
+     1  +                             |     RIGHTWARDS_ARROW_WITH_LARGE_TRIANGLE_ARROWHEAD
+     1  +                             |     RIGHTWARDS_ARROW_WITH_SMALL_EQUILATERAL_ARROWHEAD
+     1  +                             |     RIGHTWARDS_ARROW_WITH_EQUILATERAL_ARROWHEAD
+     1  +                             |     HEAVY_RIGHTWARDS_ARROW_WITH_EQUILATERAL_ARROWHEAD
+     1  +                             |     HEAVY_RIGHTWARDS_ARROW_WITH_LARGE_EQUILATERAL_ARROWHEAD
+     1  +                             |     RIGHTWARDS_TRIANGLE_HEADED_ARROW_WITH_NARROW_SHAFT
+     1  +                             |     RIGHTWARDS_TRIANGLE_HEADED_ARROW_WITH_MEDIUM_SHAFT
+     1  +                             |     RIGHTWARDS_TRIANGLE_HEADED_ARROW_WITH_BOLD_SHAFT
+     1  +                             |     RIGHTWARDS_TRIANGLE_HEADED_ARROW_WITH_HEAVY_SHAFT
+     1  +                             |     RIGHTWARDS_TRIANGLE_HEADED_ARROW_WITH_VERY_HEAVY_SHAFT
+     1  +                             |     RIGHTWARDS_SQUARED_ARROW
+     1  +                             |     RIGHTWARDS_HEAVY_ARROW
+     1  +                             |     RIGHTWARDS_SANS_SERIF_ARROW
+     1  +                             |     WIDE_HEADED_RIGHTWARDS_LIGHT_BARB_ARROW
+
+
+
+                                                                                                                                                                                                                      Page 31
+
+     1  +                             |     WIDE_HEADED_RIGHTWARDS_BARB_ARROW
+     1  +                             |     WIDE_HEADED_RIGHTWARDS_MEDIUM_BARB_ARROW
+     1  *---------------------------------------------------------------------------------------------------
+1304 1              MATCH             =     $' ' "'" ARBNO(bSlash (bSlash | ANY("n'")) | BREAK("'" bSlash)) "'"
+1305 1              STRING            =     $' ' '"' ARBNO(bSlash (bSlash | ANY('n"')) | BREAK('"' bSlash)) '"'
+1306 1              INTEGER           =     $' ' SPAN('0123456789')
+1307 1              SYMBOL            =     $' ' *identifier
+     1  *---------------------------------------------------------------------------------------------------
+1308 1              ebnf              =     nPush() *productions ("'productions'" & 'nTop()') nPop()
+1309 1              productions       =     *production nInc() (*productions | epsilon)
+1310 1              production        =     SYMBOL ~ 'identifier' ($'->' | $'::=' | $'←') *alternates $';' ("'bnf_production'" & 2)
+1311 1  
+1312 1              alternates        =     nPush() *alternates_1 ("'|'" & '*(GT(nTop(), 1) nTop())') nPop()
+1313 1              alternates_1      =     *subsequents nInc() (($'|' | $'⋮') *alternates_1 | epsilon)
+1314 1  
+1315 1              subsequents       =     nPush() *subsequents_1 ("'&'" & '*(GT(nTop(), 1) nTop())') nPop()
+1316 1              subsequents_1     =     *repetition nInc() (*subsequents_1 | epsilon)
+1317 1  
+1318 1              repetition        =     *element
+     1  +                                   (  $'...' ("'+'" & 1)
+     1  +                                   |  $',,,' ("','" & 1)
+     1  +                                   |  epsilon
+     1  +                                   )
+     1  +                             |     $'[' *alternates $']'
+     1  +                                   (  $'...' ("'*'" & 1)
+     1  +                                   |  $',,,' ("','" & 1) ("'?'" & 1)
+     1  +                                   |  epsilon ("'?'" & 1)
+     1  +                                   )
+     1  +                             |     SHIFT $'[' *symbol $',' *alternates $']' ("'?'" & 1) ("'Shift[]'" & 2)
+1319 1  
+1320 1              symbol            =     (SYMBOL ~ 'identifier' | STRING ~ 'string')
+1321 1  
+1322 1              element           =     SYMBOL ~ 'identifier'
+     1  +                             |     MATCH ~ 'string'
+     1  +                             |     POP $'(' $')' ("'Pop()'" & 0)
+     1  +                             |     REDUCE $'(' *symbol $',' *expression $')' ("'Reduce()'" & 2)
+     1  +                             |     SHIFT $'('
+     1  +                                   (  *symbol
+     1  +                                      (  $',' *alternates ("'Shift()'" & 2)
+     1  +                                      |  epsilon          ("'Shift()'" & 1)
+     1  +                                      )
+     1  +                                   |  epsilon             ("'Shift()'" & 0)
+     1  +                                   )
+     1  +                                   $')'
+     1  +                             |     $'<'  ("'&nPush'" & 0)
+     1  +                             |     $'>'  ("'&nPop'"  & 0)
+     1  +                             |     $'++' ("'&nInc'"  & 0)
+     1  +                             |     $'--' ("'&nDec'"  & 0)
+     1  +                             |     $'(' *alternates $')'
+1323 1  
+1324 1              expression        =     *expression1
+1325 1  
+1326 1              expression1       =     *expression2
+     1  +                                   (  $'+' *expression1 ("'.+.'" & 2)
+     1  +                                   |  $'-' *expression1 ("'.-.'" & 2)
+
+
+
+                                                                                                                                                                                                                      Page 32
+
+     1  +                                   |  epsilon
+     1  +                                   )
+1327 1  
+1328 1              expression2       =     *expression3
+     1  +                                   (  $'*' *expression2 ("'.*.'" & 2)
+     1  +                                   |  $'/' *expression2 ("'./.'" & 2)
+     1  +                                   |  epsilon
+     1  +                                   )
+1329 1  
+1330 1              expression3       =     $'+' *expression3 ("'+.'" & 1)
+     1  +                             |     $'-' *expression3 ("'-.'" & 1)
+     1  +                             |     *expression4
+1331 1  
+1332 1              expression4       =     INTEGER ~ 'integer'
+     1  +                             |     $'#' ~ '#'
+     1  +                             |     $'(' *expression $')' ("()" & 1)
+        -INCLUDE 'trace.inc'
+     1  *-----------------------------------------------------------------------------------------------------------------------
+1333 1              DEFINE('T8Trace(lvl,str,ofs)')                                                   :(T8TraceEnd)
+1334 1  T8Trace     T8Trace           =     .dummy
+1335 1              t8Max             =     GT(strOfs + ofs, t8Max) strOfs + ofs
+1336 1              GT(xTrace, 0)                                                                    :F(NRETURN)
+1337 1              LE(lvl, xTrace)                                                                  :F(NRETURN)
+1338 1  T8Trace1    str               POS(0) '?' = '? '                                              :S(T8Trace2)
+1339 1              str               POS(0) = '  '
+1340 1  T8Trace2    str               =     GT(SIZE(str), 1024) '  ...'
+1341 1              OUTPUT            =     T8Pos(strOfs + ofs, t8Map) str                           :(NRETURN)
+1342 1  T8TraceEnd
+     1  *-----------------------------------------------------------------------------------------------------------------------
+1343 1              DEFINE('T8Pos(t8Ofs,t8Map)i')                                                    :(T8PosEnd)
+1344 1  T8Pos       T8Pos             =     IDENT(t8Map) LPAD(t8Ofs, 8)                              :S(RETURN)
+1345 1              i                 =     +t8Ofs
+1346 1  T8Pos1      i                 =     IDENT(t8Map[i]) i - 1                                    :S(T8Pos1)
+1347 1              t8Line            =     t8Map[i]
+1348 1              t8Pos             =     t8Ofs - i + 1
+1349 1              i                 =     +t8Max
+1350 1  T8Pos2      i                 =     IDENT(t8Map[i]) i - 1                                    :S(T8Pos2)
+1351 1              t8MaxLine         =     t8Map[i]
+1352 1              t8MaxPos          =     t8Max - i + 1
+1353 1              T8Pos             =     '(' LPAD(t8MaxLine, 5)
+     1  +                                   ', ' LPAD(t8MaxPos, 3)
+     1  +                                   ', ' LPAD(t8Line, 5)
+     1  +                                   ', ' LPAD(t8Pos, 3)
+     1  +                                   ')'                                                      :(RETURN)
+1354 1  T8PosEnd
+        *//----------- -------------------------------------------------------------------- ---------------------
+1355                   doDebug        =  1
+1356                   doDetect       =  FALSE
+1357                   doExtendedOps  =  FALSE
+1358                   doInstrument   =  FALSE
+1359                   doNormalize    =  FALSE
+1360                   doPurify       =  FALSE
+1361                   doXdump        =  FALSE
+1362                   doTestGen      =  FALSE
+1363    
+
+
+
+                                                                                                                                                                                                                      Page 33
+
+        *//            ebnf           =  TZ(1, 'ebnf',        ebnf)
+        *//            productions    =  TZ(1, 'productions', productions)
+        *//            production     =  TZ(1, 'production',  production)
+        *//            alternates     =  TZ(1, 'alternates',  alternates)
+        *//            subsequents    =  TZ(1, 'subsequents', subsequents)
+        *//            repetition     =  TZ(1, 'repetition',  repetition)
+        *//            optional       =  TZ(1, 'optional',    optional)
+        *//            name           =  TZ(1, 'name',        name)
+        *//            element        =  TZ(1, 'element',     element)
+        *//            expression     =  TZ(1, 'expression',  expression)
+        *//            expression1    =  TZ(1, 'expression1', expression1)
+        *//            expression2    =  TZ(1, 'expression2', expression2)
+        *//            expression3    =  TZ(1, 'expression3', expression3)
+        *//            expression4    =  TZ(1, 'expression4', expression4)
+1364    
+1365                   EXIT(3, 'ebnf.exe')
+1366                   argPos         =  HOST(3) - 1
+1367    a1             argPos         =  argPos + 1
+1368                   arg            =  HOST(2, argPos)                                    :F(a3)
+1369                   arg            POS(0) '-d' . *assign(.doDetect, TRUE)                :S(a1)
+1370                   arg            POS(0) '-e' . *assign(.doExtendedOps, TRUE)           :S(a1)
+1371                   arg            POS(0) '-i' . *assign(.doInstrument, TRUE)            :S(a1)
+1372                   arg            POS(0) '-n' . *assign(.doNormalize, TRUE)             :S(a1)
+1373                   arg            POS(0) '-p' . *assign(.doPurify, TRUE)                :S(a1)
+1374                   arg            POS(0) '-t' . *assign(.doTestGen, TRUE)               :S(a1)
+1375                   arg            POS(0) '-x' . *assign(.doXdump, TRUE)                 :S(a1)
+1376                   arg            POS(0) '-' ANY(&LCASE &UCASE) . doSwitch              :S(a2)
+1377                   ebnfFile       =  arg                                                :(a1)
+1378    a2             OUTPUT         =  "Unrecognized switch -" doSwitch                   :(a1)
+1379    a3             OUTPUT         =  IDENT(ebnfFile) "Must supply EBNF File!"           :S(END)
+1380    
+1381    main00         ebnfStr        =  Read(ebnfFile, .t8Map)                             :F(error)
+1382                   ebnfStr        POS(0) *ebnf $' ' RPOS(0)                             :F(errorSyntax)
+1383                   bnf            =  Pop()                                              :F(error)
+1384                   DIFFER(bnf)                                                          :F(error)
+1385                   (EQ(doXdump,      TRUE) XDump(bnf, 'bnf'))
+1386                   (EQ(doDetect,     TRUE) Visit(bnf, .Xdef))
+1387                   (EQ(doDetect,     TRUE) Visit(bnf, .Xref))
+1388                   (EQ(doInstrument, TRUE) Visit(bnf, .Xinstr))
+1389                   (EQ(doDetect,     TRUE) Xreport())
+1390                   (EQ(doNormalize,  TRUE) PNorm())
+1391                   (EQ(doPurify,     TRUE) PPure())
+        *//            (EQ(doTestGen,    TRUE) TGen(bnf, "expr"))                           :S(END)
+        *//            (EQ(doTestGen,    TRUE) TGen(bnf, "sql_statement"))                  :S(END)
+1392                   (EQ(doTestGen,    TRUE) TGen(bnf, "SELECT_statement"))               :S(END)
+1393                   basenm         =  ebnfFile
+1394                   basenm         '.ebnf' RPOS(0) =
+1395                   lispnm         =  'ebnf-' basenm '.lisp'
+1396                   OUTPUT(.OUTPUT, 2, lispnm)                                           :F(error)
+1397                   SetLevel(0)
+1398                   TDump(bnf)
+1399                   ENDFILE(2)
+1400                   incnm          =  'ebnf-' basenm '.ebnf'
+1401                   OUTPUT(.OUTPUT, 2, incnm)                                            :F(xerr)
+1402                   ppSetStyle('ebnf')
+
+
+
+                                                                                                                                                                                                                      Page 34
+
+1403                   pp(bnf)
+1404                   ENDFILE(2)
+1405                   yynm           =  'ebnf-' basenm '.yy'
+1406                   OUTPUT(.OUTPUT, 2, yynm)                                             :F(xerr)
+1407                   ppSetStyle('yy')
+1408                   pp(bnf)
+1409                   ENDFILE(2)
+1410                   snonm          =  'ebnf-' basenm '.inc'
+1411                   OUTPUT(.OUTPUT, 2, snonm)                                            :F(xerr)
+1412                   ppSetStyle('sno')
+1413                   ppOps          =  doExtendedOps
+1414                   pp(bnf)
+1415                   ENDFILE(2)                                                           :(END)
+1416    errorSyntax    OUTPUT         =  'Syntax Error: ' txOfs                             :(END)
+        *//----------- -------------------------------------------------------------------- ---------------------
+        *//-INCLUDE 'debug.sno'
+1417    END
