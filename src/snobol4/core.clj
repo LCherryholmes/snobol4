@@ -17,33 +17,33 @@
 (println (insta/parses ambiguous "aaaaaa"))
 
 (def SNO [
-   ""
-   "0"
-   "1"
-   "0.5"
-   "''"
-   "'a'"
-   "'ab'"
-   "'abc'"
+;  ""
+;  "0"
+;  "1"
+;  "0.5"
+;  "''"
+;  "'a'"
+;  "'ab'"
+;  "'abc'"
    "A"
    "A[0]"
    "A[x]"
    "A[x, y]"
    "A[x, y][z]"
-   "S"
-   "S T"
-   "S T U"
-   "S T U V"
-   "S T U V W"
-   "N"
-   "N | O"
-   "N | O | P"
-   "N | O | P | Q"
-   "N | O | P | Q | R"
-   "S = E"
-   "S ? P"
-   "S ? P = E"
-   "F()"
+;  "S"
+;  "S T"
+;  "S T U"
+;  "S T U V"
+;  "S T U V W"
+;  "N"
+;  "N | O"
+;  "N | O | P"
+;  "N | O | P | Q"
+;  "N | O | P | Q | R"
+;  "S = E"
+;  "S ? P"
+;  "S ? P = E"
+;  "F()"
    "F(x)"
    "F(x y)"
    "F(x, y)"
@@ -51,9 +51,14 @@
    "F(x, y z)"
    "F(x, y, z)"
    "F(w, x, y, z)"
-   "F (x)"
-   "F (x, y)"
-   "F (x, y, z)"
+   "F(w, x y, z)"
+   "F(w, x, y z)"
+   "F(w x, y z)"
+   "F(w, x y z)"
+   "F(w x y z)"
+;  "F (x)"
+;  "F (x, y)"
+;  "F (x, y, z)"
 ;  "F (x, y, z, p1, p2, p3)"
 ;  "F G(x)"
 ;  "F(x) G(y)"
@@ -110,7 +115,7 @@
  			   N  ::= #'[A-Za-z][A-Z_a-z0-9\\.\\-]*' ;
 ")) ;  :partial :true :start :rule-name  :total true
 
-(defn bug [x] (println x) x)
+(defn bug [x] (println (type x) " " x) x)
 (defn doit []
 		(doseq [S SNO]
 		  (def ast (snobol4-compile S))
@@ -119,32 +124,38 @@
 				  (insta/transform
 				    { :expr (fn  [x] (if-not (list? x) x
 				    	                  (if (<= (count x) 1) x x)))
-				    ,	:sno  identity
-				    , :asn  (fn ([x] x) ([x y]    ['=           x y])); '=
-				    , :mch  (fn ([x] x) ([x y]    ['?           x y])); '?
-				    , :and  (fn ([x] x) ([x y]    ['&           x y])); '&
-				    , :alt  (fn ([x] x) ([x y]    ['|           x y])); '|
-				    , :at   (fn ([x] x) ([x y]    [:at          x y])); \@
+				    ,	:sno  (fn  [x] x)
+				    , :asn  (fn ([x] x) ([x y]    ['=           x y]))
+				    , :mch  (fn ([x] x) ([x y]    ['?           x y]))
+				    , :and  (fn ([x] x) ([x y]    ['&           x y]))
+				    , :alt  (fn ([x] x) ([x y]    ['|           x y]))
+				    , :at   (fn ([x] x) ([x y]    [:at          x y]))
 				    , :cat  (fn ([x] x) ([x y]    [             x y]))
-				    , :sum  (fn ([x] x) ([x op y] [(symbol op)  x y])); '+
-				    , :hsh  (fn ([x] x) ([x y]    [:hash        x y])); \#
-				    , :div  (fn ([x] x) ([x y]    ['/           x y])); '/
-				    , :mul  (fn ([x] x) ([x y]    ['*           x y])); '*
-				    , :pct  (fn ([x] x) ([x y]    ['%           x y])); '%
-				    , :xp   (fn ([x] x) ([x op y] ['**          x y])); '**
-				    , :cap  (fn ([x] x) ([x op y] [(symbol op)  x y])); '.
-				    , :ttl  (fn ([x] x) ([x y]    [:tilde       x y])); '~
-				    , :uop  (fn ([x] x) ([op x]   [(symbol op)  x  ])); 'x
+				    , :sum  (fn ([x] x) ([x op y] [(symbol op)  x y]))
+				    , :hsh  (fn ([x] x) ([x y]    [:hash        x y]))
+				    , :div  (fn ([x] x) ([x y]    ['/           x y]))
+				    , :mul  (fn ([x] x) ([x y]    ['*           x y]))
+				    , :pct  (fn ([x] x) ([x y]    ['%           x y]))
+				    , :xp   (fn ([x] x) ([x op y] ['**          x y]))
+				    , :cap  (fn ([x] x) ([x op y] [(symbol op)  x y]))
+				    , :ttl  (fn ([x] x) ([x y]    [:tilde       x y]))
+				    , :uop  (fn ([x] x) ([op x]   [(symbol op)  x  ]))
 				    , :ndx  (fn ([n] n)
-                    ([n x] (list n x))
-                    ([n x y] (list n x y))
-				                ([n x y & zs] (reduce conj () (reverse [n x y zs])))); '[]
-				    , :cnd  (fn ([x] x) ([x & ys] (apply vector :condition x ys))); \,
-				    , :inv  (fn ([] ())
-				                ([F] (list F))
-				                ([F x] (list F x))
-				                ([F x y] (list F x y))
-				                ([F x y & zs] (reduce conj () (reverse [F x y zs])))); 'x
+				                ([n x] (list n x))
+				                ([n x y] (list n x y))
+				                ([n x y z] (list n x y z)))
+				    , :cnd  (fn ([x] x)
+				                ([x & ys] (apply vector :condition x ys))); \,
+				    , :inv  (fn ([F] (list F))
+				                ([F & parms]
+				                  (apply list
+				                    (reduce (fn [args xs]
+		                        (reduce (fn [arg x]
+		                          (conj arg x))
+		                          args
+		                          xs))
+		                        [F]
+		                        (if (vector? parms) parms (vector parms))))))
 				    , :I    edn/read-string
 				    , :R    edn/read-string
 				    , :S    edn/read-string
