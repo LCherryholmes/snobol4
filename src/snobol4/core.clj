@@ -30,16 +30,17 @@
    "A[x]"
    "A[x, y]"
    "A[x, y][z]"
-;  "S"
-;  "S T"
-;  "S T U"
-;  "S T U V"
-;  "S T U V W"
-;  "N"
-;  "N | O"
-;  "N | O | P"
-;  "N | O | P | Q"
-;  "N | O | P | Q | R"
+   "S"
+   "S T"
+   "S T U"
+   "S T U V"
+   "S T U V W"
+   "N"
+   "N | O"
+   "N | O | P"
+   "N | O | P | Q"
+   "N | O | P | Q | R"
+   "A B | R A | C A | D A | B R A"
 ;  "S = E"
 ;  "S ? P"
 ;  "S ? P = E"
@@ -78,24 +79,24 @@
   (insta/parser "
      expr ::= sno ;
 				<sno> ::= <__> asn <__> ;
-			 	 asn ::= mch | mch <_  '='  _>  asn ;
- 				 mch ::= and | mch <_  '?'  _>  and ;
- 				 and ::= alt | and <_  '&'  _>  alt ;
- 				 alt ::= cat | cat <_  '|'  _>  alt ;
- 				 cat ::= at  | at      <_>      cat ;
- 				 at  ::= sum | at  <_  '@'  _>  sum ;
- 				 sum ::= hsh | sum <_> '+' <_>  hsh
-				              | sum <_> '-' <_>  hsh ;
-	 			 hsh ::= div | hsh <_  '#'  _>  div ;
-	 			 div ::= mul | div <_  '/'  _>  mul ;
-	 			 mul ::= pct | mul <_  '*'  _>  pct ;
-	 			 pct ::= xp  | pct <_  '%'  _>  xp ;
-	 			 xp  ::= cap | cap <_> '^' <_>  xp
-				              | cap <_> '!' <_>  xp
-				              | cap <_> '**' <_> xp ;
-	 			 cap ::= ttl | ttl <_> '$' <_>  cap
-				              | ttl <_> '.' <_>  cap ;
-	 			 ttl ::= uop | ttl <_  '~'  _>  uop ;
+			 	 asn ::= mch | mch  <_  '='  _>  asn ;
+ 				 mch ::= and | mch  <_  '?'  _>  and ;
+ 				 and ::= alt | and  <_  '&'  _>  alt ;
+ 				 alt ::= cat | cat (<_  '|'  _>  cat)+ ;
+ 				 cat ::= at  | at  (<_>          at)+ ;
+ 				 at  ::= sum | at   <_  '@'  _>  sum ;
+ 				 sum ::= hsh | sum  <_> '+' <_>  hsh
+				              | sum  <_> '-' <_>  hsh ;
+	 			 hsh ::= div | hsh  <_  '#'  _>  div ;
+	 			 div ::= mul | div  <_  '/'  _>  mul ;
+	 			 mul ::= pct | mul  <_  '*'  _>  pct ;
+	 			 pct ::= xp  | pct  <_  '%'  _>  xp ;
+	 			 xp  ::= cap | cap  <_> '^' <_>  xp
+				              | cap  <_> '!' <_>  xp
+				              | cap  <_> '**' <_> xp ;
+	 			 cap ::= ttl | ttl  <_> '$' <_>  cap
+				              | ttl  <_> '.' <_>  cap ;
+	 			 ttl ::= uop | ttl  <_  '~'  _>  uop ;
 	 			 uop ::= ndx | '@' uop | '~' uop | '?' uop | '&' uop | '+' uop
   				            | '-' uop | '*' uop | '$' uop | '.' uop | '!' uop
 		  		            | '%' uop | '/' uop | '#' uop | '=' uop | '|' uop ;
@@ -128,9 +129,9 @@
 				    , :asn  (fn ([x] x) ([x y]    ['=           x y]))
 				    , :mch  (fn ([x] x) ([x y]    ['?           x y]))
 				    , :and  (fn ([x] x) ([x y]    ['&           x y]))
-				    , :alt  (fn ([x] x) ([x y]    ['|           x y]))
+				    , :alt  (fn ([x] x) ([x & ys] (apply vector '| x ys)))
+				    , :cat  (fn ([x] x) ([x & ys] (apply vector x ys)))
 				    , :at   (fn ([x] x) ([x y]    [:at          x y]))
-				    , :cat  (fn ([x] x) ([x y]    [             x y]))
 				    , :sum  (fn ([x] x) ([x op y] [(symbol op)  x y]))
 				    , :hsh  (fn ([x] x) ([x y]    [:hash        x y]))
 				    , :div  (fn ([x] x) ([x y]    ['/           x y]))
@@ -163,7 +164,7 @@
 				    , :N    (fn  [n] (symbol n)); 'x
 				    } ast); :number (comp clojure.edn/read-string str)
 		  )
-		  (println (format "%-28s " S) code)
+		  (println (format "%-30s " S) code)
 ))
 
 (defn -main "SNOBOL4 statement parser." [& args] (doit))
