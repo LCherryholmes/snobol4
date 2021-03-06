@@ -3,6 +3,7 @@
   (:require [clojure.zip :as z])
   (:require [clojure.string :as string])
   (:require [clojure.pprint :as pp])
+  (:require [clojure.edn :as edn])
   (:require [instaparse.core :as insta :refer [defparser]]); Clojure
 ; (:require [instaparse.core :as insta :refer-macros [defparser]]); ClojureScript
 )
@@ -16,89 +17,143 @@
 (println (insta/parses ambiguous "aaaaaa"))
 
 (def SNO [
+   ""
+   "0"
+   "1"
+   "0.5"
+   "''"
+   "'a'"
+   "'ab'"
+   "'abc'"
+   "A"
+   "A[0]"
+   "A[x]"
+   "A[x, y]"
+   "A[x, y][z]"
    "S"
+   "S T"
+   "S T U"
+   "S T U V"
+   "S T U V W"
+   "N"
+   "N | O"
+   "N | O | P"
+   "N | O | P | Q"
+   "N | O | P | Q | R"
    "S = E"
    "S ? P"
    "S ? P = E"
-   "F(X)"
-   "F (X)"
-   "FN(X, Y)"
-   "SPAN(digits)"
-   "(SPAN(digits)
-      ('.' FENCE(SPAN(digits) | epsilon) | epsilon)
-      ('E' | 'e')
-      ('+' | '-' | epsilon)
-      SPAN(digits)
-    | SPAN(digits) '.' FENCE(SPAN(digits) | epsilon)
-    )"
+   "F()"
+   "F(x)"
+   "F(x y)"
+   "F(x, y)"
+   "F(x y z)"
+   "F(x, y z)"
+   "F(x, y, z)"
+   "F(w, x, y, z)"
+   "F (x)"
+   "F (x, y)"
+   "F (x, y, z)"
+;  "F (x, y, z, p1, p2, p3)"
+;  "F G(x)"
+;  "F(x) G(y)"
+;  "F(x, y) G(z)"
+;  "F(x, y, z, p1, p2, p3) G(z)"
+;  "SPAN(digits)"
+;  "(SPAN(digits)
+; ('.' FENCE(SPAN(digits) | epsilon) | epsilon)
+; ('E' | 'e')
+; ('+' | '-' | epsilon)
+; SPAN(digits)
+;| SPAN(digits) '.' FENCE(SPAN(digits) | epsilon)
+;)"
 ])
 
 (def snobol4-compile
   (insta/parser "
-				<sno> ::= __ asn __ ;
-				 asn  ::= mch | mch _ '=' _ asn ;
-				 mch  ::= and | mch _ '?' _ and ;
-				 and  ::= or  | and _ '&' _ or ;
-				 or   ::= cat | cat _ '|' _ or ;
-				 cat  ::= at  | at     _    cat ;
-				 at   ::= sum | at  _ '@' _ sum ;
-				 sum  ::= hsh | sum _ '+' _ hsh | sum _ '-' _ hsh ;
-				 hsh  ::= div | hsh _ '#' _ div ;
-				 div  ::= mul | div _ '/' _ mul ;
-				 mul  ::= pct | mul _ '*' _ pct ;
-				 pct  ::= xp  | pct _ '%' _ xp ;
-				 xp   ::= cap | cap _ '^' _ xp  | cap _ '!' _ xp | cap _ '**' _ xp ;
-				 cap  ::= ttl | ttl _ '$' _ cap | ttl _ '.' _ cap ;
-				 ttl  ::= uop | ttl _ '~' _ uop ;
-				 uop  ::= ndx | '@' uop | '~' uop | '?' uop | '&' uop | '+' uop
+     expr ::= sno ;
+				<sno> ::= <__> asn <__> ;
+			 	 asn ::= mch | mch <_  '='  _>  asn ;
+ 				 mch ::= and | mch <_  '?'  _>  and ;
+ 				 and ::= alt | and <_  '&'  _>  alt ;
+ 				 alt ::= cat | cat <_  '|'  _>  alt ;
+ 				 cat ::= at  | at      <_>      cat ;
+ 				 at  ::= sum | at  <_  '@'  _>  sum ;
+ 				 sum ::= hsh | sum <_> '+' <_>  hsh
+				              | sum <_> '-' <_>  hsh ;
+	 			 hsh ::= div | hsh <_  '#'  _>  div ;
+	 			 div ::= mul | div <_  '/'  _>  mul ;
+	 			 mul ::= pct | mul <_  '*'  _>  pct ;
+	 			 pct ::= xp  | pct <_  '%'  _>  xp ;
+	 			 xp  ::= cap | cap <_> '^' <_>  xp
+				              | cap <_> '!' <_>  xp
+				              | cap <_> '**' <_> xp ;
+	 			 cap ::= ttl | ttl <_> '$' <_>  cap
+				              | ttl <_> '.' <_>  cap ;
+	 			 ttl ::= uop | ttl <_  '~'  _>  uop ;
+	 			 uop ::= ndx | '@' uop | '~' uop | '?' uop | '&' uop | '+' uop
   				            | '-' uop | '*' uop | '$' uop | '.' uop | '!' uop
 		  		            | '%' uop | '/' uop | '#' uop | '=' uop | '|' uop ;
-				 ndx  ::= itm | ndx <'<'> lst <'>'> | ndx <'['> lst <']'> ;
+	 			 ndx ::= itm | ndx <'<'> lst <'>'> | ndx <'['> lst <']'> ;
 				<itm> ::= I | R | S | N | grp | cnd | inv
     <grp> ::= <'('> sno <')'>
-     cnd  ::= <'('> sno ',' lst <')'> ;
-     inv  ::= F <'('> lst <')'>
-				<lst> ::= sno | lst ',' sno ;
-		   <__> ::= <#'[ \\t\\n]*'> ;
+      cnd ::= <'('> sno <','> lst <')'> ;
+      inv ::= F <'('       ')'>
+            | F <'('> lst <')'>
+ 		 <lst> ::= sno | lst <','> sno ;
+ 		  <__> ::= <#'[ \\t\\n]*'> ;
 		 	  <_> ::= <#'[ \\t\\n]+'> ;
- 		   <I> ::= #'[0-9]+' ;
- 			  <R> ::= #'[0-9]+\\.[0-9]+' ;
- 			  <N> ::= #'[A-Za-z][A-Z_a-z\\.\\-]*' ;
-  		  <F> ::= #'[A-Za-z][A-Z_a-z\\.\\-]*' ;
- 	 	  <S> ::= #'\"[^\"]*\"' | #\"'[^']*'\" ;
-" :total true)) ; :partial :true :start :rule-name
+ 		    I  ::= #'[0-9]+' ;
+ 			   R  ::= #'[0-9]+\\.[0-9]+' ;
+ 	 	   S  ::= #'\"[^\"]*\"' | #\"'[^']*'\" ;
+  		   F  ::= #'[A-Za-z][A-Z_a-z0-9\\.\\-]*' ;
+ 			   N  ::= #'[A-Za-z][A-Z_a-z0-9\\.\\-]*' ;
+")) ;  :partial :true :start :rule-name  :total true
 
 (defn bug [x] (println x) x)
-(doseq [S SNO]
-  (println S)
-  (def ast (snobol4-compile S))
-  (pp/pprint ast)
-; (def code
-		; (insta/transform
-		;   { :asn  (fn ([x] (bug x)) ([x y] (list '=  (bug x) (bug y))))
-		;   , :mch  (fn ([x] (bug x)) ([x y] (list '?  (bug x) (bug y))))
-		;   , :and  (fn ([x] (bug x)) ([x y] (list '&  (bug x) (bug y))))
-		;   , :or   (fn ([x] (bug x)) ([x y] (list '|  (bug x) (bug y))))
-		;   , :at   (fn ([x] (bug x)) ([x y] (list \@  (bug x) (bug y))))
-		;   , :sum  (fn ([x] (bug x)) ([x y] (list '+  (bug x) (bug y))))
-		;   , :hsh  (fn ([x] (bug x)) ([x y] (list \#  (bug x) (bug y))))
-		;   , :div  (fn ([x] (bug x)) ([x y] (list '/  (bug x) (bug y))))
-		;   , :mul  (fn ([x] (bug x)) ([x y] (list '*  (bug x) (bug y))))
-		;   , :pct  (fn ([x] (bug x)) ([x y] (list '%  (bug x) (bug y))))
-		;   , :xp   (fn ([x] (bug x)) ([x y] (list '** (bug x) (bug y))))
-		;   , :cap  (fn ([x] (bug x)) ([x y] (list '.  (bug x) (bug y))))
-		;   , :ttl  (fn ([x] (bug x)) ([x y] (list '~  (bug x) (bug y))))
-		;   , :ndx  (fn ([x] (bug x)) ([x y] (list '[] (bug x) (bug y))))
-		;   , :cnd  (fn ([x] (bug x)) ([x y] (list \,  (bug x) (bug y))))
-		;   , :inv  (fn ([x] (bug x)) ([x y] (list 'x  (bug y))))
-		;   , :uop  (fn ([x] (bug x)) ([x y] (list 'x  (bug y))))
-		;   , :cat  (fn ([x] (bug x)) ([x y] (list (bug x) (bug y))))
-		;   } ast); :number (comp clojure.edn/read-string str)
-; )
-; (pp/pprint code)
-)
+(defn doit []
+		(doseq [S SNO]
+		  (def ast (snobol4-compile S))
+		; (pp/pprint ast)
+		  (def code
+				  (insta/transform
+				    { :expr (fn  [x] (if-not (list? x) x
+				    	                  (if (<= (count x) 1) x x)))
+				    ,	:sno  identity
+				    , :asn  (fn ([x] x) ([x y]    ['=           x y])); '=
+				    , :mch  (fn ([x] x) ([x y]    ['?           x y])); '?
+				    , :and  (fn ([x] x) ([x y]    ['&           x y])); '&
+				    , :alt  (fn ([x] x) ([x y]    ['|           x y])); '|
+				    , :at   (fn ([x] x) ([x y]    [:at          x y])); \@
+				    , :cat  (fn ([x] x) ([x y]    [             x y]))
+				    , :sum  (fn ([x] x) ([x op y] [(symbol op)  x y])); '+
+				    , :hsh  (fn ([x] x) ([x y]    [:hash        x y])); \#
+				    , :div  (fn ([x] x) ([x y]    ['/           x y])); '/
+				    , :mul  (fn ([x] x) ([x y]    ['*           x y])); '*
+				    , :pct  (fn ([x] x) ([x y]    ['%           x y])); '%
+				    , :xp   (fn ([x] x) ([x op y] ['**          x y])); '**
+				    , :cap  (fn ([x] x) ([x op y] [(symbol op)  x y])); '.
+				    , :ttl  (fn ([x] x) ([x y]    [:tilde       x y])); '~
+				    , :uop  (fn ([x] x) ([op x]   [(symbol op)  x  ])); 'x
+				    , :ndx  (fn ([n] n)
+                    ([n x] (list n x))
+                    ([n x y] (list n x y))
+				                ([n x y & zs] (reduce conj () (reverse [n x y zs])))); '[]
+				    , :cnd  (fn ([x] x) ([x & ys] (apply vector :condition x ys))); \,
+				    , :inv  (fn ([] ())
+				                ([F] (list F))
+				                ([F x] (list F x))
+				                ([F x y] (list F x y))
+				                ([F x y & zs] (reduce conj () (reverse [F x y zs])))); 'x
+				    , :I    edn/read-string
+				    , :R    edn/read-string
+				    , :S    edn/read-string
+				    , :F    (fn  [n] (symbol n)); 'x
+				    , :N    (fn  [n] (symbol n)); 'x
+				    } ast); :number (comp clojure.edn/read-string str)
+		  )
+		  (println (format "%-28s " S) code)
+))
 
-(defn -main
-  "SNOBOL4 statement parser."
-  [& args]
-  (println "SNOBOL4 statement parser."))
+(defn -main "SNOBOL4 statement parser." [& args] (doit))
+(-main)
