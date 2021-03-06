@@ -62,17 +62,18 @@
 ;  "F (x, y, z)"
 ;  "F (x, y, z, p1, p2, p3)"
 ;  "F G(x)"
-;  "F(x) G(y)"
-;  "F(x, y) G(z)"
-;  "F(x, y, z, p1, p2, p3) G(z)"
-;  "SPAN(digits)"
-;  "(SPAN(digits)
-; ('.' FENCE(SPAN(digits) | epsilon) | epsilon)
-; ('E' | 'e')
-; ('+' | '-' | epsilon)
-; SPAN(digits)
-;| SPAN(digits) '.' FENCE(SPAN(digits) | epsilon)
-;)"
+   "F(x) G(y)"
+   "F(x, y) G(z)"
+   "F(x, y, z, p1, p2, p3) G(z)"
+   "SPAN(digits)"
+   "
+(SPAN(digits)
+  ('.' FENCE(SPAN(digits) | epsilon) | epsilon)
+  ('E' | 'e')
+  ('+' | '-' | epsilon)
+  SPAN(digits)
+| SPAN(digits) '.' FENCE(SPAN(digits) | epsilon)
+)"
 ])
 
 (def snobol4-compile
