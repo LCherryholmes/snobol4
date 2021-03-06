@@ -11,5 +11,5 @@ pom.xml
 .lein-plugins/
 .repl
 .nrepl-port
-/rinky/*.lst
-/src/*.lst
+/src/rinky/*.lst
+/src/sno/*.lst
