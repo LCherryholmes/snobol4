@@ -15,7 +15,7 @@ cap ← ttl ⋮ ttl '$' cap ⋮ ttl '.' cap;
 ttl ← uop ⋮ ttl '~' uop;
 uop ← ndx ⋮ '@' uop ⋮ '~' uop ⋮ '?' uop ⋮ '&' uop ⋮ '+' uop
           ⋮ '-' uop ⋮ '*' uop ⋮ '$' uop ⋮ '.' uop ⋮ '!' uop
-          ⋮ '%' uop ⋮ '/' uop ⋮ '#' uop ⋮ '=' uop ⋮ '|' uop
+          ⋮ '%' uop ⋮ '/' uop ⋮ '#' uop ⋮ '=' uop ⋮ '|' uop;
 ndx ← itm ⋮ ndx '<' lst '>' ⋮ ndx '[' lst ']';
 itm ← N ⋮ S ⋮ I ⋮ R ⋮ F ⋮ F '(' lst ')' ⋮ '(' sno ')' ⋮ '(' sno ',' lst ')';
 lst ← sno ⋮ lst ',' sno;

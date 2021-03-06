@@ -83,29 +83,30 @@ main00         ebnfStr        =  Read(ebnfFile, .t8Map)                         
 *              (EQ(doTestGen,    TRUE) TGen(bnf, "expr"))                           :S(END)
 *              (EQ(doTestGen,    TRUE) TGen(bnf, "sql_statement"))                  :S(END)
                (EQ(doTestGen,    TRUE) TGen(bnf, "SELECT_statement"))               :S(END)
-               basenm         =  ebnfFile
+               ebnfFile       POS(0) BREAKX(bSlash) . dirnm bSlash
++                             ARBNO(NOTANY(bSlash)) . basenm RPOS(0)
                basenm         '.ebnf' RPOS(0) =
                lispnm         =  'ebnf-' basenm '.lisp'
-               OUTPUT(.OUTPUT, 2, lispnm)                                           :F(error)
+               OUTPUT(.OUTPUT, 3, TERMINAL = lispnm)                                           :F(error)
                SetLevel(0)
                TDump(bnf)
-               ENDFILE(2)
+               ENDFILE(3)
                incnm          =  'ebnf-' basenm '.ebnf'
-               OUTPUT(.OUTPUT, 2, incnm)                                            :F(xerr)
+               OUTPUT(.OUTPUT, 3, incnm)                                            :F(xerr)
                ppSetStyle('ebnf')
                pp(bnf)
-               ENDFILE(2)
+               ENDFILE(3)
                yynm           =  'ebnf-' basenm '.yy'
-               OUTPUT(.OUTPUT, 2, yynm)                                             :F(xerr)
+               OUTPUT(.OUTPUT, 3, yynm)                                             :F(xerr)
                ppSetStyle('yy')
                pp(bnf)
-               ENDFILE(2)
+               ENDFILE(3)
                snonm          =  'ebnf-' basenm '.inc'
-               OUTPUT(.OUTPUT, 2, snonm)                                            :F(xerr)
+               OUTPUT(.OUTPUT, 3, snonm)                                            :F(xerr)
                ppSetStyle('sno')
                ppOps          =  doExtendedOps
                pp(bnf)
-               ENDFILE(2)                                                           :(END)
+               ENDFILE(3)                                                           :(END)
 errorSyntax    OUTPUT         =  'Syntax Error: ' txOfs                             :(END)
 *---------------------------------------------------------------------------------------------------
 *-INCLUDE 'debug.sno'

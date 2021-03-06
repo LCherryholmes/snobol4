@@ -13,3 +13,7 @@ pom.xml
 .nrepl-port
 /src/rinky/*.lst
 /src/sno/*.lst
+/src/sno/ebnf-*.yy
+/src/sno/ebnf-*.inc
+/src/sno/ebnf-*.ebnf
+/src/sno/ebnf-*.lisp
