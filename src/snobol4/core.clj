@@ -66,20 +66,20 @@
    "F(x, y) G(z)"
    "F(x, y, z, p1, p2, p3) G(z)"
    "SPAN(digits)"
-   "
-(SPAN(digits)
-  ('.' FENCE(SPAN(digits) | epsilon) | epsilon)
-  ('E' | 'e')
-  ('+' | '-' | epsilon)
-  SPAN(digits)
-| SPAN(digits) '.' FENCE(SPAN(digits) | epsilon)
-)"
+;  "
+;(SPAN(digits)
+;  ('.' FENCE(SPAN(digits) | epsilon) | epsilon)
+;  ('E' | 'e')
+;  ('+' | '-' | epsilon)
+;  SPAN(digits)
+;| SPAN(digits) '.' FENCE(SPAN(digits) | epsilon)
+;)"
 ])
 
 (def snobol4-compile
   (insta/parser "
-     expr ::= sno ;
-				<sno> ::= <__> asn <__> ;
+      sno ::= xpr ;
+				<xpr> ::= <__> asn <__> ;
 			 	 asn ::= mch | mch  <_  '='  _>  asn ;
  				 mch ::= and | mch  <_  '?'  _>  and ;
  				 and ::= alt | and  <_  '&'  _>  alt ;
@@ -103,16 +103,17 @@
 		  		            | '%' uop | '/' uop | '#' uop | '=' uop | '|' uop ;
 	 			 ndx ::= itm | ndx <'<'> lst <'>'> | ndx <'['> lst <']'> ;
 				<itm> ::= I | R | S | N | grp | cnd | inv
-    <grp> ::= <'('> sno <')'>
-      cnd ::= <'('> sno <','> lst <')'> ;
+    <grp> ::= <'('> xpr <')'>
+      cnd ::= <'('> xpr <','> lst <')'> ;
       inv ::= F <'('       ')'>
             | F <'('> lst <')'>
- 		 <lst> ::= sno | lst <','> sno ;
+ 		 <lst> ::= xpr | xpr (<','> xpr)+ ;
  		  <__> ::= <#'[ \\t\\n]*'> ;
 		 	  <_> ::= <#'[ \\t\\n]+'> ;
  		    I  ::= #'[0-9]+' ;
  			   R  ::= #'[0-9]+\\.[0-9]+' ;
- 	 	   S  ::= #'\"[^\"]*\"' | #\"'[^']*'\" ;
+ 	 	   S  ::= #'\"[^\"]*\"'
+ 	 	        | #\"'[^']*'\" ;
   		   F  ::= #'[A-Za-z][A-Z_a-z0-9\\.\\-]*' ;
  			   N  ::= #'[A-Za-z][A-Z_a-z0-9\\.\\-]*' ;
 ")) ;  :partial :true :start :rule-name  :total true
@@ -124,40 +125,26 @@
 		; (pp/pprint ast)
 		  (def code
 				  (insta/transform
-				    { :expr (fn  [x] (if-not (list? x) x
-				    	                  (if (<= (count x) 1) x x)))
-				    ,	:sno  (fn  [x] x)
-				    , :asn  (fn ([x] x) ([x y]    ['=           x y]))
-				    , :mch  (fn ([x] x) ([x y]    ['?           x y]))
-				    , :and  (fn ([x] x) ([x y]    ['&           x y]))
+				    { :sno  (fn  [x] x)
+				    ,	:xpr  (fn  [x] x)
+				    , :asn  (fn ([x] x) ([x y]    ['= x y]))
+				    , :mch  (fn ([x] x) ([x y]    ['? x y]))
+				    , :and  (fn ([x] x) ([x y]    ['& x y]))
 				    , :alt  (fn ([x] x) ([x & ys] (apply vector '| x ys)))
-				    , :cat  (fn ([x] x) ([x & ys] (apply vector x ys)))
-				    , :at   (fn ([x] x) ([x y]    [:at          x y]))
-				    , :sum  (fn ([x] x) ([x op y] [(symbol op)  x y]))
-				    , :hsh  (fn ([x] x) ([x y]    [:hash        x y]))
-				    , :div  (fn ([x] x) ([x y]    ['/           x y]))
-				    , :mul  (fn ([x] x) ([x y]    ['*           x y]))
-				    , :pct  (fn ([x] x) ([x y]    ['%           x y]))
-				    , :xp   (fn ([x] x) ([x op y] ['**          x y]))
-				    , :cap  (fn ([x] x) ([x op y] [(symbol op)  x y]))
-				    , :ttl  (fn ([x] x) ([x y]    [:tilde       x y]))
-				    , :uop  (fn ([x] x) ([op x]   [(symbol op)  x  ]))
-				    , :ndx  (fn ([n] n)
-				                ([n x] (list n x))
-				                ([n x y] (list n x y))
-				                ([n x y z] (list n x y z)))
-				    , :cnd  (fn ([x] x)
-				                ([x & ys] (apply vector :condition x ys))); \,
-				    , :inv  (fn ([F] (list F))
-				                ([F & parms]
-				                  (apply list
-				                    (reduce (fn [args xs]
-		                        (reduce (fn [arg x]
-		                          (conj arg x))
-		                          args
-		                          xs))
-		                        [F]
-		                        (if (vector? parms) parms (vector parms))))))
+				    , :cat  (fn ([x] x) ([x & ys] (apply vector    x ys)))
+				    , :at   (fn ([x] x) ([x y]    [:at x y]))
+				    , :sum  (fn ([x] x) ([x op y] [(symbol op)x y]))
+				    , :hsh  (fn ([x] x) ([x y]    [:hash x y]))
+				    , :div  (fn ([x] x) ([x y]    ['/ x y]))
+				    , :mul  (fn ([x] x) ([x y]    ['* x y]))
+				    , :pct  (fn ([x] x) ([x y]    ['% x y]))
+				    , :xp   (fn ([x] x) ([x op y] [op x y]))
+				    , :cap  (fn ([x] x) ([x op y] [(symbol op) x y]))
+				    , :ttl  (fn ([x] x) ([x y]    [:tilde x y]))
+				    , :uop  (fn ([x] x) ([op x]   [(symbol op) x]))
+				    , :ndx  (fn ([n] n) ([n & xs] (apply list n xs)))
+				    , :cnd  (fn ([x] x) ([x & ys] (apply vector :condition x ys)))
+				    , :inv  (fn          [F & xs] (apply list F xs))
 				    , :I    edn/read-string
 				    , :R    edn/read-string
 				    , :S    edn/read-string
