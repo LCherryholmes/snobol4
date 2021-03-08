@@ -1,6 +1,13 @@
 (ns snobol4.core-test
   (:require [clojure.test :refer :all]
             [snobol4.core :refer :all]))
+
+
+(is (= 4 (+ 2 2)))
+(is (thrown? ArithmeticException (/ 1 0)))
+(is (thrown-with-msg? ArithmeticException #"Divide by zero" (/ 1 0)))
+
+
 (def SNO [
    ""
    "0"
@@ -71,6 +78,26 @@
   (testing "FIXME, I fail." (is (= 0 1)))
 )
 
+(def SNO [
+  ""
+  " "
+  "L"
+  "L "
+  "L X = 10 :(G)"
+  "L S P :S(S)"
+  "L E = (1 + 2) * 10 :F(F)"
+  "L :S(S)F(F)"
+  " S"
+  " S "
+  "L S"
+  "L S ="
+  "L S = E"
+  "L S P"
+  "L S P ="
+  "L S P = R :F(F)S(S)"
+  "L (S ? P = R) :F(F)S(S)"
+])
+
 ; :partial :true
 ; :start :rule-name
 ; :total true(def expression-parser
@@ -81,3 +108,22 @@
 ;(def ambiguous (insta/parser "S = A A; A = 'a'*;"))
 ;(println (insta/parse ambiguous "aaaaaa"))
 ;(println (insta/parses ambiguous "aaaaaa"))
+
+(slurp "/tmp/test.txt")
+(use 'clojure.java.io)
+(with-open [rdr (reader "/tmp/test.txt")]
+  (doseq [line (line-seq rdr)]
+    (println line)))
+(with-open [wrtr (writer "/tmp/test.txt")]
+  (.write wrtr "Line to be written"))
+(spit "/tmp/test.txt" "Line to be written")
+(use 'clojure.java.io)
+(with-open [wrtr (writer "/tmp/test.txt" :append true)]
+  (.write wrtr "Line to be appended"))
+(spit "/tmp/test.txt" "Line to be written" :append true)
+(reader (file "/tmp/test.txt"))
+(writer (file "tmp/test.txt"))
+(System/getProperty "user.dir")
+(def directory (clojure.java.io/file "/path/to/directory"))
+(def files (file-seq directory))
+(take 10 files)

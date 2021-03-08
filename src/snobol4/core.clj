@@ -1,9 +1,10 @@
 (ns snobol4.core
   (:gen-class)
   (:require [clojure.zip :as z])
-  (:require [clojure.string :as string])
-  (:require [clojure.pprint :as pp])
   (:require [clojure.edn :as edn])
+  (:require [clojure.pprint :as pp])
+  (:require [clojure.string :as string])
+  (:require [clojure.java.io :as io])
   (:require [instaparse.core :as insta :refer [defparser]]); Clojure
 ; (:require [instaparse.core :as insta :refer-macros [defparser]]); ClojureScript
 )
@@ -63,44 +64,42 @@
 (defn bug [x] (println (type x) " " x) x)
 (defn coder [ast]
   (insta/transform
-    {
-     	:stmt      (fn ([     ]               {                   })
-     	               ([L    ]               { L []              })
-     	               ([L B  ]               { L [B]             })
-     	               ([L B [G1 L1]]         { L [B G1 L1]       })
-     	               ([L B [G1 L1] [G2 L2]] { L [B G1 L1 G2 L2] }))
-      :label     (fn  [L]     (keyword L))
-     	:invoking  (fn  [S    ] S)
-     	:matching  (fn  [S P  ] (list '? S P))
-     	:replacing (fn ([S P  ] (list '? S P 'epsilon))
-     	               ([S P R] (list '? S P R)))
-     	:assigning (fn ([S    ] (list '= S 'epsilon))
-     	               ([S R  ] (list '= S R)))
-      :goto      (fn  [L]     [:G (keyword L)])
-      :succ      (fn  [L]     [:S (keyword L)])
-      :fail      (fn  [L]     [:F (keyword L)])
+    { :stmt      (fn ([     ]                {                     })
+     	               ([L    ]                { L []                })
+     	               ([L B  ]                { L [B]               })
+     	               ([L B [G1 L1]]          { L [B {G1 L1}]       })
+     	               ([L B [G1 L1] [G2 L2]]  { L [B {G1 L1 G2 L2}] }))
+      :label     (fn  [L]                    (keyword L))
+     	:invoking  (fn  [S    ]                S)
+     	:matching  (fn  [S P  ]                (list '? S P))
+     	:replacing (fn ([S P  ]                (list '? S P 'epsilon))
+     	               ([S P R]                (list '? S P R)))
+     	:assigning (fn ([S    ]                (list '= S 'epsilon))
+     	               ([S R  ]                (list '= S R)))
+      :goto      (fn  [L]                    [:G (keyword L)])
+      :succ      (fn  [L]                    [:S (keyword L)])
+      :fail      (fn  [L]                    [:F (keyword L)])
      	:expr      (fn  [x] x);-------------------------------
-      :asn       (fn ([x] x) ([x    y] (list '= x y)))
-      :mch       (fn ([x    ] x)
-                     ([x y  ] (list '? x y))
-                     ([x y z] (list '? x y z)))
-      :and       (fn ([x] x) ([x    y] (list '& x y)))
-      :alt       (fn ([x] x) ([x & ys] (apply vector '| x ys)))
-      :cat       (fn ([x] x) ([x & ys] (apply vector    x ys)))
-      :at        (fn ([x] x) ([x    y] (list 'at x y)))
-      :sum       (fn ([x] x) ([x op y] (list (symbol op) x y)))
-      :hsh       (fn ([x] x) ([x    y] (list 'hash x y)))
-      :div       (fn ([x] x) ([x    y] (list '/ x y)))
-      :mul       (fn ([x] x) ([x    y] (list '* x y)))
-      :pct       (fn ([x] x) ([x    y] (list '% x y)))
-      :xp        (fn ([x] x) ([x op y] (list (symbol op) x y)))
-      :cap       (fn ([x] x) ([x op y] (list (symbol op) x y)))
-      :ttl       (fn ([x] x) ([x    y] (list 'tilde x y)))
-      :uop       (fn ([x] x) ([  op y] (list (symbol op) y)))
-      :ndx       (fn ([n] n) ([n & xs] (apply list n xs)))
-      :cnd       (fn ([x] x) ([x & ys] (apply vector 'comma x ys)))
-      :inv       (fn          [F & xs] (apply list F xs))
-      :N         (fn  [n] (symbol n))
+      :asn       (fn ([x] x) ([x     y]      (list '= x y)))
+      :mch       (fn ([x] x) ([x  y   ]      (list '? x y))
+                             ([x  y  z]      (list '? x y z)))
+      :and       (fn ([x] x) ([x     y]      (list '& x y)))
+      :alt       (fn ([x] x) ([x  & ys]      (apply vector '| x ys)))
+      :cat       (fn ([x] x) ([x  & ys]      (apply vector    x ys)))
+      :at        (fn ([x] x) ([x     y]      (list 'at x y)))
+      :sum       (fn ([x] x) ([x  op y]      (list (symbol op) x y)))
+      :hsh       (fn ([x] x) ([x     y]      (list 'hash x y)))
+      :div       (fn ([x] x) ([x     y]      (list '/ x y)))
+      :mul       (fn ([x] x) ([x     y]      (list '* x y)))
+      :pct       (fn ([x] x) ([x     y]      (list '% x y)))
+      :xp        (fn ([x] x) ([x  op y]      (list (symbol op) x y)))
+      :cap       (fn ([x] x) ([x  op y]      (list (symbol op) x y)))
+      :ttl       (fn ([x] x) ([x     y]      (list 'tilde x y)))
+      :uop       (fn ([x] x) ([   op y]      (list (symbol op) y)))
+      :ndx       (fn ([n] n) ([n  & xs]      (apply list n xs)))
+      :cnd       (fn ([x] x) ([x  & ys]      (apply vector 'comma x ys)))
+      :inv       (fn          [f  & xs]      (apply list f xs))
+      :N         (fn  [n]                    (symbol n))
       :I         edn/read-string
       :R         edn/read-string
       :S         edn/read-string
@@ -108,29 +107,25 @@
 
 (def parse-statement (insta/parser grammar :start :stmt))
 (def parse-expression (insta/parser grammar :start :expr))
-(def SNO [
-  ""
-  " "
-  "L"
-  "L "
-  "L X = 10 :(G)"
-  "L S P :S(S)"
-  "L E = (1 + 2) * 10 :F(F)"
-  "L :S(S)F(F)"
-  " S"
-  " S "
-  "L S"
-  "L S ="
-  "L S = E"
-  "L S P"
-  "L S P ="
-  "L S P = R :F(F)S(S)"
-  "L (S ? P = R) :F(F)S(S)"
-])
 
+(defn filenames [directories] (reduce
+  (fn [files directory] (reduce
+    (fn [phyles file]
+      (let [filenm (str file)]
+        (if (re-find #"^.+\.(sno|spt|inc|SNO|SPT|INC)$" filenm)
+          (conj phyles filenm) phyles)))
+    files
+    (file-seq (io/file directory))))
+  []
+  directories))
+
+(def dirs ["./src/inc" "./src/sno"])
 (defn doit []
-		(doseq [S SNO]
-		  (let [ast (parse-statement S) code (coder ast)]
-		    (println (format "%-30s " S) code))))
-
+  (doseq [filenm (filenames dirs)]
+ 	  (with-open [rdr (io/reader filenm)]
+ 	 	  (doseq [line (line-seq rdr)]
+ 	 	    (println line)
+		    ; (let [ast (parse-statement S) code (coder ast)]
+		    ;   (println (format "%-30s " S) code))
+      ))))
 (defn -main "SNOBOL4 statement parser." [& args] (doit))
