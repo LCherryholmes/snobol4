@@ -12,7 +12,7 @@
 (defn bug [x] (println (type x) " " x) x)
 (defn re-quote [& ss]
   (str "#'" (string/replace (apply str ss) #"(\\|')" #(str \\ (second %1))) "'"))
-(def label #"[A-Z_a-z0-9][A-Z_a-z0-9!@#$%^&*\(\)\[\]<>{}=.,/\?+-]*"); (def label #"[A-Z_a-z0-9]+")
+(def label #"([^ \t\r\n+-]|\+)+")
 (def white  #"([ \t]+|\n\+|\n\.)")
 (def grammar
   (str "
@@ -25,7 +25,7 @@
   <subject> ::=  uop
   <pattern> ::=  (<'?' _>)? and
   <replace> ::=  (<_> expr)?
-  <branch>  ::=  <__ ':' __> ( goto | sgoto (<__> fgoto)? | fgoto (<__> sgoto)? )
+  branch    ::=  <__ ':' __> ( goto | sgoto (<__> fgoto)? | fgoto (<__> sgoto)? )
   goto      ::=  target
   sgoto     ::=  <'S'> target
   fgoto     ::=  <'F'> target
@@ -62,15 +62,15 @@
   <grp>     ::=  <'('> expr <')'>
   cnd       ::=  <'('> expr <','> lst <')'>
   inv       ::=  N <'()'>  |  N <'('> lst <')'>
-  <lst>     ::=  expr | expr (<','> expr)+
-  label     ::=  " (re-quote label) "
-  white     ::=  #'[ \\t]'            (*(' ' | '\\t')+ | '\\n+' | '\\n.'*)
+  <lst>     ::=  expr? | expr (<','> expr?)+
+  label     ::=  #'[^ \\t\\r\\n+-.*][^ \\t\\r\\n]*'
+  white     ::=  #'[ \\t]'  (*(' ' | '\\t')+ | '\\n+' | '\\n.'*)
   <_>       ::=  <white+>
   <__>      ::=  <white*>
   I         ::=  #'[0-9]+'
   R         ::=  #'[0-9]+\\.[0-9]+'
-  S         ::=  <'\"'>   #'[^\"]*'  <'\"'>
-              |  <'\\''>  #'[^\\']*' <'\\''>
+  S         ::=  #'\"([^\"]|\\x3B)*\"'
+              |  #'\\'([^\\']|\\x3B)*\\''
   N         ::=  #'[A-Za-z][A-Z_a-z0-9\\.\\-]*'
 "))
 
@@ -95,6 +95,10 @@
                                 ([S P R]            (list '? S P R)))
       :assigning (fn assigning  ([S    ]            (list '= S 'epsilon))
                                 ([S R  ]            (list '= S R)))
+      :branch    (fn branch      [& gs]             (reduce
+                                                      #(assoc %1
+                                                        (first %2)
+                                                        (second %2)) {} gs))
       :goto      (fn goto        [L]                [:G (keyword L)])
       :sgoto     (fn sgoto       [L]                [:S (keyword L)])
       :fgoto     (fn fgoto       [L]                [:F (keyword L)])
@@ -121,7 +125,7 @@
       :N         (fn N           [n]                (symbol n))
       :I         edn/read-string
       :R         edn/read-string
-      :S         (fn S           [s]                s); (subs s 1 (- (count s) 1))
+      :S         (fn S           [s]                (subs s 1 (- (count s) 1)))
     } ast))
 
 (def parse-program    )
@@ -153,6 +157,7 @@
 (def SNO [])
 (defn doit []
   (doseq [filenm (files dirs)]
+    (println ";------------------------------------------------------ " filenm)
     (case 2
       1 (doseq [s SNO]
           (doseq [b (re-seq block s)]
@@ -168,8 +173,15 @@
 		                         stmt1 (string/replace stmt0 #"\r\n$" "")
 		                         ast (parse-statement stmt1)
 		                         code (coder ast)]
-                     ; (pp/pprint stmt1)
-		  		                 (pp/pprint code))
+		                     (when (map? code)
+		                       (let [line   (:line code)
+		                             column (:column code)
+		                             text   (:text code)]
+		                         (println line " " column " " stmt1)
+                         ; (pp/pprint stmt1)
+		    		                 ; (pp/pprint code)
+		    		               ))
+		  		               )
 		  		        ))))
       3 (with-open [rdr (io/reader filenm)]
           (doseq [line (line-seq rdr)]

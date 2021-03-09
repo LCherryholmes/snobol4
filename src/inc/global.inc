@@ -9,6 +9,7 @@
     &ALPHABET      POS(12) LEN(1) . ff     ;* form feed
     &ALPHABET      POS(13) LEN(1) . cr     ;* carriage return
     &ALPHABET      POS(47) LEN(1) . fSlash ;* forward slash
+    &ALPHABET      POS(59) LEN(1) . semicolon ;* semi-colon
     &ALPHABET      POS(92) LEN(1) . bSlash ;* back slash
 
     &ALPHABET      POS(0)                      LEN(128) . X0xxxxxxx

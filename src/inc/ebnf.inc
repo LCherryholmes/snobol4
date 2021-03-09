@@ -13,7 +13,7 @@
 *---------------------------------------------------------------------------------------------------
             keywords          =
             reswords          =     'SHIFT REDUCE POP'
-            operators         =     '} | { ] [ ? ; <- := ::= -> ... ,,, ) ( < > ++ -- # , + - * /'
+            operators         =     '} | { ] [ ? ' semicolon ' <- := ::= -> ... ,,, ) ( < > ++ -- # , + - * /'
             ident             =     ANY(&UCASE '_' &LCASE) FENCE(SPAN('0123456789' &UCASE '_' &LCASE) | epsilon)
             identifier        =     ident $ tx $ *notmatch(reswords, (POS(0) | ' ') upr(tx) (' ' | RPOS(0)))
             resword           =     ident $ tx $ *match(reswords, (POS(0) | ' ') upr(tx) (' ' | RPOS(0)))
@@ -82,7 +82,7 @@
 *---------------------------------------------------------------------------------------------------
             ebnf              =     nPush() *productions ("'productions'" & 'nTop()') nPop()
             productions       =     *production nInc() (*productions | epsilon)
-            production        =     SYMBOL ~ 'identifier' arrow *alternates $';' ("'bnf_production'" & 2)
+            production        =     SYMBOL ~ 'identifier' arrow *alternates $semicolon ("'bnf_production'" & 2)
 
             alternates        =     nPush() *alternates_1 ("'|'" & '*(GT(nTop(), 1) nTop())') nPop()
             alternates_1      =     *subsequents nInc() (vertical_bar *alternates_1 | epsilon)

@@ -39,7 +39,7 @@ Xref25      Trefs[idNm]       =     Trefs[idNm] + 1
             IDENT(Tdefs[idNm])                                                               :F(RETURN)
             Tundefs[idNm]     =     Tundefs[idNm] + 1                                        :(RETURN)
 Xref30      IDENT(t(x), 'string')                                                            :F(RETURN)
-            v(x)              POS(0) SPAN('~`!@#$%^&*()-+={}[]|\":;?/<>,.' "'") RPOS(0)      :(RETURN)
+            v(x)              POS(0) SPAN('~`!@#$%^&*()-+={}[]|\":?/<>,.' semicolon "'") RPOS(0) :(RETURN);* PARSER error ;
             v(x)              POS(0) "'" RTAB(1) . v(x) "'"
             OUTPUT            =     v(x)                                                     :(RETURN)
 XrefEnd
