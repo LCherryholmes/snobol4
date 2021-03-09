@@ -10,20 +10,13 @@
 )
 
 (defn bug [x] (println (type x) " " x) x)
-(defn re-quoted [s]
-  (str "#'" (string/replace s #"(\\|')" #(str \\ (second %1))) "'"))
-;(def label #"[^\*\.\+; \t\r\n\-][^ \t\r\n]*")
-(def label #"[A-Z_a-z0-9]+")
-(def white #"[ \t]+(\r?\n[+.][ \t]*)?|\r?\n[+.][ \t]*")
+(defn re-quote [& ss]
+  (str "#'" (string/replace (apply str ss) #"(\\|')" #(str \\ (second %1))) "'"))
+(def label #"[A-Z_a-z0-9][A-Z_a-z0-9!@#$%^&*\(\)\[\]<>{}=.,/\?+-]*"); (def label #"[A-Z_a-z0-9]+")
+(def white  #"([ \t]+|\n\+|\n\.)")
 (def grammar
   (str "
-  command   ::=  comment | control | stmt <eos> <__> | <eol>
-  comment   ::=  <'*'> #'.*' <eol>
-  control   ::=  <'-'> #'[^;\\r\\n]*' <eos>
-  stmt      ::=  label? (<_> body? branch?)? <eos?>
-  eos       ::=  '\\r\\n' | '\\n' | ';'
-  eol       ::=  '\\r\\n' | '\\n'
-  label     ::=  " (re-quoted label) "
+  stmt      ::=  label? (<_> body? <__> branch?)? <__> <eos?>
   <body>    ::=  invoking | matching | replacing | assigning
   invoking  ::=  subject
   matching  ::=  subject <_> pattern
@@ -37,6 +30,11 @@
   sgoto     ::=  <'S'> target
   fgoto     ::=  <'F'> target
   <target>  ::=  <'('> expr <')'>
+  comment   ::=  <'*'> #'.*' <eol>
+  control   ::=  <'-'> #'[^;\\n]*' <eos>
+  eos       ::=  '\\n' | ';'
+  eol       ::=  '\\n'
+
   <expr>    ::=  <__> asn <__>
   asn       ::=  mch | mch  <_  '='  _>  asn
   mch       ::=  and | and  <_  '?'  _>  and (<_ '=' _> and)?
@@ -65,23 +63,23 @@
   cnd       ::=  <'('> expr <','> lst <')'>
   inv       ::=  N <'()'>  |  N <'('> lst <')'>
   <lst>     ::=  expr | expr (<','> expr)+
-  <__>      ::=  <_?>
-  <_>       ::=  <" (re-quoted white) ">
-  N         ::=  #'[A-Za-z][A-Z_a-z0-9\\.\\-]*'
+  label     ::=  " (re-quote label) "
+  white     ::=  #'[ \\t]'            (*(' ' | '\\t')+ | '\\n+' | '\\n.'*)
+  <_>       ::=  <white+>
+  <__>      ::=  <white*>
   I         ::=  #'[0-9]+'
   R         ::=  #'[0-9]+\\.[0-9]+'
-  S         ::=  #'\"[^\"]*\"'  |  #\"'[^']*'\"
+  S         ::=  <'\"'>   #'[^\"]*'  <'\"'>
+              |  <'\\''>  #'[^\\']*' <'\\''>
+  N         ::=  #'[A-Za-z][A-Z_a-z0-9\\.\\-]*'
 "))
 
 (defn coder [ast]
 ; (pp/pprint ast)
   (insta/transform
-    {
-    	 :command   (fn command     [cmd]              cmd)
-      :comment   (fn comment     [cmt]              [:comment cmt])
+    { :comment   (fn comment     [cmt]              [:comment cmt])
       :control   (fn control     [ctl]              [:control ctl])
       ;--------------------------------------------------------------------------
-    ; :program   (fn program     [& cs]             (apply vector cs))
       :stmt      (fn stmt        [& parts]          (apply vector parts)
                               ; ([     ]            {                     })
                               ; ([L    ]            { L []                })
@@ -123,12 +121,12 @@
       :N         (fn N           [n]                (symbol n))
       :I         edn/read-string
       :R         edn/read-string
-      :S         (fn S           [s]                (subs s 1 (- (count s) 1)))
+      :S         (fn S           [s]                s); (subs s 1 (- (count s) 1))
     } ast))
 
 (def parse-program    )
 (def parse-command    (insta/parser grammar :start :command))
-(def parse-statement  (insta/parser grammar :start :stmt))
+(def parse-statement  (insta/parser grammar :start :stmt :total true))
 (def parse-expression (insta/parser grammar :start :expr))
 
 (defn files [directories]
@@ -166,12 +164,13 @@
 		              (nil? cmd) nil
 		              (re-find #"^\*" cmd) nil
 		              (re-find #"^\-" cmd) nil
-		              true (let [ast (parse-statement cmd)
+		              true (let [stmt0 (string/replace cmd #"[ \t]*\r\n[+.][ \t]*" " ")
+		                         stmt1 (string/replace stmt0 #"\r\n$" "")
+		                         ast (parse-statement stmt1)
 		                         code (coder ast)]
-                     ; (println (seq cmd))
-		  		                 (pp/pprint code)
-		  		               ))
-            )))
+                     ; (pp/pprint stmt1)
+		  		                 (pp/pprint code))
+		  		        ))))
       3 (with-open [rdr (io/reader filenm)]
           (doseq [line (line-seq rdr)]
             (let [ast (parse-command line) code (coder ast)]
