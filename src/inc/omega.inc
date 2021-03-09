@@ -3,21 +3,21 @@
 TV          omega             =     EQ(doParseTree, FALSE) "pat"
             omega             =     EQ(doParseTree, TRUE)  "(pat ~ 'identifier')"
             omega             =     omega ' $ tx *LEQ(lwr(tx), "' lwr(name) '")'
-            TV                =     TZ(lvl, name, EVAL(omega))                               :S(RETURN)F(error)
+            TV                =     TZ(lvl, name, EVAL(omega))                               :S(RETURN)F(error);* Conflict TY also used here
 TVEnd
 *---------------------------------------------------------------------------------------------------
             DEFINE('TW(lvl,pat,name)omega')                                                  :(TWEnd)
 TW          omega             =     EQ(doParseTree, FALSE) "pat"
             omega             =     EQ(doParseTree, TRUE)  "(pat ~ 'identifier')"
             omega             =     omega " $ tx *LEQ(upr(tx), '" upr(name) "')"
-            TW                =     TZ(lvl, name, EVAL(omega))                               :S(RETURN)F(error)
+            TW                =     TZ(lvl, name, EVAL(omega))                               :S(RETURN)F(error);* Conflict TY also used here
 TWEnd
 *---------------------------------------------------------------------------------------------------
             DEFINE('TX(lvl,pat,name)omega')                                                  :(TXEnd)
 TX          omega             =     EQ(doParseTree, FALSE) "pat"
             omega             =     EQ(doParseTree, TRUE)  "(pat ~ 'identifier')"
             omega             =     omega " $ tx *LEQ(tx, '" name "')"
-            TX                =     TZ(lvl, name, EVAL(omega))                               :S(RETURN)F(error)
+            TX                =     TZ(lvl, name, EVAL(omega))                               :S(RETURN)F(error);* Conflict TY also used here
 TXEnd
 *---------------------------------------------------------------------------------------------------
             DEFINE('TY(lvl,name,pat)omega')                                                  :(TYEnd)
