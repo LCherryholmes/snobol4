@@ -100,7 +100,7 @@
 
 ; :partial :true
 ; :start :rule-name
-; :total true(def expression-parser
+; :total true
 ;(insta/parser (clojure.java.io/resource "myparser.bnf"))
 ;(defparser p "S = 1*'a'" :input-format :abnf :output-format :enlive)
 ;(time (def p (insta/parser "S = A B; A = 'a'+; B = 'b'+")))
