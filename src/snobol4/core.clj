@@ -201,19 +201,6 @@
               (println code))))
 )))
 
-(def LABELS {3 :Roman 6 :RomanEnd 8 :END})
-(def STMTNOS {:Roman 3 :RomanEnd 6 :END 8})
-(def CODE {
-1         ['(DEFINE "Roman(n)units")]
-2         ['(= romanXlat "0,1I,2II,3III,4IV,5V,6VI,7VII,8VIII,9IX,") {:G :RomanEnd}]
-:Roman    ['(?= n [(RPOS 1) (. (LEN 1) units)]) {:F :RETURN}]
-4         ['(? romanXlat [units (. (BREAK ",") units)]) {:F :FRETURN}]
-5         ['(= Roman [(REPLACE (Roman n) "IVXLCDM" "XLCDM**") units]) {:S :RETURN, :F :FRETURN}]
-:RomanEnd []
-7         ['(Roman "MMXXI")]
-:END      []
-})
-
 (defn ZIP [E]
   (loop [E (z/zipper #(or (list? %) (vector? %)) rest nil E) depth 0 direction :down]
     (pprint (z/node E))
@@ -231,18 +218,31 @@
 								        (recur (z/up E) (dec depth) :right))
 								      (recur (z/right E) depth :down)))))
 
+(def LABELS {3 :Roman 6 :RomanEnd 8 :END})
+(def STMTNOS {:Roman 3 :RomanEnd 6 :END 8})
+(def CODE {
+1         ['(DEFINE "Roman(n)units")]
+2         ['(= romanXlat "0,1I,2II,3III,4IV,5V,6VI,7VII,8VIII,9IX,") {:G :RomanEnd}]
+:Roman    ['(?= n [(RPOS 1) (. (LEN 1) units)]) {:F :RETURN}]
+4         ['(? romanXlat [units (. (BREAK ",") units)]) {:F :FRETURN}]
+5         ['(= Roman [(REPLACE (Roman n) "IVXLCDM" "XLCDM**") units]) {:S :RETURN, :F :FRETURN}]
+:RomanEnd []
+7         ['(Roman "MMXXI")]
+:END      []
+})
+
 (defn EVAL [E]
   (when E
-		  (pprint E)
+		; (pprint E)
 		  (cond
 		    (nil?     E) E
 		    (integer? E) E
 		    (string?  E) E
 		    (float?   E) E
 		    (symbol?  E) E
-		    (seq?     E) (doseq [e (map identity E)] (EVAL e))
-		    (list?    E) (doseq [e (map identity E)] (EVAL e))
-		    (vector?  E) (doseq [e (map identity E)] (EVAL e))
+		    (seq?     E) (let [op (first E) args (rest E)] (apply vector op (map EVAL args)))
+		    (list?    E) (let [op (first E) args (rest E)] (apply vector op (map EVAL args)))
+		    (vector?  E) (let [op (first E) args (rest E)] (apply list op (map EVAL args)))
 		    nil nil
 		  ))
 )
@@ -256,8 +256,8 @@
 				            seqond (second stmt)
 				            goto (if (map? ferst) ferst seqond)
 				            body (if (map? ferst) seqond ferst)]
-				        (pprint [key goto body])
-				        (EVAL body)
+				      ; (pprint [key goto body])
+				        (pprint (EVAL body))
 				        (recur
 				          (cond
 				            (keyword? key) (inc (STMTNOS key))
