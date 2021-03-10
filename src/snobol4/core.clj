@@ -75,11 +75,10 @@
               |  #'\\'([^\\']|\\x3B)*\\''
   N         ::=  #'[A-Za-z][A-Z_a-z0-9\\.\\-]*'
   label     ::=  #'[^ \\t\\r\\n+-.*][^ \\t\\r\\n]*'
-  white     ::=  #'[ \\t]'  (*(' ' | '\\t')+ | '\\n+' | '\\n.'*)
+  white     ::=  #'[ \\t]'
 "))
 
 (defn coder [ast stmtno]
-; (pp/pprint ast)
   (insta/transform
     { :comment   (fn comment     [cmt]   [:comment cmt])
       :control   (fn control     [ctl]   [:control ctl])
@@ -167,7 +166,7 @@
 (def stmtno (atom 0))
 (defn pprint [item]
   (binding [pp/*print-right-margin* 120, pp/*print-miser-width* 100]
-    (pp/pprint item))
+    (pp/pprint item)))
 (defn doit []
   (doseq [filenm (files dirs)]
     (println ";------------------------------------------------------ " filenm)
@@ -195,13 +194,131 @@
 		                             text   (:text code)
 		                             error  {stmtno [(list 'ERROR line column)]}]; text
 		                         (pprint error))
-		                       (pprint code)))
-		  		               )))))
+		                       (pprint code)))))))
       3 (with-open [rdr (io/reader filenm)]
           (doseq [line (line-seq rdr)]
             (let [ast (parse-command line) code (coder ast)]
-              (println code))
-          ))
-    )))
+              (println code))))
+)))
 
-(defn -main "SNOBOL4 statement parser." [& args] (doit))
+(def LABELS {3 :Roman 6 :RomanEnd 8 :END})
+(def STMTNOS {:Roman 3 :RomanEnd 6 :END 8})
+(def CODE {
+1         ['(DEFINE "Roman(n)units")]
+2         ['(= romanXlat "0,1I,2II,3III,4IV,5V,6VI,7VII,8VIII,9IX,") {:G :RomanEnd}]
+:Roman    ['(?= n [(RPOS 1) (. (LEN 1) units)]) {:F :RETURN}]
+4         ['(? romanXlat [units (. (BREAK ",") units)]) {:F :FRETURN}]
+5         ['(= Roman [(REPLACE (Roman n) "IVXLCDM" "XLCDM**") units]) {:S :RETURN, :F :FRETURN}]
+:RomanEnd []
+7         ['(Roman "MMXXI")]
+:END      []
+})
+
+(defn ZIP [E]
+  (loop [E (z/zipper #(or (list? %) (vector? %)) rest nil E) depth 0 direction :down]
+    (pprint (z/node E))
+    (case direction
+    :down  (if (z/branch? E)
+							      (recur (z/down E) (inc depth) :down)
+							      (if (= E (z/rightmost E))
+											    (if (= depth 0)
+							          (z/root E)
+							          (recur (z/up E) (dec depth) :right))
+											    (recur (z/right E) depth :down)))
+     :right (if (= E (z/rightmost E))
+								      (if (= depth 0)
+								        (z/root E)
+								        (recur (z/up E) (dec depth) :right))
+								      (recur (z/right E) depth :down)))))
+
+(defn EVAL [E]
+  (when E
+		  (pprint E)
+		  (cond
+		    (nil?     E) E
+		    (integer? E) E
+		    (string?  E) E
+		    (float?   E) E
+		    (symbol?  E) E
+		    (seq?     E) (doseq [e (map identity E)] (EVAL e))
+		    (list?    E) (doseq [e (map identity E)] (EVAL e))
+		    (vector?  E) (doseq [e (map identity E)] (EVAL e))
+		    nil nil
+		  ))
+)
+
+(defn RUN [code]
+  (loop [current 1]
+    (let [label (LABELS current)]
+      (if-let [key (if label label current)]
+				    (if-let [stmt (code key)]
+				      (let [ferst (first stmt)
+				            seqond (second stmt)
+				            goto (if (map? ferst) ferst seqond)
+				            body (if (map? ferst) seqond ferst)]
+				        (pprint [key goto body])
+				        (EVAL body)
+				        (recur
+				          (cond
+				            (keyword? key) (inc (STMTNOS key))
+				            (string?  key) (inc (STMTNOS key))
+				            (integer? key) (inc key)
+				            )))
+     ))
+  ))
+)
+
+(defn runit []
+		(defn Pos [])
+		(defn RPos [])
+		(defn Tab [])
+		(defn RTab [])
+		(defn Any [])
+		(defn NotAny [])
+		(defn Len [])
+		(defn Break [])
+		(defn Breakx [])
+
+		(defn POS [I])
+		(defn RPOS [I])
+		(defn TAB [I])
+		(defn RTAB [I])
+		(defn ANY [S])
+		(defn NOTANY [S])
+		(defn LEN [I])
+		(defn BREAK [S])
+		(defn BREAKX [S])
+
+		(defn EQ [x y] (= x y))
+		(defn NE [x y] (not= x y))
+		(defn LT [x y] (< x y))
+		(defn GT [x y] (> x y))
+		(defn LE [x y] (<= x y))
+		(defn GE [x y] (>= x y))
+		(defmacro Ident [])
+		(defn IDENT
+		     ([]    true)
+		     ([x]   (identical? x ""))
+		     ([x y] (identical? x y))
+		)
+		(defmacro Differ [])
+		(defn DIFFER
+		     ([]    false)
+		     ([x]   (not (identical? x "")))
+		     ([x y] (not (identical? x y)))
+ )
+		(defn REPLACE [S1 S2 S3])
+		(defn SIZE [O] (count O))
+		(defn TABLE [proto] {})
+		(defn ARRAY [proto] [])
+		(defn DEFINE [proto])
+		(defn INVOKE [F args])
+		(defn . [P N])
+		;(defn = [S R])
+		(defn ? [S P])
+		(defn ?= ([S P]) ([S P R]))
+		(def DATA {})
+		(def STACK ())
+;	(MakeItHappen)
+)
+(defn -main "SNOBOL4/Clojure." [& args] (RUN CODE))
