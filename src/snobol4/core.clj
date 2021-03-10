@@ -153,7 +153,7 @@
 (def control (re-cat #"[-]" fill eos))
 (def kode    (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
 (def block   (re-cat komment "|" control "|" kode "|" eol))
-(def dirs ["./src/inc" "./src/sno"])
+(def dirs ["./src/sno" "./src/inc" "./src/test"])
 (def SNO [])
 (defn doit []
   (doseq [filenm (files dirs)]
