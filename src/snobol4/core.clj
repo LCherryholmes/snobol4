@@ -16,26 +16,30 @@
 (def white  #"([ \t]+|\n\+|\n\.)")
 (def grammar
   (str "
-  stmt      ::=  label? (<_> body? <__> branch?)? <__> <eos?>
-  <body>    ::=  invoking | matching | replacing | assigning
+  stmt      ::=  label? (<_> body? <__> goto?)? <__> <eos?>
+  body      ::=  invoking | matching | replacing | assigning
   invoking  ::=  subject
   matching  ::=  subject <_> pattern
   replacing ::=  subject <_> pattern <_ '='> replace
   assigning ::=  subject <_ '='> replace
-  <subject> ::=  uop
-  <pattern> ::=  (<'?' _>)? and
-  <replace> ::=  (<_> expr)?
-  branch    ::=  <__ ':' __> ( goto | sgoto (<__> fgoto)? | fgoto (<__> sgoto)? )
-  goto      ::=  target
-  sgoto     ::=  <'S'> target
-  fgoto     ::=  <'F'> target
-  <target>  ::=  <'('> expr <')'>
+ <subject>  ::=  uop
+ <pattern>  ::=  (<'?' _>)? and
+ <replace>  ::=  (<_> expr)?
+  goto      ::=  <__ ':' __>
+                 ( branch
+                 | sbranch (<__> fbranch)?
+                 | fbranch (<__> sbranch)?
+                 )
+  branch    ::=  target
+  sbranch   ::=  <'S'> target
+  fbranch   ::=  <'F'> target
+ <target>   ::=  <'('> expr <')'>
   comment   ::=  <'*'> #'.*' <eol>
   control   ::=  <'-'> #'[^;\\n]*' <eos>
   eos       ::=  '\\n' | ';'
   eol       ::=  '\\n'
 
-  <expr>    ::=  <__> asn <__>
+ <expr>     ::=  <__> asn <__>
   asn       ::=  mch | mch  <_  '='  _>  asn
   mch       ::=  and | and  <_  '?'  _>  and (<_ '=' _> and)?
   and       ::=  alt | and  <_  '&'  _>  alt
@@ -63,8 +67,6 @@
   cnd       ::=  <'('> expr <','> lst <')'>
   inv       ::=  N <'()'>  |  N <'('> lst <')'>
   <lst>     ::=  expr? | expr (<','> expr?)+
-  label     ::=  #'[^ \\t\\r\\n+-.*][^ \\t\\r\\n]*'
-  white     ::=  #'[ \\t]'  (*(' ' | '\\t')+ | '\\n+' | '\\n.'*)
   <_>       ::=  <white+>
   <__>      ::=  <white*>
   I         ::=  #'[0-9]+'
@@ -72,40 +74,43 @@
   S         ::=  #'\"([^\"]|\\x3B)*\"'
               |  #'\\'([^\\']|\\x3B)*\\''
   N         ::=  #'[A-Za-z][A-Z_a-z0-9\\.\\-]*'
+  label     ::=  #'[^ \\t\\r\\n+-.*][^ \\t\\r\\n]*'
+  white     ::=  #'[ \\t]'  (*(' ' | '\\t')+ | '\\n+' | '\\n.'*)
 "))
 
-(defn coder [ast]
+(defn coder [ast stmtno]
 ; (pp/pprint ast)
   (insta/transform
-    { :comment   (fn comment     [cmt]              [:comment cmt])
-      :control   (fn control     [ctl]              [:control ctl])
+    { :comment   (fn comment     [cmt]   [:comment cmt])
+      :control   (fn control     [ctl]   [:control ctl])
       ;--------------------------------------------------------------------------
-      :stmt      (fn stmt        [& parts]          (apply vector parts)
-                              ; ([     ]            {                     })
-                              ; ([L    ]            { L []                })
-                              ; ([L B  ]            { L [B]               })
-                              ; ([L B [G1 L1]]      { L [B {G1 L1}]       })
-                              ; ([L B [G1 L1]
-                              ;       [G2 L2]]      { L [B {G1 L1 G2 L2}] })
-                 )
-      :label     (fn label       [L]                (keyword L))
-      :invoking  (fn invoking    [S    ]            S)
-      :matching  (fn matching    [S P  ]            (list '? S P))
-      :replacing (fn replacing  ([S P  ]            (list '? S P 'epsilon))
-                                ([S P R]            (list '? S P R)))
-      :assigning (fn assigning  ([S    ]            (list '= S 'epsilon))
-                                ([S R  ]            (list '= S R)))
-      :branch    (fn branch      [& gs]             (reduce
-                                                      #(assoc %1
-                                                        (first %2)
-                                                        (second %2)) {} gs))
-      :goto      (fn goto        [L]                [:G (keyword L)])
-      :sgoto     (fn sgoto       [L]                [:S (keyword L)])
-      :fgoto     (fn fgoto       [L]                [:F (keyword L)])
-      :expr      (fn expr        [x] x);----------------------------------------
+      :stmt      (fn stmt [& ss]
+                   (let [{L :label B :body G :goto} (apply conj ss)]
+                     (apply vector ss)
+                     {(if L L stmtno) [B G]}
+                 ))
+      :label     (fn label       [L]     {:label (if (re-find #"^[0-9A-Z_a-z]+$" L) (keyword L) (str L))})
+      :body      (fn body        [B]     {:body  B})
+      :invoking  (fn invoking    [S    ] S)
+      :matching  (fn matching    [S P  ] (list '? S P))
+      :replacing (fn replacing  ([S P  ] (list '?= S P 'epsilon))
+                                ([S P R] (list '?= S P R)))
+      :assigning (fn assigning  ([S    ] (list '= S 'epsilon))
+                                ([S R  ] (list '= S R)))
+      :goto      (fn goto        [& gs]  {:goto (reduce
+																																                  (fn [bs b]
+																																                    (let [key (first b) tgt (second b)]
+																																                      (assoc bs key
+																																                        (if (symbol? tgt) (keyword tgt) tgt)))) {} gs)
+                      		                 })
+      :branch    (fn branch      [L]     [:G L])
+      :sbranch   (fn sbranch     [L]     [:S L])
+      :fbranch   (fn fbranch     [L]     [:F L])
+      ;--------------------------------------------------------------------------
+      :expr      (fn expr        [x] x)
       :asn       (fn asn        ([x] x) ([x     y]  (list '= x y)))
       :mch       (fn mch        ([x] x) ([x  y   ]  (list '? x y))
-                                        ([x  y  z]  (list '? x y z)))
+                                        ([x  y  z]  (list '?= x y z)))
       :and       (fn and        ([x] x) ([x     y]  (list '& x y)))
       :alt       (fn alt        ([x] x) ([x  & ys]  (apply vector '| x ys)))
       :cat       (fn cat        ([x] x) ([x  & ys]  (apply vector    x ys)))
@@ -118,14 +123,18 @@
       :xp        (fn xp         ([x] x) ([x  op y]  (list (symbol op) x y)))
       :cap       (fn cap        ([x] x) ([x  op y]  (list (symbol op) x y)))
       :ttl       (fn ttl        ([x] x) ([x     y]  (list 'tilde x y)))
-      :uop       (fn uop        ([x] x) ([   op y]  (list (symbol op) y)))
+      :uop       (fn uop        ([x] x) ([   op y]  (case op
+                                                      "@" (list 'at y)
+                                                      "#" (list 'hash y)
+                                                      "~" (list 'tilde y)
+                                                          (list (symbol op) y))))
       :ndx       (fn ndx        ([n] n) ([n  & xs]  (apply list n xs)))
       :cnd       (fn cnd        ([x] x) ([x  & ys]  (apply vector 'comma x ys)))
       :inv       (fn inv         [f  & xs]          (apply list f xs))
       :N         (fn N           [n]                (symbol n))
+      :S         (fn S           [s]                (subs s 1 (- (count s) 1)))
       :I         edn/read-string
       :R         edn/read-string
-      :S         (fn S           [s]                (subs s 1 (- (count s) 1)))
     } ast))
 
 (def parse-program    )
@@ -153,8 +162,12 @@
 (def control (re-cat #"[-]" fill eos))
 (def kode    (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
 (def block   (re-cat komment "|" control "|" kode "|" eol))
-(def dirs ["./src/sno" "./src/inc" "./src/test"])
+(def dirs ["./src/sno" "./src/inc" "./src/test ./src/rinky"])
 (def SNO [])
+(def stmtno (atom 0))
+(defn pprint [item]
+  (binding [pp/*print-right-margin* 120, pp/*print-miser-width* 100]
+    (pp/pprint item))
 (defn doit []
   (doseq [filenm (files dirs)]
     (println ";------------------------------------------------------ " filenm)
@@ -169,20 +182,21 @@
 		              (nil? cmd) nil
 		              (re-find #"^\*" cmd) nil
 		              (re-find #"^\-" cmd) nil
-		              true (let [stmt0 (string/replace cmd #"[ \t]*\r\n[+.][ \t]*" " ")
-		                         stmt1 (string/replace stmt0 #"\r\n$" "")
-		                         ast (parse-statement stmt1)
-		                         code (coder ast)]
-		                     (when (map? code)
+		              true (let [stmt (string/replace
+		                                (string/replace cmd
+		                                  #"[ \t]*\r\n[+.][ \t]*" " ")
+		                                #"\r\n$" "")
+		                         stmtno (swap! stmtno inc)
+		                         ast (parse-statement stmt)
+		                         code (coder ast stmtno)]
+		                     (if (and (map? code) (:reason code))
 		                       (let [line   (:line code)
 		                             column (:column code)
-		                             text   (:text code)]
-		                         (println line " " column " " stmt1)
-                         ; (pp/pprint stmt1)
-		    		                 ; (pp/pprint code)
-		    		               ))
-		  		               )
-		  		        ))))
+		                             text   (:text code)
+		                             error  {stmtno [(list 'ERROR line column)]}]; text
+		                         (pprint error))
+		                       (pprint code)))
+		  		               )))))
       3 (with-open [rdr (io/reader filenm)]
           (doseq [line (line-seq rdr)]
             (let [ast (parse-command line) code (coder ast)]
