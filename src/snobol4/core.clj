@@ -6,6 +6,7 @@
   (:require [clojure.string :as string])
   (:require [clojure.java.io :as io])
   (:require [instaparse.core :as insta :refer [defparser]]); Clojure
+  (:require [clojure.tools.trace :refer :all])
 ; (:require [instaparse.core :as insta :refer-macros [defparser]]); ClojureScript
 )
 
@@ -164,9 +165,10 @@
 (def dirs ["./src/sno" "./src/inc" "./src/test ./src/rinky"])
 (def SNO [])
 (def stmtno (atom 0))
-(defn pprint [item]
-  (binding [pp/*print-right-margin* 120, pp/*print-miser-width* 100]
-    (pp/pprint item)))
+(def out
+  (fn [item]
+		  (binding [pp/*print-right-margin* 120, pp/*print-miser-width* 100]
+		    (pp/pprint item))))
 (defn doit []
   (doseq [filenm (files dirs)]
     (println ";------------------------------------------------------ " filenm)
@@ -193,8 +195,8 @@
 		                             column (:column code)
 		                             text   (:text code)
 		                             error  {stmtno [(list 'ERROR line column)]}]; text
-		                         (pprint error))
-		                       (pprint code)))))))
+		                         (out error))
+		                       (out code)))))))
       3 (with-open [rdr (io/reader filenm)]
           (doseq [line (line-seq rdr)]
             (let [ast (parse-command line) code (coder ast)]
@@ -203,7 +205,7 @@
 
 (defn ZIP [E]
   (loop [E (z/zipper #(or (list? %) (vector? %)) rest nil E) depth 0 direction :down]
-    (pprint (z/node E))
+    (out (z/node E))
     (case direction
     :down  (if (z/branch? E)
 							      (recur (z/down E) (inc depth) :down)
@@ -217,7 +219,7 @@
 								        (z/root E)
 								        (recur (z/up E) (dec depth) :right))
 								      (recur (z/right E) depth :down)))))
-
+;---------------------------------------------------------------------------------------------------
 (def LABELS {3 :Roman 6 :RomanEnd 8 :END})
 (def STMTNOS {:Roman 3 :RomanEnd 6 :END 8})
 (def CODE {
@@ -230,23 +232,58 @@
 7         ['(Roman "MMXXI")]
 :END      []
 })
-
-(defn EVAL [E]
+;---------------------------------------------------------------------------------------------------
+(defn ? [S P])
+(defn =$ [N S])
+(defn =. [N S])
+(defn Len [I])
+(defn RPos [I])
+(defn Break [S])
+(defn REPLACE [S1 S2 S3])
+(declare EVAL)
+(deftrace INVOKE [op & args]
+  (case op
+    $        (apply list '=$    args)
+    .        (apply list '=.    args)
+    LEN      (apply list 'Len   args)
+    RPOS     (apply list 'RPos  args)
+    BREAK    (apply list 'Break args)
+    ?        (let [[S P] args] (? (str S) P))
+    =        (let [[N r] args] (eval (trace (list 'def N r))) r)
+    ?=       (let [[N P R] args, r (str "Winner is: " (EVAL R))]
+               (eval (trace (list 'def N r))) r)
+    DEFINE   (let [[proto] args]
+               (let [spec (apply vector (re-seq #"[0-9A-Z_a-z]+" proto))]
+                 (let [[N & params] spec, F (symbol N)]
+                   (eval (trace (list 'defn F ['& 'args] ""))) "")))
+    REPLACE  (let [[S1 S2 S3] args] (REPLACE S1 S2 S3))
+    Roman    "";(apply Roman args)
+  )
+)
+;---------------------------------------------------------------------------------------------------
+(deftrace EVAL [E]
   (when E
-		; (pprint E)
 		  (cond
-		    (nil?     E) E
+		    (nil? E) E
+		    (float? E) E
+		    (string? E) E
 		    (integer? E) E
-		    (string?  E) E
-		    (float?   E) E
-		    (symbol?  E) E
-		    (seq?     E) (let [op (first E) args (rest E)] (apply vector op (map EVAL args)))
-		    (list?    E) (let [op (first E) args (rest E)] (apply vector op (map EVAL args)))
-		    (vector?  E) (let [op (first E) args (rest E)] (apply list op (map EVAL args)))
+		    (symbol? E) (eval E)
+		    (vector? E) (apply vector (map EVAL E))
+		    (list? E)
+		      (let [[op & parms] E]
+		        (cond
+		          (= op '.)  (let [[P N]   parms] (INVOKE '. (EVAL P) N))
+		          (= op '$)  (let [[P N]   parms] (INVOKE '$ (EVAL P) N))
+		          (= op '=)  (let [[N R]   parms] (INVOKE '= N (EVAL R)))
+		          (= op '?=) (let [[N P R] parms] (INVOKE '?= N (EVAL P) R))
+		          true       (let [args (apply vector (map EVAL parms))]
+		                       (apply INVOKE op args))
+		      ))
 		    nil nil
 		  ))
 )
-
+;---------------------------------------------------------------------------------------------------
 (defn RUN [code]
   (loop [current 1]
     (let [label (LABELS current)]
@@ -256,8 +293,7 @@
 				            seqond (second stmt)
 				            goto (if (map? ferst) ferst seqond)
 				            body (if (map? ferst) seqond ferst)]
-				      ; (pprint [key goto body])
-				        (pprint (EVAL body))
+				        (EVAL body)
 				        (recur
 				          (cond
 				            (keyword? key) (inc (STMTNOS key))
@@ -269,14 +305,11 @@
 )
 
 (defn runit []
-		(defn Pos [])
 		(defn RPos [])
 		(defn Tab [])
 		(defn RTab [])
 		(defn Any [])
 		(defn NotAny [])
-		(defn Len [])
-		(defn Break [])
 		(defn Breakx [])
 
 		(defn POS [I])
@@ -307,7 +340,6 @@
 		     ([x]   (not (identical? x "")))
 		     ([x y] (not (identical? x y)))
  )
-		(defn REPLACE [S1 S2 S3])
 		(defn SIZE [O] (count O))
 		(defn TABLE [proto] {})
 		(defn ARRAY [proto] [])
