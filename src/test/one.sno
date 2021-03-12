@@ -9,7 +9,6 @@ START
  'BADS'   ? BD
  'BAD'    ? BD
  'BATS'   ? BD
-
  BR  = ("B" | "R") ("E" | "EA") ("D" | "DS")
  'BED'   ? BR
  'BEDS'  ? BR
@@ -19,5 +18,4 @@ START
  'REDS'  ? BR
  'READ'  ? BR
  'READS' ? BR
-
 END

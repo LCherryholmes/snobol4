@@ -98,10 +98,10 @@
       :assigning (fn assigning  ([S    ] (list '= S 'epsilon))
                                 ([S R  ] (list '= S R)))
       :goto      (fn goto        [& gs]  {:goto (reduce
-																									(fn [bs b]
-																										(let [key (first b) tgt (second b)]
-																											(assoc bs key
-																												(if (symbol? tgt) (keyword tgt) tgt)))) {} gs)
+																																											(fn [bs b]
+																																												(let [key (first b) tgt (second b)]
+																																													(assoc bs key
+																																														(if (symbol? tgt) (keyword tgt) tgt)))) {} gs)
                                          })
       :branch    (fn branch      [L]     [:G L])
       :sbranch   (fn sbranch     [L]     [:S L])
@@ -112,8 +112,8 @@
       :mch       (fn mch        ([x] x) ([x  y   ]  (list '? x y))
                                         ([x  y  z]  (list '?= x y z)))
       :and       (fn and        ([x] x) ([x     y]  (list '& x y)))
-      :alt       (fn alt        ([x] x) ([x  & ys]  (apply vector '| x ys)))
-      :cat       (fn cat        ([x] x) ([x  & ys]  (apply vector    x ys)))
+      :alt       (fn alt        ([x] x) ([x  & ys]  (apply list '| x ys)))
+      :cat       (fn cat        ([x] x) ([x  & ys]  (apply vector x ys)))
       :at        (fn at         ([x] x) ([x     y]  (list 'at x y)))
       :sum       (fn sum        ([x] x) ([x  op y]  (list (symbol op) x y)))
       :hsh       (fn hsh        ([x] x) ([x     y]  (list 'hash x y)))
@@ -153,56 +153,79 @@
     []
     directories))
 
-(defn re-cat [& regexs] (re-pattern (apply str regexs)))
-(def eol     #"[\n]")
-(def eos     #"[;\n]")
-(def skip    #"[^\n]*")
-(def fill    #"[^;\n]*")
-(def komment (re-cat #"[*]" skip eol))
-(def control (re-cat #"[-]" fill eos))
-(def kode    (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
-(def block   (re-cat komment "|" control "|" kode "|" eol))
 (def dirs ["./src/sno" "./src/inc" "./src/test ./src/rinky"])
-(def SNO [])
-(def stmtno (atom 0))
 (def out
   (fn [item]
       (binding [pp/*print-right-margin* 120, pp/*print-miser-width* 100]
         (pp/pprint item))))
 ;---------------------------------------------------------------------------------------------------
+(def stmtno (atom 0))
+(defn compile-stmt [cmd]
+   (let [stmt1 (string/replace cmd #"[ \t]*\r?\n[+.][ \t]*" " ")
+		       stmt2 (string/replace stmt1 #"\r?\n$" "")
+		       stmtno (swap! stmtno inc)
+		       ast (parse-statement stmt2)
+		       code (coder ast stmtno)]
+		   (if (and (map? code) (:reason code))
+		     (let [line   (:line code)
+		           column (:column code)
+		           text   (:text code)
+		           error  {stmtno [(list 'ERROR line column)]}]; text
+		       (out error))
+		     (out code))))
+;---------------------------------------------------------------------------------------------------
+(def SNO [
+  "START"
+  " BD = ('BE' | 'B') ('AR' | 'A') ('DS' | 'D')"
+  " 'BEARDS' ? BD"
+  " 'BEARD'  ? BD"
+  " 'BEADS'  ? BD"
+  " 'BEAD'   ? BD"
+  " 'BARDS'  ? BD"
+  " 'BARD'   ? BD"
+  " 'BADS'   ? BD"
+  " 'BAD'    ? BD"
+  " 'BATS'   ? BD"
+  " BR  = ('B' | 'R') ('E' | 'EA') ('D' | 'DS')"
+  " 'BED'   ? BR"
+  " 'BEDS'  ? BR"
+  " 'BEAD'  ? BR"
+  " 'BEADS' ? BR"
+  " 'RED'   ? BR"
+  " 'REDS'  ? BR"
+  " 'READ'  ? BR"
+  " 'READS' ? BR"
+  "END"
+])
+;---------------------------------------------------------------------------------------------------
+(defn re-cat [& regexs] (re-pattern (apply str regexs)))
+(def  eol     #"[\n]")
+(def  eos     #"[;\n]")
+(def  skip    #"[^\n]*")
+(def  fill    #"[^;\n]*")
+(def  komment (re-cat #"[*]" skip eol))
+(def  control (re-cat #"[-]" fill eos))
+(def  kode    (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
+(def  block   (re-cat komment "|" control "|" kode "|" eol))
 (defn doit []
-  (doseq [filenm (files dirs)]
-    (println ";------------------------------------------------------ " filenm)
-    (case 2
-      1 (doseq [s SNO]
-          (doseq [b (re-seq block s)]
-            (println b)))
-      2 (let [program (slurp filenm)]
+  (case 1
+    1 (doseq [s SNO] (compile-stmt s))
+    2 (doseq [filenm (files dirs)]
+        (let [program (slurp filenm)]
+          (println ";------------------------------------------------------ " filenm)
           (doseq [command (re-seq block program)]
             (let [cmd (first command)]
                 (cond
                   (nil? cmd) nil
                   (re-find #"^\*" cmd) nil
                   (re-find #"^\-" cmd) nil
-                  true (let [stmt (string/replace
-                                    (string/replace cmd
-                                      #"[ \t]*\r\n[+.][ \t]*" " ")
-                                    #"\r\n$" "")
-                             stmtno (swap! stmtno inc)
-                             ast (parse-statement stmt)
-                             code (coder ast stmtno)]
-                         (if (and (map? code) (:reason code))
-                           (let [line   (:line code)
-                                 column (:column code)
-                                 text   (:text code)
-                                 error  {stmtno [(list 'ERROR line column)]}]; text
-                             (out error))
-                           (out code)))))))
-      3 (with-open [rdr (io/reader filenm)]
+                  true (compile-stmt cmd))))))
+    3 (doseq [filenm (files dirs)]
+        (with-open [rdr (io/reader filenm)]
           (doseq [line (line-seq rdr)]
             (let [ast (parse-command line) code (coder ast)]
-              (println code))))
-)))
+              (println code)))))
+  ))
 ;---------------------------------------------------------------------------------------------------
 (defn ZIP [E]
   (loop [E (z/zipper #(or (list? %) (vector? %)) rest nil E) depth 0 direction :down]
@@ -221,9 +244,57 @@
                         (recur (z/up E) (dec depth) :right))
                       (recur (z/right E) depth :down)))))
 ;---------------------------------------------------------------------------------------------------
-(def LABELS {3 :Roman 6 :RomanEnd 8 :END})
-(def STMTNOS {:Roman 3 :RomanEnd 6 :END 8})
-(def CODE {
+;(defn assign [n new] (alter-var-root n (fn [old] new)))
+;(def x 10)
+;(println x)
+;(assign #'x 20)
+;(println x)
+;(def ^:dynamic x 10)
+;(defn tryit [] x)
+;(println x)
+;(println (binding [x 20] x))
+;(println (binding [x 20] (tryit)))
+;(println x)
+;---------------------------------------------------------------------------------------------------
+;(import '[clojure.lang Var])
+;(Var/create 42); root binding
+;(let [V (.setDynamic (Var/create 0))]
+;  (do (var-get V); 0
+;      (with-bindings {V 42} (var-get V)))); 42
+;(the-ns 'snobol4.core)
+;(ns-map 'snobol4.core)
+;(ns-aliases 'snobol4.string)
+;(ns-publics 'snobol4.core)
+;(set! symbol expr)
+;---------------------------------------------------------------------------------------------------
+(defn reference [N]
+  (if-let [ns-name (namespace N)]
+    (when-let [ns-ref
+								      (or (get (ns-aliases *ns*) (symbol ns-name))
+								          (find-ns (symbol ns-name)))]
+      (get (ns-publics ns-ref) (symbol (name N))))
+    (get (ns-map *ns*) (symbol (name N)))))
+(defn $$ [N] (if-let [V (reference N)] (var-get V) "")); (var-get (eval (list 'var N)))
+;---------------------------------------------------------------------------------------------------
+(declare RUN)
+(declare dq path part)
+(declare Roman n)
+(defn dq [_path] (binding [dq "" path _path part ""] (RUN :dq) dq));DEFINE('dq(path)part')
+(defn Roman-binding [_n] (binding [Roman "" n _n] (RUN :Roman) Roman))
+(defn Roman-save-restore [_n]
+ '(let [_Roman ($$ 'Roman) __n ($$ 'n)]
+    (def Roman "")
+    (def n _n)
+    (RUN :Roman)
+    (def n __n)
+    (let [__Roman Roman]
+      (def Roman _Roman)
+      __Roman)))
+
+;---------------------------------------------------------------------------------------------------
+(def LABELS-Roman {3 :Roman 6 :RomanEnd 8 :END})
+(def STMTNOS-Roman {:Roman 3 :RomanEnd 6 :END 8})
+(def CODE-Roman {
 1         ['(DEFINE "Roman(n)units")]
 2         ['(= romanXlat "0,1I,2II,3III,4IV,5V,6VI,7VII,8VIII,9IX,") {:G :RomanEnd}]
 :Roman    ['(?= n [(RPOS 1) (. (LEN 1) units)]) {:F :RETURN}]
@@ -233,52 +304,99 @@
 7         ['(Roman "MMXXI")]
 :END      []
 })
-(defn Roman [n]
-  )
 ;---------------------------------------------------------------------------------------------------
-(defn $ [S P]) (defn =$ [N S])
-(defn . [S P]) (defn =. [N S])
-(defn LEN [I]) (defn Len [I])
-(defn POS [I]) (defn Pos [I])
-(defn RPOS [I]) (defn RPos [I])
-(defn BREAK [S]) (defn Break [S])
-
-(defn ?  [S P])
-(defn ?= [S P])
-(defn REPLACE [S1 S2 S3])
-(defn DEFINE [proto])
+(def LABELS {1 :START 21 :END})
+(def STMTNOS {:START 1 :END 21})
+(def CODE {
+:START    []
+2         ['(= BD [(| "BE" "B") (| "AR" "A") (| "DS" "D")])]
+3         ['(? "BEARDS" BD)]
+4         ['(? "BEARD" BD)]
+5         ['(? "BEADS" BD)]
+6         ['(? "BEAD" BD)]
+7         ['(? "BARDS" BD)]
+8         ['(? "BARD" BD)]
+9         ['(? "BADS" BD)]
+10        ['(? "BAD" BD)]
+11        ['(? "BATS" BD)]
+12        ['(= BR [(| "B" "R") (| "E" "EA") (| "D" "DS")])]
+13        ['(? "BED" BR)]
+14        ['(? "BEDS" BR)]
+15        ['(? "BEAD" BR)]
+16        ['(? "BEADS" BR)]
+17        ['(? "RED" BR)]
+18        ['(? "REDS" BR)]
+19        ['(? "READ" BR)]
+20        ['(? "READS" BR)]
+:END      []
+})
+;---------------------------------------------------------------------------------------------------
+(defn ALT     [& ps])
+(defn SEQ     [& ps])
+(defn |       [& Ps]   (apply list 'ALT Ps))
+(defn $       [P & Ns] (apply list '=$ P Ns)) (defn =$    [p n])
+(defn .       [P & Ns] (apply list '=. P Ns)) (defn =.    [p n])
+(defn LEN     [I]      (list 'Len I))
+(defn POS     [I]      (list 'Pos I))         (defn Pos   [i])
+(defn RPOS    [I]      (list 'RPos I))        (defn RPos  [i])
+(defn BREAK   [S]      (list 'Break S))       (defn Break [s])
+(defn ?       [S P])
+(defn ?=      ([N P] "") ([N P R] ""))
+(defn REPLACE [S1 S2 S3] "")
+(defn DEFINE  [proto] "")
+;---------------------------------------------------------------------------------------------------
+(defn Len$ [s len]; lazy
+  (if (<= len 0) s
+    (if (not (seq s)) nil
+		    (lazy-seq
+		      (cons
+		        (first s)
+		        (Len$ (rest s) (dec len)))))))
+(defn Len [s length]; eager
+  (loop [s s len length]
+		  (if (<= len 0) s; Success
+		    (if (not (seq s)) nil; Failure
+		      (recur (rest s) (dec len))))))
 
 (declare EVAL)
-(defn INVOKE [op & args]
+(deftrace INVOKE [op & args]
   (case op
-    $        (apply list '=$    args)
-    .        (apply list '=.    args)
-    LEN      (apply list 'Len   args)
-    POS      (apply list 'Pos   args)
-    RPOS     (apply list 'RPos  args)
-    BREAK    (apply list 'Break args)
-    ?        (let [[S P] args] (? (str S) P))
-    =        (let [[N r] args] (eval (trace (list 'def N r))) r)
-    ?=       (let [[N P R] args, r (str "Winner is: " (EVAL R))]
-               (eval (trace (list 'def N r))) r)
+    |        (apply | args)
+    $        (apply $ args)
+    .        (apply . args)
+    LEN      (LEN (first args))
+    POS      (POS (first args))
+    RPOS     (RPOS (first args))
+    BREAK    (BREAK (first args))
+    ?        (let [[s p] args] (? (str s) p))
+    =        (let [[N r] args]
+               (if-not (list? r)         ; (apply 'def n r)
+                 (eval (list 'def N r))  ; (eval (list 'def n r))
+                 (do                     ; (eval (read-string (str "(def " n " '" r ")")))
+                   (eval (list 'def N))  ; use (load-string "(...) (...)") for multiple
+                   (alter-var-root (trace (reference N)) (fn [oldr] r))
+                 )
+               ) r)
+    ?=       (let [[n p R] args, r (EVAL R)]
+               (eval (trace (list 'def n r))) r)
     DEFINE   (let [[proto] args]
                (let [spec (apply vector (re-seq #"[0-9A-Z_a-z]+" proto))]
-                 (let [[N & params] spec, F (symbol N)]
-                   (eval (trace (list 'defn F ['& 'args] ""))) "")))
-    REPLACE  (let [[S1 S2 S3] args] (REPLACE S1 S2 S3))
+                 (let [[n & params] spec, f (symbol n)]
+                   (eval (trace (list 'defn f ['& 'args] ""))) "")))
+    REPLACE  (let [[s1 s2 s3] args] (REPLACE s1 s2 s3))
     Roman    "";(apply Roman args)
   )
 )
 ;---------------------------------------------------------------------------------------------------
-(defn EVAL [E]
+(deftrace EVAL [E]
   (when E
       (cond
         (nil? E) E
         (float? E) E
         (string? E) E
         (integer? E) E
-        (symbol? E) (eval E)
-        (vector? E) (apply vector (map EVAL E))
+        (symbol? E) ($$ E)
+        (vector? E) (apply list 'SEQ (map EVAL E))
         (list? E)
           (let [[op & parms] E]
             (cond
@@ -293,66 +411,32 @@
       ))
 )
 ;---------------------------------------------------------------------------------------------------
-(defn RUN [code]
-  (loop [current 1]
-    (let [label (LABELS current)]
-      (if-let [key (if label label current)]
-            (if-let [stmt (code key)]
-              (let [ferst (first stmt)
-                    seqond (second stmt)
-                    goto (if (map? ferst) ferst seqond)
-                    body (if (map? ferst) seqond ferst)]
-                (EVAL body)
-                (recur
-                  (cond
-                    (keyword? key) (inc (STMTNOS key))
-                    (string?  key) (inc (STMTNOS key))
-                    (integer? key) (inc key)
-                    )))
-     ))
-  ))
-)
-
-(defn runit []
-    (defn RPos [])
-    (defn Tab [])
-    (defn RTab [])
-    (defn Any [])
-    (defn NotAny [])
-    (defn Breakx [])
-
-    (defn TAB [I])
-    (defn RTAB [I])
-    (defn ANY [S])
-    (defn NOTANY [S])
-    (defn BREAKX [S])
-
-    (defn EQ [x y] (= x y))
-    (defn NE [x y] (not= x y))
-    (defn LT [x y] (< x y))
-    (defn GT [x y] (> x y))
-    (defn LE [x y] (<= x y))
-    (defn GE [x y] (>= x y))
-    (defmacro Ident [])
-    (defn IDENT
-         ([]    true)
-         ([x]   (identical? x ""))
-         ([x y] (identical? x y))
-    )
-    (defmacro Differ [])
-    (defn DIFFER
-         ([]    false)
-         ([x]   (not (identical? x "")))
-         ([x y] (not (identical? x y)))
- )
-    (defn SIZE [O] (count O))
-    (defn TABLE [proto] {})
-    (defn ARRAY [proto] [])
-    (defn INVOKE [F args])
-    (defn . [P N])
-    ;(defn = [S R])
-    (defn ? [S P])
-    (defn ?= ([S P]) ([S P R]))
-;  (MakeItHappen)
-)
-(defn -main "SNOBOL4/Clojure." [& args] (RUN CODE))
+;(deftype Address [no label])
+;(defmethod key Address [a] (if (.label a) (.label a) (.no a)))
+;(->Address at); construct via factory
+;(Address. at); construct
+;---------------------------------------------------------------------------------------------------
+;(definline skey [address] (let [[no label] address] (if label label no)))
+(defn skey [address] (let [[no label] address] (if label label no)))
+(defn saddr [at]  (cond (keyword? at) [(STMTNOS at) at]
+											 								    (string?  at) [(STMTNOS at) at]
+																				    (integer? at) [at (LABELS at)]))
+(deftrace RUN [at]
+  (loop [current       (saddr at)]
+      (if-let [key     (skey current)]
+		      (if-let [stmt  (CODE key)]
+		        (let [ferst  (first stmt)
+		              seqond (second stmt)
+		              goto   (if (map? ferst) ferst seqond)
+		              body   (if (map? ferst) seqond ferst)]
+            (if (EVAL body)
+              (if (contains? goto :G)   (recur (saddr (:G goto)))
+                (if (contains? goto :S) (recur (saddr (:S goto)))
+                                        (recur (saddr (inc (current 0))))))
+              (if (contains? goto :G)   (recur (saddr (:G goto)))
+                (if (contains? goto :F) (recur (saddr (:F goto)))
+                                        (recur (saddr (inc (current 0))))))
+            )
+		        )))))
+;---------------------------------------------------------------------------------------------------
+(defn -main "SNOBOL4/Clojure." [& args] (RUN 1))
