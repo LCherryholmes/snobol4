@@ -1,13 +1,10 @@
-*//---------------------------------------------------------------------------------------------------------
-*// $Workfile: Beauty.sno $ $Revision: 5 $ $Date: 3/10/05 11:42a $
-*//---------------------------------------------------------------------------------------------------------
-*//
-*// Program:       SNOBOL4 Beautifier
-*// Author:        Lon Cherryholmes
-*// First Created: 2002/12/10
-*// Last Modified: 2005/01/16
-*// Version:       0.25
-*//
+*-----------------------------------------------------------------------------------------------------------
+* Program:       SNOBOL4 Beautifier
+* Author:        Lon Cherryholmes
+* First Created: 2002/12/10
+* Last Modified: 2005/01/16
+* Version:       0.25
+*
 START
 -INCLUDE 'global.inc'
 -INCLUDE 'is.inc'
@@ -31,25 +28,25 @@ START
 
  			&FULLSCAN      =  1
                   &MAXLNGTH      =  524288
-*//
-*//               Four tab-stops defined for the pretty-print routine.
-*//               ppStop[1] - subject
-*//               ppStop[2] - pattern or =
-*//               ppStop[3] - object of assignment
-*//               ppStop[4] - goto field
-*//               ppSmBump - the amount of extra space when within multi-line nesting
-*//               ppLgBump - the amount of extra space when no goto field is present
-*//
+*
+*                 Four tab-stops defined for the pretty-print routine.
+*                 ppStop[1] - subject
+*                 ppStop[2] - pattern or =
+*                 ppStop[3] - object of assignment
+*                 ppStop[4] - goto field
+*                 ppSmBump - the amount of extra space when within multi-line nesting
+*                 ppLgBump - the amount of extra space when no goto field is present
+*
                   ppStop         =  ARRAY('1:4')
-                  ppStop[1]      =  18 ;*// 11
-                  ppStop[2]      =  33 ;*// 28
-                  ppStop[3]      =  36 ;*// 31
-                  ppStop[4]      =  81 ;*// 66
+                  ppStop[1]      =  18 ;*   11
+                  ppStop[2]      =  33 ;*   28
+                  ppStop[3]      =  36 ;*   31
+                  ppStop[4]      =  81 ;*   66
                   ppSmBump       =  6
                   ppLgBump       =  21
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
-*//               Parser patterns:
-*//
+*---------------- -------------- -- ----------------------------------------------- ------------------------
+*                 Parser patterns:
+*
                   snoInteger     =  SPAN(digits)
                   snoDQ          =  '"' BREAK('"' nl) '"'
                   snoSQ          =  "'" BREAK("'" nl) "'"
@@ -250,11 +247,11 @@ START
 +                                   (icase('END') (' ' BREAK(nl) nl | nl) ARBNO(BREAK(nl) nl) | epsilon)
 +                                   nPop()
 
-*//============== ============== == =============================================== ========================
-*//               Pretty-print routine.
-*//               null = pp(x=tree)
-*//               Recursive routine given a tree, to output SNOBOL4 code.
-*//
+*================ ============== == =============================================== ========================
+*                 Pretty-print routine.
+*                 null = pp(x=tree)
+*                 Recursive routine given a tree, to output SNOBOL4 code.
+*
                   DEFINE('pp(x)c,i,n,s,t,v')                                        :(ppEnd)
 pp                DIFFER(x)                                                         :F(RETURN)
                   t              =  t(x)
@@ -263,12 +260,12 @@ pp                DIFFER(x)                                                     
                   c              =  c(x)
                   OUTPUT         =  GT(doDebug, 0) 'pp(' t ')' ', sz = ' level '+' SIZE(v) ', v = ' v
                   DIFFER(t)                                                         :S($('pp_' t))F(RETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_snoParse       ppWidth        =  ppStop[4]                                       :(pp_0)
 pp_0              i              =  0
 pp_1              i              =  LT(i, n) i + 1                                  :F(RETURN)
                   pp(c[i])                                                          :(pp_1)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_snoBuiltinVar  Gen(ss(x))                                                        :S(RETURN)F(error)
 pp_snoFunction    Gen(ss(x))                                                        :S(RETURN)F(error)
 pp_snoId          Gen(ss(x))                                                        :S(RETURN)F(error)
@@ -279,14 +276,14 @@ pp_snoReal        Gen(ss(x))                                                    
 pp_snoSpecialNm   Gen(ss(x))                                                        :S(RETURN)F(error)
 pp_snoString      Gen(ss(x))                                                        :S(RETURN)F(error)
 pp_snoUnprotKwd   Gen(ss(x))                                                        :S(RETURN)F(error)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_:()            Gen(ss(x))                                                        :S(RETURN)F(error)
 pp_:<>            Gen(ss(x))                                                        :S(RETURN)F(error)
 pp_:S()           Gen(ss(x))                                                        :S(RETURN)F(error)
 pp_:S<>           Gen(ss(x))                                                        :S(RETURN)F(error)
 pp_:F()           Gen(ss(x))                                                        :S(RETURN)F(error)
 pp_:F<>           Gen(ss(x))                                                        :S(RETURN)F(error)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 ppUnOp            Gen(ss(x, ppWidth - GetLevel()))                                  :S(RETURN)
                   Gen(t)
                   pp(c[1])                                                          :(RETURN)
@@ -298,7 +295,7 @@ ppBinOp           Gen(ss(x, ppWidth - GetLevel()))                              
                   IncLevel()
                   GenTab()
                   pp(c[2])                                                          :(RETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_!              EQ(n, 1)                                                          :S(ppUnOp)
 pp_#              EQ(n, 1)                                                          :S(ppUnOp)
                   EQ(n, 2)                                                          :S(ppBinOp)F(error)
@@ -327,15 +324,15 @@ pp_@              EQ(n, 1)                                                      
 pp_^              EQ(n, 2)                                                          :S(ppBinOp)F(error)
 pp_~              EQ(n, 1)                                                          :S(ppUnOp)
                   EQ(n, 2)                                                          :S(ppBinOp)F(error)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_snoComment     SetLevel(0)
                   GenSetCont()
                   Gen(v(c[1]) nl)                                                   :(RETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_snoControl     SetLevel(0)
                   GenSetCont()
                   Gen(v(c[1]) nl)                                                   :(RETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_snoStmt        SetLevel(0)
                   GenSetCont('+')
                   ppWidth        =  ppStop[4]
@@ -385,7 +382,7 @@ pp_snoStmt7       DIFFER(t(ppGo1))                                              
                   DIFFER(t(ppGo2))                                                  :F(pp_snoStmt9)
                   pp(ppGo2)                                                         :(pp_snoStmt9)
 pp_snoStmt9       Gen(nl)                                                           :(RETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_snoExprList    Gen(ss(x, ppWidth - GetLevel()))                                  :S(RETURN)
                   pp(c[1])
                   i              =  1
@@ -396,7 +393,7 @@ pp_snoExprList0   i              =  LT(i, n) i + 1                              
                   IncLevel()
                   GenTab()
                   pp(c[i])                                                          :(pp_snoExprList0)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_,              Gen(ss(x, ppWidth - GetLevel()))                                  :S(RETURN)
                   Gen('(')
                   IncLevel()
@@ -413,7 +410,7 @@ pp_,0             i              =  LT(i, n) i + 1                              
 pp_,1             Gen(nl)
                   DecLevel()
                   Gen(')')                                                          :(RETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_|              EQ(n, 1)                                                          :S(ppUnOp)
                   Gen(ss(x, ppWidth - GetLevel()))                                  :S(RETURN)
                   pp(c[1])
@@ -425,13 +422,13 @@ pp_|0             i              =  LT(i, n) i + 1                              
                   IncLevel()
                   GenTab()
                   pp(c[i])                                                          :($'pp_|0')
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_..             Gen(ss(x, ppWidth - GetLevel()))                                  :S(RETURN)
                   i              =  0
 pp_..0            i              =  LT(i, n) i + 1                                  :F(RETURN)
                   pp(c[i])
                   (LT(i, n) Gen(nl))                                                :($'pp_..0')
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_[]             Gen(ss(x, ppWidth - GetLevel()))                                  :S(RETURN)
                   pp(c[1])
                   i              =  1
@@ -444,7 +441,7 @@ pp_[]0            i              =  LT(i, n) i + 1                              
                   DecLevel()
                   Gen(']')
                   (LT(i, n) Gen(nl))                                                :($'pp_[]0')
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_()             Gen(ss(x, ppWidth - GetLevel()))                                  :S(RETURN)
                   Gen('(')
                   IncLevel()
@@ -453,7 +450,7 @@ pp_()             Gen(ss(x, ppWidth - GetLevel()))                              
                   Gen(nl)
                   DecLevel()
                   Gen(')')                                                          :(RETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 pp_snoCall        Gen(ss(x, ppWidth - GetLevel()))                                  :S(RETURN)
                   pp(c[1])
                   Gen('(' nl)
@@ -464,11 +461,11 @@ pp_snoCall        Gen(ss(x, ppWidth - GetLevel()))                              
                   DecLevel()
                   Gen(')')                                                          :(RETURN)
 ppEnd
-*//============== ============== == =============================================== ========================
-*//               Stringize Subject
-*//               string = ss(x=tree, len=integer)
-*//               Recursive function given a tree, to return SNOBOL4 code as a string.
-*//
+*================ ============== == =============================================== ========================
+*                 Stringize Subject
+*                 string = ss(x=tree, len=integer)
+*                 Recursive function given a tree, to return SNOBOL4 code as a string.
+*
                   DEFINE('ss(x,len)c,c1,c2,i,n,s,t,v')                              :(ssEnd)
 ss                DIFFER(x)                                                         :F(RETURN)
                   len            =  IDENT(len) 1024
@@ -479,7 +476,7 @@ ss                DIFFER(x)                                                     
                   c              =  c(x)
                   OUTPUT         =  GT(doDebug, 0) 'ss(' t ')' ', sz = ' level '+' SIZE(v) ', v = ' v
                   DIFFER(t)                                                         :S($('ss_' t))F(RETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 ss_snoBuiltinVar  ss             =  upr(v)                                          :(ss_atomic)
 ss_snoFunction    ss             =  upr(v)                                          :(ss_atomic)
 ss_snoId          ss             =  v                                               :(ss_atomic)
@@ -493,18 +490,18 @@ ss_snoSpecialNm   ss             =  upr(v)                                      
 ss_snoString      ss             =  v                                               :(ss_atomic)
 ss_snoUnprotKwd   ss             =  upr(v)                                          :(ss_atomic)
 ss_atomic         LE(SIZE(ss), len)                                                 :S(RETURN)F(FRETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 ss_:()            ss             =  '(' ss(c[1], len - 2) ')'                       :S(RETURN)F(error)
 ss_:<>            ss             =  '<' ss(c[1], len - 2) '>'                       :S(RETURN)F(error)
 ss_:S()           ss             =  'S(' ss(c[1], len - 3) ')'                      :S(RETURN)F(error)
 ss_:S<>           ss             =  'S<' ss(c[1], len - 3) '>'                      :S(RETURN)F(error)
 ss_:F()           ss             =  'F(' ss(c[1], len - 3) ')'                      :S(RETURN)F(error)
 ss_:F<>           ss             =  'F<' ss(c[1], len - 3) '>'                      :S(RETURN)F(error)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 ssUnOp            ss             =  t ss(c[1], len - SIZE(t))                       :S(RETURN)F(FRETURN)
 ssBinOp           ss             =  ss(c[1], len)                                   :F(FRETURN)
                   ss             =  ss ' ' t ' ' ss(c[2], len - SIZE(ss) - SIZE(t) - 2) :S(RETURN)F(FRETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 ss_!              EQ(n, 1)                                                          :S(ssUnOp)
 ss_#              EQ(n, 1)                                                          :S(ssUnOp)
                   EQ(n, 2)                                                          :S(ssBinOp)F(error)
@@ -533,46 +530,46 @@ ss_@              EQ(n, 1)                                                      
 ss_^              EQ(n, 2)                                                          :S(ssBinOp)F(error)
 ss_~              EQ(n, 1)                                                          :S(ssUnOp)
                   EQ(n, 2)                                                          :S(ssBinOp)F(error)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 ss_snoExprList    ss             =  ss(c[1], len)                                   :F(FRETURN)
                   i              =  1
 ss_snoExprList0   i              =  LT(i, n) i + 1                                  :F(RETURN)
                   ss             =  ss ', ' ss(c[i], len - SIZE(ss) - 2)            :S(ss_snoExprList0)F(FRETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 ss_,              ss             =  '(' ss(c[1], len - 4)                           :F(FRETURN)
                   i              =  1
 ss_,0             i              =  LT(i, n) i + 1                                  :F($'ss_,1')
                   ss             =  ss ', ' ss(c[i], len - SIZE(ss) - 3)            :S($'ss_,0')F(FRETURN)
 ss_,1             ss             =  ss ')'                                          :(RETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 ss_|              EQ(n, 1)                                                          :S(ssUnOp)
                   ss             =  ss(c[1], len)                                   :F(FRETURN)
                   i              =  1
 ss_|0             i              =  LT(i, n) i + 1                                  :F(RETURN)
                   ss             =  ss ' | ' ss(c[i], len - SIZE(ss) - 3)           :S($'ss_|0')F(FRETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 ss_..             ss             =  ss(c[1], len)                                   :F(FRETURN)
                   i              =  1
 ss_..0            i              =  LT(i, n) i + 1                                  :F(RETURN)
                   ss             =  ss ' ' ss(c[i], len - SIZE(ss) - 1)             :S($'ss_..0')F(FRETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 ss_[]             ss             =  ss(c[1], len)                                   :F(FRETURN)
                   i              =  1
 ss_[]0            i              =  LT(i, n) i + 1                                  :F(RETURN)
                   ss             =  ss '[' ss(c[i], len - SIZE(ss) - 2) ']'         :S($'ss_[]0')F(FRETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 ss_()             ss             =  '(' ss(c[1], len - 2) ')'                       :S(RETURN)F(FRETURN)
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
 ss_snoCall        ss             =  ss(c[1]) '(' ss(c[2], len - SIZE(v) - 2) ')'    :S(RETURN)F(FRETURN)
 ssEnd
-*//============== ============== == =============================================== ========================
+*================ ============== == =============================================== ========================
                   DEFINE('visit(x,fnc)i')                                           :(visitEnd)
 visit             APPLY(fnc, x)                                                     :F(RETURN)
                   i              =  0
 visit_1           i              =  LT(i, n(x)) i + 1                               :F(RETURN)
                   visit(c(x)[i], fnc)                                               :(visit_1)
 visitEnd
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
                   DEFINE('findRefs(x)n,v')
                   snoRefs        =                                                  :(findRefsEnd)
 findRefs          DIFFER(x)                                                         :F(RETURN)
@@ -588,7 +585,7 @@ findRefs_9        v              POS(0) SPAN('0123456789' &UCASE '_') RPOS(0)   
                   snoRefs        =  DIFFER(snoRefs) snoRefs ' ' v                   :S(FRETURN)
                   snoRefs        =  IDENT(snoRefs) v                                :(FRETURN)
 findRefsEnd
-*//-------------- -------------- -- ----------------------------------------------- ------------------------
+*---------------- -------------- -- ----------------------------------------------- ------------------------
                   DEFINE('refs(p)c,n,s,subj')                                       :(refsEnd)
 refs              c              =  c(p)
                   n              =  0
@@ -604,12 +601,12 @@ refs_1            subj           =  ss(c(c[n])[2])
                   visit(c(c[n])[5], .findRefs)
                   OUTPUT         =  LPAD(s, 3, 0) ': ' RPAD(subj, 38) ' ' snoRefs   :(refs_0)
 refsEnd
-*//============== ============== == =============================================== ========================
-*//               Main program.
-*//               Read a SNOBOL4 program.
-*//               Parse the SNOBOL4 program.
-*//               Generate a more beautiful SNOBOL4 program.
-*//
+*================ ============== == =============================================== ========================
+*                 Main program.
+*                 Read a SNOBOL4 program.
+*                 Parse the SNOBOL4 program.
+*                 Generate a more beautiful SNOBOL4 program.
+*
                   doDebug        =  0
                   snoSpace       =  SPAN(' ' tab) | epsilon
 main00            snoLine        =  INPUT                                           :F(END)
@@ -629,5 +626,5 @@ mainErr1          OUTPUT         =  'Parse Error'
                   OUTPUT         =  snoSrc                                          :(END)
 mainErr2          OUTPUT         =  'Internal Error'
                   OUTPUT         =  snoSrc                                          :(END)
-*//-INCLUDE 'debug.sno'
+*-INCLUDE 'debug.sno'
 END

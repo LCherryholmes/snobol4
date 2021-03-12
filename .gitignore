@@ -18,3 +18,5 @@ pom.xml.asc
 /src/sno/ebnf-*.ebnf
 /src/sno/ebnf-*.lisp
 /*.out
+/.idea
+/out

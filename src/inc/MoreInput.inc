@@ -1,13 +1,13 @@
-*//-------- ----------- --- ----------------------------------------------- ------------------------
+*---------- ----------- --- ----------------------------------------------- ------------------------
             DEFINE('Tack(p,o)')                                             :(Tack_end)
 Tack        Tack        =   (DIFFER(p) p '_', NULL) o                       :(RETURN)
 Tack_end
-*//-------- ----------- --- ----------------------------------------------- ------------------------
+*---------- ----------- --- ----------------------------------------------- ------------------------
             DEFINE('SQL_type(SQL_type)')                                    :(SQL_type_end)
 SQL_type    SQL_type    =   SQL_type IDENT(SQL_type, 'varchar') "(max)"     :S(RETURN)
             SQL_type    =   SQL_type IDENT(SQL_type, 'nvarchar') "(max)"    :(RETURN)
 SQL_type_end
-*//-------- ----------- --- ----------------------------------------------- ------------------------
+*---------- ----------- --- ----------------------------------------------- ------------------------
             DEFINE('SQL_CREATE_TABLE(nmSQL,o,level)'
 +               'SQL,aS,f,has_city,iK,iS,sK,st'
 +           ,   .SQL_CT
@@ -24,8 +24,8 @@ SQL_CT      aS          =   (DIFFER(tS[o]) SORT(tS[o]), NULL)
 SQL_CT1     sK          =   DIFFER(tK[iK = iK + 1]) tK[iK]                  :F(SQL_CT2)
             SQL         =   SQL (EQ(iK, 1) "(", ",") "   "
             SQL         =   SQL sK "_id$ int"
-*//         SQL         =   SQL (DIFFER(sK, o) sK "_id$", "id$") " int"
-            SQL         =   SQL EQ(level, 1) EQ(iK, 1) " IDENTITY(1, 1)"    
+*           SQL         =   SQL (DIFFER(sK, o) sK "_id$", "id$") " int"
+            SQL         =   SQL EQ(level, 1) EQ(iK, 1) " IDENTITY(1, 1)"
             SQL         =   SQL " NOT NULL" nl                              :(SQL_CT1)
 SQL_CT2     SQL         =   SQL EQ(level, 1) ',   stamp$ timestamp NOT NULL' nl
             SQL         =   SQL EQ(level, 1) ',   topic_id$ int NOT NULL' nl
@@ -42,16 +42,16 @@ SQL_CT4     SQL         =   SQL ",   CONSTRAINT PK_" o
             iK          =   0
 SQL_CT5     sK          =   DIFFER(tK[iK = iK + 1]) tK[iK]                  :F(SQL_CT6)
             SQL         =   SQL (EQ(iK, 1) "(", ", ") sK "_id$"
-*//         SQL         =   SQL (EQ(iK, 1) "(", ", ") (DIFFER(sK, o) sK "_id$", "id$")
+*           SQL         =   SQL (EQ(iK, 1) "(", ", ") (DIFFER(sK, o) sK "_id$", "id$")
                                                                             :(SQL_CT5)
 SQL_CT6     SQL         =   SQL ")" nl
-            SQL         =   SQL ")" nl      
-            TERMINAL    =   SQL ;*// 'CREATE TABLE ' o
+            SQL         =   SQL ")" nl
+            TERMINAL    =   SQL ;* 'CREATE TABLE ' o
             $nmSQL      =   $nmSQL SQL                                      :(RETURN)
-*//         SQL_A_ExecDirect(hStmt, SQL)                                    :F(SQLFail)
-*//         SQL_EndTranCommit()                                             :S(RETURN)F(SQLFail)
+*           SQL_A_ExecDirect(hStmt, SQL)                                    :F(SQLFail)
+*           SQL_EndTranCommit()                                             :S(RETURN)F(SQLFail)
 SQL_CT_End
-*//-------- ----------- --- ----------------------------------------------- ------------------------
+*---------- ----------- --- ----------------------------------------------- ------------------------
             DEFINE('SQL_ALTER_TABLE_ADD_COLUMN(nmSQL,o,f,st)SQL'
 +           , .SQL_AT_AddC
 +           )                                                               :(SQL_AT_AddC_End)
@@ -59,10 +59,10 @@ SQL_AT_AddC SQL         =   "ALTER TABLE " o
 +                           " ADD " f " " SQL_type(st) " NULL" nl
             TERMINAL    =   SQL
             $nmSQL      =   $nmSQL SQL                                      :(RETURN)
-*//         SQL_A_ExecDirect(hStmt, SQL)                                    :F(SQLFail)
-*//         SQL_EndTranCommit()                                             :S(RETURN)F(SQLFail)
+*           SQL_A_ExecDirect(hStmt, SQL)                                    :F(SQLFail)
+*           SQL_EndTranCommit()                                             :S(RETURN)F(SQLFail)
 SQL_AT_AddC_End
-*//-------- ----------- --- ----------------------------------------------- ------------------------
+*---------- ----------- --- ----------------------------------------------- ------------------------
             DEFINE('SQL_ALTER_TABLE_ALTER_COLUMN(nmSQL,o,f,st)SQL'
 +           , .SQL_AT_AltC
 +           )                                                               :(SQL_AT_AltC_End)
@@ -70,10 +70,10 @@ SQL_AT_AltC SQL         =   "ALTER TABLE " o
 +                           " ALTER COLUMN " f " " SQL_type(st) " NULL" nl
             TERMINAL    =   SQL
             $nmSQL      =   $nmSQL SQL                                      :(RETURN)
-*//         SQL_A_ExecDirect(hStmt, SQL)                                    :F(SQLFail)
-*//         SQL_EndTranCommit()                                             :S(RETURN)F(SQLFail)
+*           SQL_A_ExecDirect(hStmt, SQL)                                    :F(SQLFail)
+*           SQL_EndTranCommit()                                             :S(RETURN)F(SQLFail)
 SQL_AT_AltC_End
-*//-------- ----------- --- ----------------------------------------------- ------------------------
+*---------- ----------- --- ----------------------------------------------- ------------------------
             DEFINE('SQL_INSERT(nmSQL,x,o,level)SQL,f,has_city,i,n,st,t,v')  :(SQL_INSERT_End)
 SQL_INSERT  IDENT(t(x), '{}')                                               :F(error)
             has_city    =   ( ?(o ? POS(0) 'CityGrid') TRUE
@@ -82,7 +82,7 @@ SQL_INSERT  IDENT(t(x), '{}')                                               :F(e
 +                           , ?(o ? POS(0) 'Geo') TRUE
 +                           , FALSE
 +                           )
-*//         SQL         =   SQL EQ(level, 1) 'DECLARE @id$ int' nl
+*           SQL         =   SQL EQ(level, 1) 'DECLARE @id$ int' nl
             SQL         =   SQL "INSERT INTO " o " ("
             n           =   0
             i           =   0
@@ -90,12 +90,12 @@ SQL_INSERT1 i           =   LT(i, tK[0]) i + 1                              :F(S
             n           =   (GT(level, 1) n + 1, GT(i, 1) n + 1)            :F(SQL_INSERT1)
             f           =   tK[i]
             SQL         =   SQL GT(n, 1) ", "
-            SQL         =   SQL f "_id$"              
-*//         SQL         =   SQL (DIFFER(f, o) f "_id$", "id$")              
+            SQL         =   SQL f "_id$"
+*           SQL         =   SQL (DIFFER(f, o) f "_id$", "id$")
                                                                             :(SQL_INSERT1)
 SQL_INSERT2 SQL         =   SQL EQ(level, 1) GT(n = n + 1, 1) ", "
             SQL         =   SQL EQ(level, 1) "topic_id$"
-            SQL         =   SQL EQ(level, 1) EQ(has_city, TRUE) GT(n = n + 1, 1) ", " 
+            SQL         =   SQL EQ(level, 1) EQ(has_city, TRUE) GT(n = n + 1, 1) ", "
             SQL         =   SQL EQ(level, 1) EQ(has_city, TRUE) "city_id$"
             i           =   0
 SQL_INSERT3 i           =   LT(i, n(x)) i + 1                               :F(SQL_INSERT4)
@@ -107,7 +107,7 @@ SQL_INSERT3 i           =   LT(i, n(x)) i + 1                               :F(S
             f           =   IDENT(f, 'schema') '[' f ']'
             SQL         =   SQL ", " f                                      :(SQL_INSERT3)
 SQL_INSERT4 SQL         =   SQL ")" nl
-*//         SQL         =   SQL EQ(level, 1) 'OUTPUT INSERTED.' o '_id$' nl
+*           SQL         =   SQL EQ(level, 1) 'OUTPUT INSERTED.' o '_id$' nl
             SQL         =   SQL "VALUES ("
             n           =   0
             i           =   0
@@ -127,7 +127,7 @@ SQL_INSERT7 i           =   LT(i, n(x)) i + 1                               :F(S
             v           =   v(c(c(x)[i])[2])
             st          =   (DIFFER(tS[o][f]) tS[o][f], IDENT(t, 'Null'))   :F(error)
             (DIFFER(st) DIFFER(tTypes[st]))                                 :F(SQL_INSERT7)
-            v           =   (   IDENT(t, 'Null') 
+            v           =   (   IDENT(t, 'Null')
 +                           ,   IDENT(t, 'Bool') IDENT(v, 'true') TRUE
 +                           ,   IDENT(t, 'Bool') IDENT(v, 'false') FALSE
 +                           ,   v
@@ -145,21 +145,21 @@ SQL_INSERT7 i           =   LT(i, n(x)) i + 1                               :F(S
             SQL         =   SQL IDENT(st, 'nvarchar') "N'" SqlSQize(v) "'"  :S(SQL_INSERT7)
             TERMINAL    =   i ' ' f ' ' t ' ' st ' ' n ' "' v '"'           :(error)
 SQL_INSERT8 SQL         =   SQL ')' nl
-*//         TERMINAL    =   SQL
-*//         hInsert     =   SQL_AllocStmt()                                 :F(SQLFail)
-*//         SQL_W_ExecDirect(hInsert, utf8_to_wstr(SQL))                    :F(FRETURN)
-*//         SQL_EndTranCommit()                                             :F(SQLFail)
+*           TERMINAL    =   SQL
+*           hInsert     =   SQL_AllocStmt()                                 :F(SQLFail)
+*           SQL_W_ExecDirect(hInsert, utf8_to_wstr(SQL))                    :F(FRETURN)
+*           SQL_EndTranCommit()                                             :F(SQLFail)
             SQL         =   SQL EQ(level, 1) "SET @id$ = @@IDENTITY" nl     :F(SQL_INSERT9)
-*//         SQL_Fetch(hInsert)                                              :F(SQLFail)
-*//         tK['$' tK[1]] = SQL_GetData(hInsert, 1)                         :F(SQLFail)
-SQL_INSERT9 
-*//         SQL_FreeStmt(hInsert)                                           :S(RETURN)F(SQLFail)
+*           SQL_Fetch(hInsert)                                              :F(SQLFail)
+*           tK['$' tK[1]] = SQL_GetData(hInsert, 1)                         :F(SQLFail)
+SQL_INSERT9
+*           SQL_FreeStmt(hInsert)                                           :S(RETURN)F(SQLFail)
             $nmSQL      =   $nmSQL SQL                                      :(RETURN)
 SQL_INSERT_End
-*//-------- ----------- --- ----------------------------------------------- ------------------------
-*//------------ ------------------- --- ------------------------------------------------------------
+*---------- ----------- --- ----------------------------------------------- ------------------------
+*-------------- ------------------- --- ------------------------------------------------------------
                 &ALPHABET           ?   TAB(128) LEN(128) . non_ascii
-                tS                  =   TABLE()                                                     
+                tS                  =   TABLE()
                 tTypes              =   TABLE()
                 tTypes['null']      =   0
                 tTypes['bit']       =   1
@@ -170,8 +170,8 @@ SQL_INSERT_End
                 tTypes['real']      =   6
                 tTypes['datetime']  =   7
                 tTypes['varchar']   =   8
-                tTypes['nvarchar']  =   9                                       
-*//------------ ----------- --- ------------------------------------------- ------------------------
+                tTypes['nvarchar']  =   9
+*-------------- ----------- --- ------------------------------------------- ------------------------
                 DEFINE('Schema(nmSQL,x,o,p,level,is_first)'
 +                   'cx1,cx2,st0,st1,f,i,ist0,ist1,s,svp,t,v'
 +               ,   .Sch
@@ -182,16 +182,16 @@ Sch             Schema      =   Tack(p, o)
                 cx2         =   (DIFFER(c(x)) c(x)[2], NULL)
                 v           =   v(x)
                 t           =   DIFFER(t(x)) t(x)                           :S($('Sch_' t))F(error)
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Sch_JSON        Schema(nmSQL, c(x)[1], o, p, level + 1)                     :(RETURN)
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Sch_{}          is_first    =   (IDENT(tS[o]) TRUE, FALSE)
                 tS[o]       =   EQ(is_first, TRUE) TABLE()
                 i           =   0
 Sch_{}3         i           =   LT(i, n(x)) i + 1                           :F($'Sch_{}5')
                 Schema(nmSQL, c(x)[i], o, p, level + 1, is_first)           :($'Sch_{}3')
 Sch_{}5         (EQ(is_first, TRUE) SQL_CREATE_TABLE(nmSQL, o, level))      :(RETURN)
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Sch_[]          i           =   0
 Sch_[]3         i           =   LT(i, n(x)) i + 1                           :F(RETURN)
                 tK[0]       =   tK[0] + 1
@@ -199,7 +199,7 @@ Sch_[]3         i           =   LT(i, n(x)) i + 1                           :F(R
                 Schema(nmSQL, c(x)[i], o, p, level + 1)
                 tK[tK[0]]   =
                 tK[0]       =   tK[0] - 1                                   :($'Sch_[]3')
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Sch_:           f           =   Schema(nmSQL, cx1,,, level + 1)
                 (DIFFER(t(cx2), '{}') DIFFER(t(cx2), '[]'))                 :F($'Sch_:3')
                 st0         =   tS[o][f]
@@ -222,10 +222,10 @@ Sch_:2          tS[o][f]    =   st1
 Sch_:3          tS[o][f]    =   Schema(nmSQL, cx2, Tack(o, f), Tack(p, o), level + 1) :(RETURN)
 SchError        TERMINAL    =   'st0=' st0 ', st1=' st1
                 TERMINAL    =   'ist0=' ist0 ', ist1=' ist1                 :(END)
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Sch_Bool        Schema      =   'bit'                                       :(RETURN)
 Sch_Datetime    Schema      =   'datetime'                                  :(RETURN)
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Sch_Integer     INTEGER(v)                                                  :F(Sch_Integer64)
                 Schema      =   GE(v, 0) LE(v, 1) 'bit'                     :S(RETURN)
                 Schema      =   GE(v, 0) LE(v, 256) 'tinyint'               :S(RETURN)
@@ -236,31 +236,31 @@ Sch_Integer64   s           =   '+'
                 Schema      =   IDENT(s, '-')
 +                               LE(SIZE(v), 19)
 +                               LLE(LPAD(v, 19, 0), '9223372036854775808')
-+                               'bigint'                                    :S(RETURN) 
++                               'bigint'                                    :S(RETURN)
                 Schema      =   IDENT(s, '+')
 +                               LE(SIZE(v), 19)
 +                               LLE(LPAD(v, 19, 0), '9223372036854775807')
-+                               'bigint'                                    :S(RETURN) 
++                               'bigint'                                    :S(RETURN)
                 Schema      =   'varchar'                                   :(RETURN)
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Sch_Name        Schema      =   v                                           :(RETURN)
 Sch_Null        Schema      =   'null'                                      :(RETURN)
 Sch_Real        Schema      =   'real'                                      :(RETURN)
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Sch_String      Schema      =   ~(v ? ANY(non_ascii)) 'varchar'             :S(RETURN)
                 Schema      =   'nvarchar'                                  :(RETURN)
 SchEnd
-*//------------ ----------- --- ------------------------------------------- ------------------------
+*-------------- ----------- --- ------------------------------------------- ------------------------
                 DEFINE('Save(nmSQL,x,o,level)i,t')                          :(SaveEnd)
 Save            t           =   DIFFER(t(x)) t(x)                           :S($('Save_' t))F(error)
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Save_JSON       Save(nmSQL, c(x)[1], o, level + 1)                          :(RETURN)
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Save_{}         SQL_INSERT(nmSQL,x, o, level)
                 i           =   0
 Save_{}3        i           =   LT(i, n(x)) i + 1                           :F(RETURN)
                 Save(nmSQL, c(x)[i], o, level + 1)                          :($'Save_{}3')
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Save_[]         tK[0]       =   tK[0] + 1
                 tK[tK[0]]   =   o
                 i           =   0
@@ -270,9 +270,9 @@ Save_[]3        i           =   LT(i, n(x)) i + 1                           :F($
 Save_[]5        tK['$' o]   =
                 tK[tK[0]]   =
                 tK[0]       =   tK[0] - 1                                   :(RETURN)
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Save_:          Save(nmSQL, c(x)[2], o '_' v(c(x)[1]), level + 1)           :(RETURN)
-*//             ----------- --- ------------------------------------------- ------------------------
+*               ----------- --- ------------------------------------------- ------------------------
 Save_Bool
 Save_Datetime
 Save_Integer
@@ -281,4 +281,4 @@ Save_Null
 Save_Real
 Save_String                                                                 :(RETURN)
 SaveEnd
-*//------------ ----------- --- ------------------------------------------- ------------------------
+*-------------- ----------- --- ------------------------------------------- ------------------------

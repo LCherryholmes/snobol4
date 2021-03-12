@@ -5,6 +5,7 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [
     [org.clojure/clojure "1.10.1"]
+    [org.clojure/tools.trace "0.7.11"]
     [instaparse "1.4.10"]]
   :main ^:skip-aot snobol4.core
   :target-path "target/%s"

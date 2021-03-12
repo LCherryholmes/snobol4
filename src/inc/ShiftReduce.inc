@@ -11,7 +11,7 @@ Shift          v              POS(0) whitespace =
                s              =    tree(t, v)
                Push(s)
                OUTPUT         =    GT(xTrace, 3) 'Shift(' t ', ' v ')'
-*--            OUTPUT         =    GT(xTrace, 4) ' = ' TLump(s, 1024)
+*              OUTPUT         =    GT(xTrace, 4) ' = ' TLump(s, 1024)
                Shift          =    IDENT(v) .v(s)                                   :S(NRETURN)
                Shift          =    DIFFER(v) .dummy                                 :(NRETURN)
 ShiftEnd

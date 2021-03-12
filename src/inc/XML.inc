@@ -1,6 +1,6 @@
-*//-----------------------------------------------------------------------------------------------------
-*// XML.inc
-*//-------- --------------- --- -------------------------------------------------------- -----------------------------
+*-------------------------------------------------------------------------------------------------------
+* XML.inc
+*---------- --------------- --- -------------------------------------------------------- -----------------------------
             xmlWhite        =   SPAN(' ' tab lf cr ff vt)
             $'  '           =   FENCE(xmlWhite | epsilon)
             xmlComment      =   '<!--' BREAKX('-') '-->'
@@ -24,7 +24,7 @@
             $'?>'           =   $'  ' TY(1, '?>', '?>')
             xmlNUMBER       =   $'  ' TY(2, 'xmlNUMBER', xmlNUMBER)
             xmlSTRING       =   $'  ' TY(2, 'xmlSTRING', xmlSTRING)
-*//-------- --------------- --- -------------------------------------------------------- -----------------------------
+*---------- --------------- --- -------------------------------------------------------- -----------------------------
             xmlIdent        =   (xmlIDENT FENCE(':' xmlIDENT | epsilon)) $ xmlxIdent . xmlxIdent
             xmlData         =   xmlDATUM . xmlx . *Shift('Data', XMLDecode(xmlx))
             xmlName         =   *xmlIdent . *Shift('Name')
@@ -51,14 +51,14 @@
             xmlParser       =   $'<?' 'xml' $'  ' 'version="1.0"' $'  ' 'encoding="' ('UTF-8' | 'utf-8') '"' $'?>'
 +                               *xmlElement . *Reduce('XML', 1)
             xmlRecognizer   =   POS(0) FENCE *xmlParser $' ' RPOS(0)
-*//-------- --------------- --- -------------------------------------------------------- -----------------------------
+*---------- --------------- --- -------------------------------------------------------- -----------------------------
             xmlIdent        =   TY(1, 'xmlIdent', xmlIdent)
             xmlDatum        =   TZ(1, 'xmlDatum', xmlDatum)
             xmlAttribute    =   TZ(1, 'xmlAttribute', xmlAttribute)
             xmlElement      =   TZ(1, 'xmlElement', xmlElement)
             xmlRecognizer   =   epsilon $ t8Max
 +                               TZ(1, 'xmlRecognizer', xmlRecognizer)
-*//-----------------------------------------------------------------------------------------------------
+*-------------------------------------------------------------------------------------------------------
             xmlCh              = TABLE()
             xmlCh['iexcl']     = '¡'
             xmlCh['cent']      = '¢'
@@ -72,7 +72,7 @@
             xmlCh['ordf']      = 'ª'
             xmlCh['laquo']     = '«'
             xmlCh['not']       = '¬'
-*//         xmlCh['shy']       =
+*           xmlCh['shy']       =
             xmlCh['reg']       = '®'
             xmlCh['macr']      = '¯'
             xmlCh['deg']       = '°'
@@ -317,7 +317,7 @@
             xmlDec['8240'] = '‰'
             xmlDec['8364'] = '€'
             xmlDec['8482'] = '™'
-*//-------- ---------- --- -------------------------------------------- ------------------------------------
+*---------- ---------- --- -------------------------------------------- ------------------------------------
             DEFINE('XMLDecode(xml)ch,str,n')                            :(XMLDecodeEnd)
 XMLDecode   xml        POS(0) RPOS(0)                                   :S(RETURN)
             xml        POS(0) '&quot;'   . *assign(.ch, '"') =          :S(XMLDecode1)
@@ -328,7 +328,7 @@ XMLDecode   xml        POS(0) RPOS(0)                                   :S(RETUR
             xml        POS(0) '&nbsp;'   . *assign(.ch, ' ') =          :S(XMLDecode1)
             xml        POS(0) '&' SPAN(&UCASE &LCASE) . xch ';' =       :S(XMLDecode2)
             xml        POS(0) '&#' SPAN('0123456789') . n ';' =         :S(XMLDecode3)
-            xml        POS(0) '&' . ch =                                :S(XMLDecode1) ;*//:S(XMLDecodeE1)
+            xml        POS(0) '&' . ch =                                :S(XMLDecode1) ;* :S(XMLDecodeE1)
             xml        POS(0) BREAK('&') . str =                        :S(XMLDecode4)
             xml        POS(0) RTAB(0) . str =                           :S(XMLDecode4)
 XMLDecode1  XMLDecode  =   XMLDecode ch                                 :(XMLDecode)
@@ -338,8 +338,8 @@ XMLDecode3  XMLDecode  =   XMLDecode LT(n, 256) CHAR(n)                 :S(XMLDe
 XMLDecode4  XMLDecode  =   XMLDecode str                                :(XMLDecode)
 XMLDecodeE1 OUTPUT     =   'XMLDecode Error #1: ' SUBSTR(xml, 1, 16)    :(error)
 XMLDecodeE2 OUTPUT     =   'XMLDecode Error #2: &' xch ';'              :(XMLDecode)
-XMLDecodeE3 
-*//         OUTPUT     =   'XMLDecode Error #3: &#' n ';'               
+XMLDecodeE3
+*           OUTPUT     =   'XMLDecode Error #3: &#' n ';'
                                                                         :(XMLDecode)
 XMLDecodeEnd
-*//-------- ---------- --- -------------------------------------------- ------------------------------------
+*---------- ---------- --- -------------------------------------------- ------------------------------------

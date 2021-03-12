@@ -9,7 +9,7 @@
   (:require [clojure.tools.trace :refer :all])
 ; (:require [instaparse.core :as insta :refer-macros [defparser]]); ClojureScript
 )
-
+;---------------------------------------------------------------------------------------------------
 (defn bug [x] (println (type x) " " x) x)
 (defn re-quote [& ss]
   (str "#'" (string/replace (apply str ss) #"(\\|')" #(str \\ (second %1))) "'"))
@@ -78,7 +78,7 @@
   label     ::=  #'[^ \\t\\r\\n+-.*][^ \\t\\r\\n]*'
   white     ::=  #'[ \\t]'
 "))
-
+;---------------------------------------------------------------------------------------------------
 (defn coder [ast stmtno]
   (insta/transform
     { :comment   (fn comment     [cmt]   [:comment cmt])
@@ -98,11 +98,11 @@
       :assigning (fn assigning  ([S    ] (list '= S 'epsilon))
                                 ([S R  ] (list '= S R)))
       :goto      (fn goto        [& gs]  {:goto (reduce
-																																                  (fn [bs b]
-																																                    (let [key (first b) tgt (second b)]
-																																                      (assoc bs key
-																																                        (if (symbol? tgt) (keyword tgt) tgt)))) {} gs)
-                      		                 })
+																									(fn [bs b]
+																										(let [key (first b) tgt (second b)]
+																											(assoc bs key
+																												(if (symbol? tgt) (keyword tgt) tgt)))) {} gs)
+                                         })
       :branch    (fn branch      [L]     [:G L])
       :sbranch   (fn sbranch     [L]     [:S L])
       :fbranch   (fn fbranch     [L]     [:F L])
@@ -136,7 +136,7 @@
       :I         edn/read-string
       :R         edn/read-string
     } ast))
-
+;---------------------------------------------------------------------------------------------------
 (def parse-program    )
 (def parse-command    (insta/parser grammar :start :command))
 (def parse-statement  (insta/parser grammar :start :stmt :total true))
@@ -167,8 +167,9 @@
 (def stmtno (atom 0))
 (def out
   (fn [item]
-		  (binding [pp/*print-right-margin* 120, pp/*print-miser-width* 100]
-		    (pp/pprint item))))
+      (binding [pp/*print-right-margin* 120, pp/*print-miser-width* 100]
+        (pp/pprint item))))
+;---------------------------------------------------------------------------------------------------
 (defn doit []
   (doseq [filenm (files dirs)]
     (println ";------------------------------------------------------ " filenm)
@@ -179,46 +180,46 @@
       2 (let [program (slurp filenm)]
           (doseq [command (re-seq block program)]
             (let [cmd (first command)]
-		            (cond
-		              (nil? cmd) nil
-		              (re-find #"^\*" cmd) nil
-		              (re-find #"^\-" cmd) nil
-		              true (let [stmt (string/replace
-		                                (string/replace cmd
-		                                  #"[ \t]*\r\n[+.][ \t]*" " ")
-		                                #"\r\n$" "")
-		                         stmtno (swap! stmtno inc)
-		                         ast (parse-statement stmt)
-		                         code (coder ast stmtno)]
-		                     (if (and (map? code) (:reason code))
-		                       (let [line   (:line code)
-		                             column (:column code)
-		                             text   (:text code)
-		                             error  {stmtno [(list 'ERROR line column)]}]; text
-		                         (out error))
-		                       (out code)))))))
+                (cond
+                  (nil? cmd) nil
+                  (re-find #"^\*" cmd) nil
+                  (re-find #"^\-" cmd) nil
+                  true (let [stmt (string/replace
+                                    (string/replace cmd
+                                      #"[ \t]*\r\n[+.][ \t]*" " ")
+                                    #"\r\n$" "")
+                             stmtno (swap! stmtno inc)
+                             ast (parse-statement stmt)
+                             code (coder ast stmtno)]
+                         (if (and (map? code) (:reason code))
+                           (let [line   (:line code)
+                                 column (:column code)
+                                 text   (:text code)
+                                 error  {stmtno [(list 'ERROR line column)]}]; text
+                             (out error))
+                           (out code)))))))
       3 (with-open [rdr (io/reader filenm)]
           (doseq [line (line-seq rdr)]
             (let [ast (parse-command line) code (coder ast)]
               (println code))))
 )))
-
+;---------------------------------------------------------------------------------------------------
 (defn ZIP [E]
   (loop [E (z/zipper #(or (list? %) (vector? %)) rest nil E) depth 0 direction :down]
     (out (z/node E))
     (case direction
     :down  (if (z/branch? E)
-							      (recur (z/down E) (inc depth) :down)
-							      (if (= E (z/rightmost E))
-											    (if (= depth 0)
-							          (z/root E)
-							          (recur (z/up E) (dec depth) :right))
-											    (recur (z/right E) depth :down)))
+                    (recur (z/down E) (inc depth) :down)
+                    (if (= E (z/rightmost E))
+                          (if (= depth 0)
+                        (z/root E)
+                        (recur (z/up E) (dec depth) :right))
+                          (recur (z/right E) depth :down)))
      :right (if (= E (z/rightmost E))
-								      (if (= depth 0)
-								        (z/root E)
-								        (recur (z/up E) (dec depth) :right))
-								      (recur (z/right E) depth :down)))))
+                      (if (= depth 0)
+                        (z/root E)
+                        (recur (z/up E) (dec depth) :right))
+                      (recur (z/right E) depth :down)))))
 ;---------------------------------------------------------------------------------------------------
 (def LABELS {3 :Roman 6 :RomanEnd 8 :END})
 (def STMTNOS {:Roman 3 :RomanEnd 6 :END 8})
@@ -232,20 +233,28 @@
 7         ['(Roman "MMXXI")]
 :END      []
 })
+(defn Roman [n]
+  )
 ;---------------------------------------------------------------------------------------------------
-(defn ? [S P])
-(defn =$ [N S])
-(defn =. [N S])
-(defn Len [I])
-(defn RPos [I])
-(defn Break [S])
+(defn $ [S P]) (defn =$ [N S])
+(defn . [S P]) (defn =. [N S])
+(defn LEN [I]) (defn Len [I])
+(defn POS [I]) (defn Pos [I])
+(defn RPOS [I]) (defn RPos [I])
+(defn BREAK [S]) (defn Break [S])
+
+(defn ?  [S P])
+(defn ?= [S P])
 (defn REPLACE [S1 S2 S3])
+(defn DEFINE [proto])
+
 (declare EVAL)
-(deftrace INVOKE [op & args]
+(defn INVOKE [op & args]
   (case op
     $        (apply list '=$    args)
     .        (apply list '=.    args)
     LEN      (apply list 'Len   args)
+    POS      (apply list 'Pos   args)
     RPOS     (apply list 'RPos  args)
     BREAK    (apply list 'Break args)
     ?        (let [[S P] args] (? (str S) P))
@@ -261,96 +270,89 @@
   )
 )
 ;---------------------------------------------------------------------------------------------------
-(deftrace EVAL [E]
+(defn EVAL [E]
   (when E
-		  (cond
-		    (nil? E) E
-		    (float? E) E
-		    (string? E) E
-		    (integer? E) E
-		    (symbol? E) (eval E)
-		    (vector? E) (apply vector (map EVAL E))
-		    (list? E)
-		      (let [[op & parms] E]
-		        (cond
-		          (= op '.)  (let [[P N]   parms] (INVOKE '. (EVAL P) N))
-		          (= op '$)  (let [[P N]   parms] (INVOKE '$ (EVAL P) N))
-		          (= op '=)  (let [[N R]   parms] (INVOKE '= N (EVAL R)))
-		          (= op '?=) (let [[N P R] parms] (INVOKE '?= N (EVAL P) R))
-		          true       (let [args (apply vector (map EVAL parms))]
-		                       (apply INVOKE op args))
-		      ))
-		    nil nil
-		  ))
+      (cond
+        (nil? E) E
+        (float? E) E
+        (string? E) E
+        (integer? E) E
+        (symbol? E) (eval E)
+        (vector? E) (apply vector (map EVAL E))
+        (list? E)
+          (let [[op & parms] E]
+            (cond
+              (= op '.)  (let [[P N]   parms] (INVOKE '. (EVAL P) N))
+              (= op '$)  (let [[P N]   parms] (INVOKE '$ (EVAL P) N))
+              (= op '=)  (let [[N R]   parms] (INVOKE '= N (EVAL R)))
+              (= op '?=) (let [[N P R] parms] (INVOKE '?= N (EVAL P) R))
+              true       (let [args (apply vector (map EVAL parms))]
+                           (apply INVOKE op args))
+          ))
+        nil nil
+      ))
 )
 ;---------------------------------------------------------------------------------------------------
 (defn RUN [code]
   (loop [current 1]
     (let [label (LABELS current)]
       (if-let [key (if label label current)]
-				    (if-let [stmt (code key)]
-				      (let [ferst (first stmt)
-				            seqond (second stmt)
-				            goto (if (map? ferst) ferst seqond)
-				            body (if (map? ferst) seqond ferst)]
-				        (EVAL body)
-				        (recur
-				          (cond
-				            (keyword? key) (inc (STMTNOS key))
-				            (string?  key) (inc (STMTNOS key))
-				            (integer? key) (inc key)
-				            )))
+            (if-let [stmt (code key)]
+              (let [ferst (first stmt)
+                    seqond (second stmt)
+                    goto (if (map? ferst) ferst seqond)
+                    body (if (map? ferst) seqond ferst)]
+                (EVAL body)
+                (recur
+                  (cond
+                    (keyword? key) (inc (STMTNOS key))
+                    (string?  key) (inc (STMTNOS key))
+                    (integer? key) (inc key)
+                    )))
      ))
   ))
 )
 
 (defn runit []
-		(defn RPos [])
-		(defn Tab [])
-		(defn RTab [])
-		(defn Any [])
-		(defn NotAny [])
-		(defn Breakx [])
+    (defn RPos [])
+    (defn Tab [])
+    (defn RTab [])
+    (defn Any [])
+    (defn NotAny [])
+    (defn Breakx [])
 
-		(defn POS [I])
-		(defn RPOS [I])
-		(defn TAB [I])
-		(defn RTAB [I])
-		(defn ANY [S])
-		(defn NOTANY [S])
-		(defn LEN [I])
-		(defn BREAK [S])
-		(defn BREAKX [S])
+    (defn TAB [I])
+    (defn RTAB [I])
+    (defn ANY [S])
+    (defn NOTANY [S])
+    (defn BREAKX [S])
 
-		(defn EQ [x y] (= x y))
-		(defn NE [x y] (not= x y))
-		(defn LT [x y] (< x y))
-		(defn GT [x y] (> x y))
-		(defn LE [x y] (<= x y))
-		(defn GE [x y] (>= x y))
-		(defmacro Ident [])
-		(defn IDENT
-		     ([]    true)
-		     ([x]   (identical? x ""))
-		     ([x y] (identical? x y))
-		)
-		(defmacro Differ [])
-		(defn DIFFER
-		     ([]    false)
-		     ([x]   (not (identical? x "")))
-		     ([x y] (not (identical? x y)))
+    (defn EQ [x y] (= x y))
+    (defn NE [x y] (not= x y))
+    (defn LT [x y] (< x y))
+    (defn GT [x y] (> x y))
+    (defn LE [x y] (<= x y))
+    (defn GE [x y] (>= x y))
+    (defmacro Ident [])
+    (defn IDENT
+         ([]    true)
+         ([x]   (identical? x ""))
+         ([x y] (identical? x y))
+    )
+    (defmacro Differ [])
+    (defn DIFFER
+         ([]    false)
+         ([x]   (not (identical? x "")))
+         ([x y] (not (identical? x y)))
  )
-		(defn SIZE [O] (count O))
-		(defn TABLE [proto] {})
-		(defn ARRAY [proto] [])
-		(defn DEFINE [proto])
-		(defn INVOKE [F args])
-		(defn . [P N])
-		;(defn = [S R])
-		(defn ? [S P])
-		(defn ?= ([S P]) ([S P R]))
-		(def DATA {})
-		(def STACK ())
-;	(MakeItHappen)
+    (defn SIZE [O] (count O))
+    (defn TABLE [proto] {})
+    (defn ARRAY [proto] [])
+    (defn INVOKE [F args])
+    (defn . [P N])
+    ;(defn = [S R])
+    (defn ? [S P])
+    (defn ?= ([S P]) ([S P R]))
+;  (MakeItHappen)
 )
 (defn -main "SNOBOL4/Clojure." [& args] (RUN CODE))

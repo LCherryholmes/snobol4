@@ -87,7 +87,7 @@ main00         ebnfStr        =  Read(ebnfFile, .t8Map)                         
 +                             ARBNO(NOTANY(bSlash)) . basenm RPOS(0)
                basenm         '.ebnf' RPOS(0) =
                lispnm         =  'ebnf-' basenm '.lisp'
-               OUTPUT(.OUTPUT, 3, TERMINAL = lispnm)                                           :F(error)
+               OUTPUT(.OUTPUT, 3, TERMINAL = lispnm)                                :F(error)
                SetLevel(0)
                TDump(bnf)
                ENDFILE(3)

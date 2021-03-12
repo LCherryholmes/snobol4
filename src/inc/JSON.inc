@@ -1,6 +1,6 @@
-*//-----------------------------------------------------------------------------------------------------
-*// JSON.inc - Java Serializable Object Notation
-*//-------- ----------- --- ------------------------------------------------------- --------------------
+*-------------------------------------------------------------------------------------------------------
+* JSON.inc - Java Serializable Object Notation
+*---------- ----------- --- ------------------------------------------------------- --------------------
             $'  '       =   SPAN(' ' tab cr lf)
             $' '        =   FENCE($'  ' | epsilon)
             $'{'        =   $' ' TY(1, '{', '{')
@@ -9,7 +9,7 @@
             $']'        =   $' ' TY(1, ']', ']')
             $':'        =   $' ' TY(1, ':', ':')
             $','        =   $' ' TY(1, ',', ',')
-*//-------- ----------- --- ------------------------------------------------------- --------------------
+*---------- ----------- --- ------------------------------------------------------- --------------------
             jInt        =   (FENCE('+' | '-' | epsilon) SPAN('0123456789')) . jxN
             jEscChar    =   bSlash
 +                           (  ANY('ntbrf' '"' bSlash fSlash "'")
@@ -26,7 +26,7 @@
             jBoolVal    =   jTrueFalse | '"' jTrueFalse '"'
             jRealVal    =   (('+' | '-' | epsilon) SPAN('0123456789') '.' SPAN('0123456789')) . jxVal
             jIntVal     =   (jInt . jxVal | '"' jInt . jxVal '"')
-*//-------- ----------- --- ----------------------------------------------------------------------------
+*---------- ----------- --- ----------------------------------------------------------------------------
             jMos        =   TABLE()
             jMos['Jan'] =   '01'
             jMos['Feb'] =   '02'
@@ -44,9 +44,9 @@
 +                           |   'Jul' | 'Aug' | 'Sep' | 'Oct' | 'Nov' | 'Dec'
 +                           ) . jxMonthName . *assign(.jxMonth, jMos[jxMonthName])
             jDayName    =   'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat'
-            jNum2       =   SPAN('0123456789') $ jxN . jxN *EQ(SIZE(jxN), 2) 
-            jNum3       =   SPAN('0123456789') $ jxN . jxN *EQ(SIZE(jxN), 3) 
-            jNum4       =   SPAN('0123456789') $ jxN . jxN *EQ(SIZE(jxN), 4) 
+            jNum2       =   SPAN('0123456789') $ jxN . jxN *EQ(SIZE(jxN), 2)
+            jNum3       =   SPAN('0123456789') $ jxN . jxN *EQ(SIZE(jxN), 3)
+            jNum4       =   SPAN('0123456789') $ jxN . jxN *EQ(SIZE(jxN), 4)
             jYear       =   jNum4 . jxYear
             jMonth      =   jNum2 . jxMonth
             jDay        =   jNum2 . jxDay
@@ -67,7 +67,7 @@
 +                           )
 +                           '"' . *assign(.jxDatetime, jxYear '-' jxMonth '-' jxDay ' ' jxHour ':' jxMinute ':' jxSecond)
             jDateVal    =   jDatetime . *assign(.jxVal, jxDatetime)
-*//-------- ----------- --- ------------------------------------------------------- --------------------
+*---------- ----------- --- ------------------------------------------------------- --------------------
             jBoolVal    =   $' ' TY(2, 'jBoolVal', jBoolVal)
             jDateVal    =   $' ' TY(2, 'jDateVal', jDateVal)
             jIntVal     =   $' ' TY(2, 'jIntVal', jIntVal)
@@ -75,7 +75,7 @@
             jRealVal    =   $' ' TY(2, 'jRealVal', jRealVal)
             jStrVal     =   $' ' TY(2, 'jStrVal', jStrVal)
             jVar        =   $' ' TY(2, 'jVar', jVar)
-*//-------- ----------- --- ------------------------------------------------------- --------------------
+*---------- ----------- --- ------------------------------------------------------- --------------------
             jRecognizer =   POS(0) FENCE *jParser $' ' RPOS(0)
             jParser     =   *jObject . *Reduce('JSON', 1)
             jObject     =   $'{' nPush()
@@ -96,7 +96,7 @@
 +                       |   *jNullVal  epsilon . *Shift('Null')
 +                       |   *jArray
 +                       |   *jObject
-*//-------- ----------- --- ------------------------------------------------------- --------------------
+*---------- ----------- --- ------------------------------------------------------- --------------------
             jRecognizer =   epsilon $ t8Max
 +                           TZ(1, 'jRecognizer', jRecognizer)
             jParser     =   TZ(1, 'jParser', jParser)
@@ -104,7 +104,7 @@
             jArray      =   TZ(1, 'jArray', jArray)
             jField      =   TZ(1, 'jField', jField)
             jElement    =   TZ(1, 'jElement', jElement)
-*//-------- ----------- --- ------------------------------------------------------- --------------------
+*---------- ----------- --- ------------------------------------------------------- --------------------
             jpTab       =   4
             jpPretty    =   FENCE $ jpxP            . *assign(.jpxL, 0)
 +                                                   . *assign(.jpxP, NULL)
@@ -140,15 +140,15 @@
 +                       |   $' ' jBoolVal   . jpxA . *assign(.jpxP, jpxP jpxA)
 +                       |   $' ' jStrVal    . jpxA . *assign(.jpxP, jpxP jpxA)
 +                       |   $' ' jNullVal   . jpxA . *assign(.jpxP, jpxP jpxA)
-*//-------- ----------- --- ------------------------------------------------------- --------------------
+*---------- ----------- --- ------------------------------------------------------- --------------------
             jpPretty    =   epsilon $ t8Max jpPretty
-*//         jpPretty    =   epsilon $ t8Max
-*//+                        TZ(1, 'jpPretty', jpPretty)
-*//         jpObject    =   TZ(1, 'jpObject', jpObject)
-*//         jpArray     =   TZ(1, 'jpArray', jpArray)
-*//         jpField     =   TZ(1, 'jpField', jpField)
-*//         jpElement   =   TZ(1, 'jpElement', jpElement)
-*//-------- ----------- --- ------------------------------------------------------ --------------------
+*           jpPretty    =   epsilon $ t8Max
+*+                          TZ(1, 'jpPretty', jpPretty)
+*           jpObject    =   TZ(1, 'jpObject', jpObject)
+*           jpArray     =   TZ(1, 'jpArray', jpArray)
+*           jpField     =   TZ(1, 'jpField', jpField)
+*           jpElement   =   TZ(1, 'jpElement', jpElement)
+*---------- ----------- --- ------------------------------------------------------ --------------------
             DEFINE('JSONDecode(str)ch,h,h0,h1,h2,h3,xch0,xch1,xch2,xch3,xchs')
             jHex        =   '0123456789ABCDEF'                                     :(JSONDecodeEnd)
 JSONDecode  str         FENCE POS(0) RPOS(0)                                       :S(RETURN)
@@ -183,4 +183,4 @@ JSONDecode1 xchs        =   REPLACE(xchs, &LCASE, &UCASE)
 JSONDecode2 JSONDecode  =   JSONDecode ch                                           :(JSONDecode)
 JSONDecode3 OUTPUT      =   'JSONDecode: Warning: ' bSlash 'u' xchs                 :(JSONDecode)
 JSONDecodeEnd
-*//-------- ----------- --- ------------------------------------------------------ --------------------
+*---------- ----------- --- ------------------------------------------------------ --------------------

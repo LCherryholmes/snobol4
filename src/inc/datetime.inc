@@ -131,9 +131,9 @@ DTDecodeEnd
 +               'xiDOM,xiHH,xiMM,xiMOY,xiSS,xiTT,xiYYYY'
 +           )                                                       :(DTEncodeEnd)
 DTEncode    IDENT(DATATYPE(SDT), 'SQLDATE')                         :F(error)
-            iDOY        =   0  ;*// days since January 1 - between 0 and 365
-            iDIY        =   0  ;*// days in the year - either 365 or 366
-            iDays       =   dtDay(SDT)  ;*// days since Jan 1 1900 (it may be less than 0)!!!
+            iDOY        =   0  ;* days since January 1 - between 0 and 365
+            iDIY        =   0  ;* days in the year - either 365 or 366
+            iDays       =   dtDay(SDT)  ;* days since Jan 1 1900 (it may be less than 0)!!!
             iDOY        =   iDays
             xiYYYY      =   GE(iDays, 0) 1900 - 1                   :F(DTEncode3)
 DTEncode2   iDIY        =   DaysInYear(xiYYYY = xiYYYY + 1)
@@ -145,13 +145,13 @@ DTEncode4   iDIY        =   DaysInYear(xiYYYY = xiYYYY - 1)
 DTEncode5   iJ          =   (EQ(iDIY, 365) 0, 1)
             xiMOY       =   12
 DTEncode8   xiMOY       =   GT(jA[iJ, xiMOY - 1], iDOY) xiMOY - 1   :S(DTEncode8)
-            xiDOM       =   iDOY - jA[iJ, xiMOY - 1] + 1  ;*// day of the month - between 1 and 31
-            i300thSecs  =   dtTime(SDT)  ;*// 300ths of a second since midnight
-            iSecs       =   i300thSecs / 300  ;*// seconds since midnight
-            xiTT        =   ((REMDR(i300thSecs, 300) * 1000) + 150) / 300  ;*// milli-seconds ticks after the second
-            xiHH        =   iSecs / 3600  ;*// hours since midnight - between 0 and 23
-            xiMM        =   REMDR(iSecs, 3600) / 60  ;*// minutes after the hour - between 0 and 59
-            xiSS        =   REMDR(iSecs, 3600) - (xiMM * 60)  ;*// seconds after the minute - between 0 and 59
+            xiDOM       =   iDOY - jA[iJ, xiMOY - 1] + 1  ;* day of the month - between 1 and 31
+            i300thSecs  =   dtTime(SDT)  ;* 300ths of a second since midnight
+            iSecs       =   i300thSecs / 300  ;* seconds since midnight
+            xiTT        =   ((REMDR(i300thSecs, 300) * 1000) + 150) / 300  ;* milli-seconds ticks after the second
+            xiHH        =   iSecs / 3600  ;* hours since midnight - between 0 and 23
+            xiMM        =   REMDR(iSecs, 3600) / 60  ;* minutes after the hour - between 0 and 59
+            xiSS        =   REMDR(iSecs, 3600) - (xiMM * 60)  ;* seconds after the minute - between 0 and 59
             DTEncode    =   LPAD(xiYYYY, 4, 0)
 +                           '-' LPAD(xiMOY, 2, 0)
 +                           '-' LPAD(xiDOM, 2, 0)

@@ -1,6 +1,6 @@
-*//-----------------------------------------------------------------------------------------------------
-*// HTML.inc
-*//-----------------------------------------------------------------------------------------------------
+*-------------------------------------------------------------------------------------------------------
+* HTML.inc
+*-------------------------------------------------------------------------------------------------------
             htmTags           =     'A B I P U '
 +                                   'BR DD DL DT EM H1 H2 H3 H4 H5 H6 HR LI OL TD TH TR TT UL '
 +                                   'BIG DFN DIR DIV IMG KBD MAP PRE SUB SUP VAR '
@@ -25,7 +25,7 @@
 +                                   'DEFAULT FILE FUCHSIA GET GRAY GREEN HIDDEN IMAGE ISMAP LEFT LIME MAROON MIDDLE '
 +                                   'MULTIPLE NAVY NONE NOWRAP NOHREF NOSHADE OLIVE POLY POST PURPLE PASSWORD RED RECT '
 +                                   'RADIO RESET RIGHT SLIVER SQUARE SUBMIT SELECTED TOP TEAL TEXT WHITE YELLOW'
-*//-------- ----------------- ----- -------------------------------------------------------- -----------------------------
+*---------- ----------------- ----- -------------------------------------------------------- -----------------------------
             DEFINE('HTMLDecode(html)ch,str')                                        :(HTMLDecodeEnd)
 HTMLDecode  html        POS(0) RPOS(0)                                              :S(RETURN)
             html        POS(0) '&amp;' . *assign(.ch, '&') =                        :S(HTMLDecode1)
@@ -36,7 +36,7 @@ HTMLDecode1 HTMLDecode  =   HTMLDecode ch                                       
 HTMLDecode2 HTMLDecode  =   HTMLDecode str                                          :(HTMLDecode)
 HTMLDecodeErr OUTPUT = 'Error: ' html                                               :(abort)
 HTMLDecodeEnd
-*//-------- ----------------- ----- -------------------------------------------------------- -----------------------------
+*---------- ----------------- ----- -------------------------------------------------------- -----------------------------
             DEFINE('HPopulate(fold,idpat,attrs,xattrs,vals,special)pat,peel,w')              :(HPopulateEnd)
 HPopulate   peel              =     POS(0) (BREAK(' ') . w ' ' | (LEN(1) RTAB(0)) . w)
 HPopulate10 attrs             peel =                                                         :F(HPopulate20)
@@ -53,7 +53,7 @@ HPopulate40 special           peel =                                            
             $w                =     EQ(doParseTree, FALSE) $'  ' TY(2, w, w)                 :(HPopulate40)
 HPopulate50                                                                                  :(RETURN)
 HPopulateEnd
-*//-------- ----------------- ----- -------------------------------------------------------- -----------------------------
+*---------- ----------------- ----- -------------------------------------------------------- -----------------------------
             empty             =     epsilon ~ ''
             white             =     SPAN(' ' tab lf cr ff vt)
             $'  '             =     FENCE(white | epsilon)
@@ -88,7 +88,7 @@ HPopulateEnd
             $'/>'             =     $'  ' TY(1, '/>', '/>')
             $'='              =     $'  ' TY(1, '=', '=') $'  '
             HPopulate(.TW, ident, htmAttrs, htmXAttrs, htmVals)
-*//-------- ----------------- ----- ------------------------------------------------------- -----------------------------
+*---------- ----------------- ----- ------------------------------------------------------- -----------------------------
             hTags             =     htmTags
 L01         hTags             POS(0) (BREAK(' ') . hT ' ' | (LEN(1) RTAB(0)) . hT) =        :F(L03)
             $('<'  hT    )    =     $' '  TW(1, '<'  ident, '<'  hT)
@@ -101,7 +101,7 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
             PERCENT           =     $'  ' TY(2, 'PERCENT', PERCENT)
             RGB               =     $'  ' TY(2, 'RGB', RGB)
             STRING            =     $'  ' TY(2, 'STRING', STRING)
-*//-------- ----------------- ----- ------------------------------------------------------- -----------------------------
+*---------- ----------------- ----- ------------------------------------------------------- -----------------------------
             htmTokens         =     *htmToken FENCE(*htmTokens | epsilon)
             htmToken          =     $' '
 +                                   (  NUMBER
@@ -116,7 +116,7 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 +                                   |  *htmAttr
 +                                   |  *htmVal
 +                                   )
-*//-------- --------------------- ----- ----------------------------------------------------------------------------------
+*---------- --------------------- ----- ----------------------------------------------------------------------------------
             htmRecognizer         =     *htmDOCTYPE *htmHTML
 
             htmDOCTYPE            =     $'  ' '<!' icase('DOCTYPE')
@@ -124,11 +124,11 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 +                                       $'  ' icase('PUBLIC')
 +                                      !($'  ' STRING !($'  ' STRING))
 +                                       BREAK('>') '>'
-            
+
             htmData               =     #*htmDatum
             htmDatum              =     NOTANY('<') BREAK('<')
 +                                 |     '<![CDATA[' BREAKX(']') ']]>'
-*//-------- --------------------- ----- ----------------------------------------------------------------------------------
+*---------- --------------------- ----- ----------------------------------------------------------------------------------
             htmHTML               =     $'<HTML' *htmHTML_attrs $'>' *htmHEAD *htmBODY $'</HTML>'
             htmHEAD               =     $'<HEAD' *htmHEAD_attrs $'>'
 +                                      %(   *htmBASE
@@ -144,60 +144,60 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 
             htmBODY               =     $'<BODY' *htmBODY_attrs $'>' %*htmBODY_cont $'</BODY>'
             htmBODY_cont          =     (   *htmADDRESS
-+                                       |   *htmH 
++                                       |   *htmH
 +                                       |   *htmBlock
-+                                       |   *htmText 
++                                       |   *htmText
 +                                       )
-*//
-*//         Inline elements
-*//
-            htmA                  =    ($'<A' *htmA_attrs $'>'                  %*htmText               $'</A>') ;*//$ OUTPUT 
-            htmABBR               =     $'<ABBR' *htmABBR_attrs $'>'            %*htmText               $'</ABBR>' 
-            htmB                  =     $'<B>'                                  %*htmText               $'</B>' 
-            htmCITE               =     $'<CITE>'                               %*htmText               $'</CITE>' 
-            htmCODE               =     $'<CODE>'                               %*htmText               $'</CODE>' 
+*
+*           Inline elements
+*
+            htmA                  =    ($'<A' *htmA_attrs $'>'                  %*htmText               $'</A>') ;* $ OUTPUT
+            htmABBR               =     $'<ABBR' *htmABBR_attrs $'>'            %*htmText               $'</ABBR>'
+            htmB                  =     $'<B>'                                  %*htmText               $'</B>'
+            htmCITE               =     $'<CITE>'                               %*htmText               $'</CITE>'
+            htmCODE               =     $'<CODE>'                               %*htmText               $'</CODE>'
             htmDFN                =     $'<DFN>'                                %*htmText               $'</DFN>'
-            htmFONT               =     $'<FONT' *htmFONT_attrs $'>'            %*htmText               $'</FONT>' 
-            htmI                  =     $'<I>'                                  %*htmText               $'</I>' 
+            htmFONT               =     $'<FONT' *htmFONT_attrs $'>'            %*htmText               $'</FONT>'
+            htmI                  =     $'<I>'                                  %*htmText               $'</I>'
             htmLABEL              =     $'<LABEL' *htmLABEL_attrs $'>'          %*htmText               $'</LABEL>'
-            htmSAMP               =     $'<SAMP>'                               %*htmText               $'</SAMP>' 
+            htmSAMP               =     $'<SAMP>'                               %*htmText               $'</SAMP>'
             htmSELECT             =     $'<SELECT' *htmSELECT_attrs $'>'        #*htmOPTION             $'</SELECT>'
             htmSMALL              =     $'<SMALL>'                              %*htmText               $'</SMALL>'
             htmSTRIKE             =     $'<STRIKE>'                             %*htmText               $'</STRIKE>'
-            htmSPAN               =     $'<SPAN' *htmSPAN_attrs $'>'            %(*htmText | *htmCENTER | *htmP) $'</SPAN>' 
+            htmSPAN               =     $'<SPAN' *htmSPAN_attrs $'>'            %(*htmText | *htmCENTER | *htmP) $'</SPAN>'
             htmSTRONG             =     $'<STRONG' *htmSTRONG_attrs $'>'        %*htmText               $'</STRONG>'
             htmSUB                =     $'<SUB>'                                %*htmText               $'</SUB>'
             htmSUP                =     $'<SUP>'                                %*htmText               $'</SUP>'
             htmTEXTAREA           =     $'<TEXTAREA' *htmTEXTAREA_attrs $'>'    !*htmData               $'</TEXTAREA>'
             htmTT                 =     $'<TT>'                                 %*htmText               $'</TT>'
-            htmU                  =     $'<U>'                                  %*htmText               $'</U>' 
+            htmU                  =     $'<U>'                                  %*htmText               $'</U>'
             htmVAR                =     $'<VAR>'                                %*htmText               $'</VAR>'
 
-            htmBASEFONT           =     $'<BASEFONT'    *htmBASEFONT_attrs  FENCE($'>' !$'</BASEFONT>' | $'/>') 
-            htmBR                 =     $'<BR'          *htmBR_attrs        FENCE($'>' !$'</BR>'       | $'/>') 
+            htmBASEFONT           =     $'<BASEFONT'    *htmBASEFONT_attrs  FENCE($'>' !$'</BASEFONT>' | $'/>')
+            htmBR                 =     $'<BR'          *htmBR_attrs        FENCE($'>' !$'</BR>'       | $'/>')
             htmIMG                =     $'<IMG'         *htmIMG_attrs       FENCE($'>' !$'</IMG>'      | $'/>')
             htmINPUT              =     $'<INPUT'       *htmINPUT_attrs     FENCE($'>' !$'</INPUT>'    | $'/>')
-*//
-*//         Block-level or inline elements
-*//
+*
+*           Block-level or inline elements
+*
             htmAPPLET             =     $'<APPLET' *htmAPPLET_attrs $'>'        %(*htmPARAM | *htmText) $'</APPLET>'
             htmBUTTON             =     $'<BUTTON' *htmBUTTON_attrs $'>'        %*htmText               $'</BUTTON>'
             htmIFRAME             =     $'<IFRAME' *htmIFRAME_attrs $'>'        %*htmText               $'</IFRAME>'
             htmOBJECT             =     $'<OBJECT' *htmOBJECT_attrs $'>'        %(*htmPARAM | *htmText) $'</OBJECT>'
             htmMAP                =     $'<MAP' *htmMAP_attrs $'>'              %*htmAREA               $'</MAP>'
-            htmSCRIPT             =    ($'<SCRIPT' *htmSCRIPT_attrs $'>'        %(*htmData | *htmComment) $'</SCRIPT>') ;*//$ OUTPUT
+            htmSCRIPT             =    ($'<SCRIPT' *htmSCRIPT_attrs $'>'        %(*htmData | *htmComment) $'</SCRIPT>') ;* $ OUTPUT
 
-            htmAREA               =     $'<AREA' *htmAREA_attrs FENCE($'>' !$'</AREA>' | $'/>') 
-*//
-*//         Block-level elements
-*//
+            htmAREA               =     $'<AREA' *htmAREA_attrs FENCE($'>' !$'</AREA>' | $'/>')
+*
+*           Block-level elements
+*
             htmISINDEX            =     $'<ISINDEX'     *htmISINDEX_attrs   FENCE($'>' !$'</ISINDEX>' | $'/>')
             htmBASE               =     $'<BASE'        *htmBASE_attr       FENCE($'>' !$'</BASE>'    | $'/>')
             htmMETA               =     $'<META'        *htmMETA_attrs      FENCE($'>' !$'</META>'    | $'/>')
             htmLINK               =     $'<LINK'        *htmLINK_attrs      FENCE($'>' !$'</LINK>'    | $'/>')
-            htmPARAM              =     $'<PARAM'       *htmPARAM_attrs     FENCE($'>' !$'</PARAM>'   | $'/>') 
-            htmEMBED              =     $'<EMBED'       *htmEMBED_attrs     FENCE($'>' !$'</EMBED>'   | $'/>') 
-            htmHR                 =     $'<HR'          *htmHR_attrs        FENCE($'>' !$'</HR>'      | $'/>') 
+            htmPARAM              =     $'<PARAM'       *htmPARAM_attrs     FENCE($'>' !$'</PARAM>'   | $'/>')
+            htmEMBED              =     $'<EMBED'       *htmEMBED_attrs     FENCE($'>' !$'</EMBED>'   | $'/>')
+            htmHR                 =     $'<HR'          *htmHR_attrs        FENCE($'>' !$'</HR>'      | $'/>')
 
             htmTITLE              =     $'<TITLE>'                              !*htmData               $'</TITLE>'
             htmNOSCRIPT           =     $'<NOSCRIPT>'                           %(*htmText | *htmBlock) $'</NOSCRIPT>'
@@ -212,30 +212,30 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
             htmEM                 =     $'<EM>'                                 %*htmText               $'</EM>'
             htmKBD                =     $'<KBD>'                                %*htmText               $'</KBD>'
             htmOPTION             =     $'<OPTION' *htmOPTION_attrs $'>'        !*htmData               FENCE($'</OPTION>' | epsilon)
-            htmP                  =    ($'<P' *htmP_attrs $'>'                  #(*htmText | *htmDIV | *htmUL) FENCE($'</P>' | epsilon)) ;*//$ OUTPUT
+            htmP                  =    ($'<P' *htmP_attrs $'>'                  #(*htmText | *htmDIV | *htmUL) FENCE($'</P>' | epsilon)) ;* $ OUTPUT
             htmUL                 =     $'<UL' *htmUL_attrs $'>'                %*htmUL_LI              $'</UL>'
             htmUL_LI              =     $'<LI' *htmUL_LI_attrs $'>'             %(*htmText | *htmBlock | *htmH) FENCE($'</LI>' | epsilon)
-            htmOL                 =     $'<OL' *htmOL_attrs $'>'                %*htmOL_LI              $'</OL>' 
+            htmOL                 =     $'<OL' *htmOL_attrs $'>'                %*htmOL_LI              $'</OL>'
             htmOL_LI              =     $'<LI' *htmOL_LI_attrs $'>'             %(*htmText | *htmBlock) FENCE($'</LI>' | epsilon)
-            htmDIR                =     $'<DIR' *htmDIR_MENU_attr $'>'          %*htmText               $'</DIR>' 
+            htmDIR                =     $'<DIR' *htmDIR_MENU_attr $'>'          %*htmText               $'</DIR>'
             htmMENU               =     $'<MENU' *htmDIR_MENU_attr $'>'         %*htmText               $'</MENU>'
-            htmPRE                =     $'<PRE' *htmPRE_attr $'>'               %*htmText               $'</PRE>' 
-            htmDL                 =     $'<DL' *htmDL_attrs $'>'                %(*htmDT | *htmDD)      $'</DL>' 
+            htmPRE                =     $'<PRE' *htmPRE_attr $'>'               %*htmText               $'</PRE>'
+            htmDL                 =     $'<DL' *htmDL_attrs $'>'                %(*htmDT | *htmDD)      $'</DL>'
             htmDT                 =     $'<DT' *htmDT_attrs $'>'                %(*htmText | *htmDIV) FENCE($'</DT>' | epsilon)
             htmDD                 =     $'<DD' *htmDD_attrs $'>'                %(*htmText | *htmBlock) FENCE($'</DD>' | epsilon)
-            htmDIV                =    ($'<DIV' *htmDIV_attrs $'>'              %(*htmBODY_cont | *htmSTYLE) $'</DIV>') ;*//$ OUTPUT
-            htmCENTER             =     $'<CENTER' *htmCENTER_attrs $'>'        %*htmBODY_cont          $'</CENTER>' 
-            htmBLOCKQUOTE         =     $'<BLOCKQUOTE>'                         %*htmBODY_cont          $'</BLOCKQUOTE>' 
-            htmFORM               =     $'<FORM' *htmFORM_attrs $'>'            %*htmBODY_cont          $'</FORM>' 
-            htmTABLE              =     $'<TABLE' *htmTABLE_attrs $'>'          *htmTABLE_cont          $'</TABLE>' 
+            htmDIV                =    ($'<DIV' *htmDIV_attrs $'>'              %(*htmBODY_cont | *htmSTYLE) $'</DIV>') ;* $ OUTPUT
+            htmCENTER             =     $'<CENTER' *htmCENTER_attrs $'>'        %*htmBODY_cont          $'</CENTER>'
+            htmBLOCKQUOTE         =     $'<BLOCKQUOTE>'                         %*htmBODY_cont          $'</BLOCKQUOTE>'
+            htmFORM               =     $'<FORM' *htmFORM_attrs $'>'            %*htmBODY_cont          $'</FORM>'
+            htmTABLE              =     $'<TABLE' *htmTABLE_attrs $'>'          *htmTABLE_cont          $'</TABLE>'
             htmTHEAD              =     $'<THEAD>'                              #*htmTR                 $'</THEAD>'
             htmTFOOT              =     $'<TFOOT>'                              #*htmTR                 $'</TFOOT>'
             htmTBODY              =     $'<TBODY>'                              #*htmTR                 $'</TBODY>'
-            htmCAPTION            =     $'<CAPTION' *htmCAPTION_attr $'>'       %*htmText               $'</CAPTION>' 
+            htmCAPTION            =     $'<CAPTION' *htmCAPTION_attr $'>'       %*htmText               $'</CAPTION>'
             htmTR                 =     $'<TR' *htmTR_attrs $'>'                %(*htmTH | *htmTD | *htmSCRIPT) FENCE($'</TR>' | epsilon)
             htmTH                 =     $'<TH' *htmTH_TD_attrs $'>'             %*htmBODY_cont          FENCE($'</TH>' | epsilon)
             htmTD                 =     $'<TD' *htmTH_TD_attrs $'>'             %*htmBODY_cont          FENCE($'</TD>' | epsilon)
-            htmADDRESS            =     $'<ADDRESS>'                            %(*htmP | *htmText)     $'</ADDRESS>' 
+            htmADDRESS            =     $'<ADDRESS>'                            %(*htmP | *htmText)     $'</ADDRESS>'
 
             htmTABLE_cont         =     (   !*htmCAPTION
 +                                           (   #*htmTR
@@ -319,7 +319,7 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 
             htmDT_attrs           =    %(   CLASS $'=' STRING
 +                                       |   ID $'=' STRING
-+                                       ) 
++                                       )
 
             htmBASE_attr          =     HREF $'=' STRING
 
@@ -364,26 +364,26 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
             htmISINDEX_attrs      =     !(PROMPT $'=' STRING)
             htmBASEFONT_attrs     =     !(SIZE $'=' NUMBER)
             htmMAP_attrs          =     !(NAME $'=' STRING)
-            htmCENTER_attrs       =     !(STYLE $'=' STRING) 
+            htmCENTER_attrs       =     !(STYLE $'=' STRING)
 
             htmSTYLE_attrs        =    %(   ID $'=' STRING
 +                                       |   TYPE $'=' STRING
-+                                       ) 
++                                       )
 
             htmMETA_attrs         =    %(  NAME $'=' STRING
 +                                       |  CONTENT $'=' STRING
 +                                       |  $'HTTP-EQUIV' $'=' STRING
 +                                       )
 
-            htmLINK_attrs         =    %(  REL $'=' STRING 
-+                                       |  REV $'=' STRING 
-+                                       |  HREF $'=' STRING 
-+                                       |  TITLE $'=' STRING 
-+                                       |  MEDIA $'=' STRING 
-+                                       |  SIZES $'=' STRING 
-+                                       |  TYPE $'=' STRING 
-+                                       |  CHARSET $'=' STRING 
-+                                       )     
+            htmLINK_attrs         =    %(  REL $'=' STRING
++                                       |  REV $'=' STRING
++                                       |  HREF $'=' STRING
++                                       |  TITLE $'=' STRING
++                                       |  MEDIA $'=' STRING
++                                       |  SIZES $'=' STRING
++                                       |  TYPE $'=' STRING
++                                       |  CHARSET $'=' STRING
++                                       )
 
             htmBODY_attrs         =    %(  BACKGROUND $'=' STRING
 +                                       |  BGCOLOR $'=' *htmCOLOR_val
@@ -393,7 +393,7 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 +                                       |  ALINK $'=' *htmCOLOR_val
 +                                       |  ID $'=' STRING
 +                                       |  CLASS $'=' STRING
-+                                       )     
++                                       )
 
             htmH_attrs            =    %(  ALIGN $'=' *htmALIGN_val
 +                                       |  CLASS $'=' STRING
@@ -418,70 +418,70 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 +                                       |   CLASS $'=' STRING
 +                                       )
 
-            htmA_attrs            =    %(   ACCESSKEY $'=' STRING 
-+                                       |   CLASS $'=' STRING 
-+                                       |   $'DATA-COUNT' $'=' STRING 
-+                                       |   $'DATA-TEXT' $'=' STRING 
-+                                       |   $'DATA-URL' $'=' STRING 
-+                                       |   $'DATA-VIA' $'=' STRING 
-+                                       |   DIR $'=' STRING 
-+                                       |   HREF $'=' STRING 
-+                                       |   ID $'=' STRING 
+            htmA_attrs            =    %(   ACCESSKEY $'=' STRING
++                                       |   CLASS $'=' STRING
++                                       |   $'DATA-COUNT' $'=' STRING
++                                       |   $'DATA-TEXT' $'=' STRING
++                                       |   $'DATA-URL' $'=' STRING
++                                       |   $'DATA-VIA' $'=' STRING
++                                       |   DIR $'=' STRING
++                                       |   HREF $'=' STRING
++                                       |   ID $'=' STRING
 +                                       |   IMAGEANCHOR $'=' NUMBER
-+                                       |   NAME $'=' STRING 
-+                                       |   ONCLICK $'=' STRING 
++                                       |   NAME $'=' STRING
++                                       |   ONCLICK $'=' STRING
 +                                       |   ONCONTEXTMENU $'=' STRING
 +                                       |   ONMOUSEOUT $'=' STRING
 +                                       |   ONMOUSEOVER $'=' STRING
-+                                       |   REL $'=' STRING 
-+                                       |   REV $'=' STRING 
-+                                       |   SHARE_URL $'=' STRING 
-+                                       |   STYLE $'=' STRING 
-+                                       |   TABINDEX $'=' STRING 
-+                                       |   TARGET $'=' STRING 
-+                                       |   TYPE $'=' STRING 
-+                                       |   TITLE $'=' STRING 
-+                                       )     
++                                       |   REL $'=' STRING
++                                       |   REV $'=' STRING
++                                       |   SHARE_URL $'=' STRING
++                                       |   STYLE $'=' STRING
++                                       |   TABINDEX $'=' STRING
++                                       |   TARGET $'=' STRING
++                                       |   TYPE $'=' STRING
++                                       |   TITLE $'=' STRING
++                                       )
 
-            htmABBR_attrs         =    %(   CLASS $'=' STRING 
-+                                       |   TITLE $'=' STRING 
+            htmABBR_attrs         =    %(   CLASS $'=' STRING
++                                       |   TITLE $'=' STRING
 +                                       )
 
             htmIMG_attrs          =    %(   ALIGN $'=' (*htmALIGN_special_val | STRING)
-+                                       |   ALT $'=' STRING 
-+                                       |   BORDER $'=' NUMBER 
-+                                       |   CLASS $'=' STRING 
-+                                       |   HEIGHT $'=' STRING 
-+                                       |   HSPACE $'=' NUMBER 
++                                       |   ALT $'=' STRING
++                                       |   BORDER $'=' NUMBER
++                                       |   CLASS $'=' STRING
++                                       |   HEIGHT $'=' STRING
++                                       |   HSPACE $'=' NUMBER
 +                                       |   ID $'=' STRING
 +                                       |   ISMAP !($'=' ISMAP)
 +                                       |   LONGDESC $'=' STRING
-+                                       |   SRC $'=' STRING 
-+                                       |   STYLE $'=' STRING 
-+                                       |   TITLE $'=' STRING 
-+                                       |   USEMAP $'=' STRING 
-+                                       |   VSPACE $'=' NUMBER 
++                                       |   SRC $'=' STRING
++                                       |   STYLE $'=' STRING
++                                       |   TITLE $'=' STRING
++                                       |   USEMAP $'=' STRING
++                                       |   VSPACE $'=' NUMBER
 +                                       |   WIDTH $'=' STRING
-+                                       )     
++                                       )
 
-            htmAPPLET_attrs       =    %(  CODEBASE $'=' STRING 
+            htmAPPLET_attrs       =    %(  CODEBASE $'=' STRING
 +                                       |  CODE $'=' STRING
 +                                       |  NAME $'=' STRING
 +                                       |  ALT $'=' STRING
-+                                       |  ALIGN $'=' *htmALIGN_special_val 
-+                                       |  HEIGHT $'=' NUMBER 
-+                                       |  WIDTH $'=' NUMBER 
-+                                       |  HSPACE $'=' NUMBER 
-+                                       |  VSPACE $'=' NUMBER 
-+                                       )     
++                                       |  ALIGN $'=' *htmALIGN_special_val
++                                       |  HEIGHT $'=' NUMBER
++                                       |  WIDTH $'=' NUMBER
++                                       |  HSPACE $'=' NUMBER
++                                       |  VSPACE $'=' NUMBER
++                                       )
 
-            htmPARAM_attrs        =    %(   NAME $'=' STRING 
+            htmPARAM_attrs        =    %(   NAME $'=' STRING
 +                                       |   VALUE $'=' STRING
 +                                       )
 
             htmFONT_attrs         =    !(  COLOR $'=' *htmCOLOR_val !(SIZE $'=' SIZE_VALUE)
 +                                       |  SIZE $'=' SIZE_VALUE !(COLOR $'=' *htmCOLOR_val)
-+                                       )     
++                                       )
 
             htmBR_attrs           =    %(   CLEAR $'=' *htmCLEAR_val
 +                                       |   STYLE $'=' STRING
@@ -490,41 +490,41 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 
             htmAREA_attrs         =    %(  SHAPE $'=' *htmSHAPE_val
 +                                       |  COORDS $'=' STRING
-+                                       |  NOHREF 
-+                                       |  NOHREF $'=' NOHREF 
++                                       |  NOHREF
++                                       |  NOHREF $'=' NOHREF
 +                                       |  HREF $'=' STRING
 +                                       |  ALT $'=' STRING
-+                                       )     
++                                       )
 
             htmINPUT_attrs        =    %(   ACCESSKEY $'=' STRING
-+                                       |   ALIGN $'=' htmALIGN_special_val 
++                                       |   ALIGN $'=' htmALIGN_special_val
 +                                       |   ALT $'=' STRING
 +                                       |   AUTOCOMPLETE $'=' STRING
 +                                       |   BORDER $'=' NUMBER
-+                                       |   CHECKED $'=' CHECKED 
-+                                       |   CHECKED 
++                                       |   CHECKED $'=' CHECKED
++                                       |   CHECKED
 +                                       |   CLASS $'=' STRING
 +                                       |   ID $'=' STRING
-+                                       |   MAXLENGTH $'=' NUMBER 
++                                       |   MAXLENGTH $'=' NUMBER
 +                                       |   NAME $'=' STRING
 +                                       |   ONCLICK $'=' STRING
 +                                       |   ONFOCUS $'=' STRING
 +                                       |   PLACEHOLDER $'=' STRING
-+                                       |   SIZE $'=' NUMBER 
++                                       |   SIZE $'=' NUMBER
 +                                       |   SPELLCHECK $'=' STRING
-+                                       |   SRC $'=' STRING 
-+                                       |   STYLE $'=' STRING 
++                                       |   SRC $'=' STRING
++                                       |   STYLE $'=' STRING
 +                                       |   TABINDEX $'=' STRING
 +                                       |   TITLE $'=' STRING
 +                                       |   TYPE $'=' *htmTYPE_val
-+                                       |   VALUE $'=' STRING 
-+                                       )     
++                                       |   VALUE $'=' STRING
++                                       )
 
             htmSELECT_attrs       =    %(  NAME $'=' STRING
 +                                       |  ID $'=' STRING
 +                                       |  SIZE $'=' NUMBER
 +                                       |  MULTIPLE !($'=' MULTIPLE)
-+                                       )     
++                                       )
 
             htmOPTION_attrs       =    %(   VALUE $'=' STRING
 +                                       |   LABEL $'=' STRING
@@ -564,7 +564,7 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 +                                       |   COMPACT !($'=' COMPACT)
 +                                       |   START $'=' NUMBER
 +                                       |   TYPE $'=' (STRING | NUMBER)
-+                                       )     
++                                       )
 
             htmOL_LI_attrs        =    %(   CLASS $'=' STRING
 +                                       |   TYPE $'=' (STRING | NUMBER)
@@ -586,31 +586,31 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 +                                       |  ONCLICK $'=' STRING
 +                                       |  STYLE $'=' STRING
 +                                       |  SUMMARY $'=' STRING
-+                                       ) 
++                                       )
 
             htmFORM_attrs         =    %(  $'ACCEPT-CHARSET' $'=' STRING
 +                                       |  ACTION $'=' STRING
-+                                       |  METHOD $'=' *htmMETHOD_val 
-+                                       |  ENCTYPE $'=' STRING 
-+                                       |  ID $'=' STRING 
-+                                       |  NAME $'=' STRING 
-+                                       |  ONSUBMIT $'=' STRING 
-+                                       )     
++                                       |  METHOD $'=' *htmMETHOD_val
++                                       |  ENCTYPE $'=' STRING
++                                       |  ID $'=' STRING
++                                       |  NAME $'=' STRING
++                                       |  ONSUBMIT $'=' STRING
++                                       )
 
-            htmHR_attrs           =    %(  ALIGN $'=' *htmALIGN_val 
+            htmHR_attrs           =    %(  ALIGN $'=' *htmALIGN_val
 +                                       |  NOSHADE !($'=' NOSHADE)
-+                                       |  SIZE $'=' NUMBER 
++                                       |  SIZE $'=' NUMBER
 +                                       |  WIDTH $'=' (NUMBER | PERCENT)
-+                                       )     
++                                       )
 
-            htmTABLE_attrs        =    %(  ALIGN $'=' *htmALIGN_val 
+            htmTABLE_attrs        =    %(  ALIGN $'=' *htmALIGN_val
 +                                       |  BORDER !($'=' (NUMBER | BORDER))
-+                                       |  CELLPADDING $'=' NUMBER 
-+                                       |  CELLSPACING $'=' NUMBER 
++                                       |  CELLPADDING $'=' NUMBER
++                                       |  CELLSPACING $'=' NUMBER
 +                                       |  ID $'=' STRING
 +                                       |  SUMMARY $'=' STRING
 +                                       |  WIDTH $'=' (NUMBER | PERCENT)
-+                                       )     
++                                       )
 
             htmCAPTION_attr       =     !(ALIGN $'=' (TOP | BOTTOM))
 
@@ -618,18 +618,18 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 +                                       |  VALIGN $'=' *htmVALIGN_val !(ALIGN $'=' *htmALIGN_val)
 +                                       )
 
-            htmTH_TD_attrs        =    %(  ALIGN $'=' *htmALIGN_val 
-+                                       |  CLASS $'=' STRING 
-+                                       |  COLSPAN $'=' NUMBER 
-+                                       |  HEIGHT $'=' NUMBER 
-+                                       |  ID $'=' STRING 
+            htmTH_TD_attrs        =    %(  ALIGN $'=' *htmALIGN_val
++                                       |  CLASS $'=' STRING
++                                       |  COLSPAN $'=' NUMBER
++                                       |  HEIGHT $'=' NUMBER
++                                       |  ID $'=' STRING
 +                                       |  NOWRAP !($'=' NOWRAP)
-+                                       |  ROWSPAN $'=' NUMBER 
++                                       |  ROWSPAN $'=' NUMBER
 +                                       |  SCOPE $'=' STRING
 +                                       |  TITLE $'=' STRING
-+                                       |  VALIGN $'=' *htmVALIGN_val 
-+                                       |  WIDTH $'=' NUMBER 
-+                                       )     
++                                       |  VALIGN $'=' *htmVALIGN_val
++                                       |  WIDTH $'=' NUMBER
++                                       )
 
             htmALIGN_val          =     LEFT
 +                                 |     RIGHT
@@ -641,10 +641,10 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 +                                 |     LEFT
 +                                 |     RIGHT
 
-            htmCLEAR_val          =     LEFT 
-+                                 |     RIGHT 
-+                                 |     ALL 
-+                                 |     NONE 
+            htmCLEAR_val          =     LEFT
++                                 |     RIGHT
++                                 |     ALL
++                                 |     NONE
 
             htmCOLOR_val          =     RGB
 +                                 |     AQUA
@@ -690,7 +690,7 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 +                                 |     MIDDLE
 +                                 |     BOTTOM
 +                                 |     BASELINE
-*//-------- --------------------------------------------------------------------------------------------------------------
+*---------- --------------------------------------------------------------------------------------------------------------
             htmPatterns =
 +           'htmRecognizer/htmDOCTYPE/htmData/htmHTML/htmHTML_attrs/htmHEAD/htmTITLE/htmISINDEX/htmBASE/'
 +           'htmSCRIPT/htmNOSCRIPT/htmSTYLE/htmMETA/htmMETA_attrs/htmLINK/htmLINK_attrs/htmBODY/'
@@ -706,9 +706,9 @@ L03         NUMBER            =     $'  ' TY(2, 'NUMBER', NUMBER)
 +           'htmTABLE/htmTABLE_attrs/htmCAPTION/htmCAPTION_attr/htmTR/htmTR_attrs/'
 +           'htmTH/htmTD/htmTH_TD_attrs/htmADDRESS/htmALIGN_val/htmALIGN_special_val/htmCLEAR_val/'
 +           'htmCOLOR_val/htmMETHOD_val/htmSHAPE_val/htmTYPE_val/htmTYPE_style_val/htmVALIGN_val/'
-*//-------- ----------- --- --------------------------------------------------- ------------------------
+*---------- ----------- --- --------------------------------------------------- ------------------------
             hPatterns   =     htmPatterns
 H10         hPatterns   POS(0) BREAK('/') . hP '/' =                            :F(H20)
             $hP         =     TZ(3, hP, $hP)                                    :(H10)
 H20
-*//-------- ----------- --- --------------------------------------------------- ------------------------
+*---------- ----------- --- --------------------------------------------------- ------------------------

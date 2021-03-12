@@ -11,7 +11,7 @@
 *
 START    &trim     =  1
          &stlimit  =  -1
-*//      output(.output,6,218)
+*        output(.output,6,218)
          sp        =  span(' ')
          optsp     =  span(' ') | null
          endm      =  ' ' | rpos(0)
@@ -223,7 +223,7 @@ build_end
 * list - list parser table actions
 *------------------------------------------------------------------------------*
          define('list()a,i,j,entry')                       :(list_end)
-list     output    =  ;*// char(12)
+list     output    =  ;* char(12)
          i         =  0
 list0    a         =  sort(action[i],2)
          output    =
@@ -241,7 +241,7 @@ list_end
 * insert - list parser table actions
 *------------------------------------------------------------------------------*
          define('inserts()a,act,i,j,entry,token')                    :(inserts_end)
-inserts  output    =  ;*// char(12)
+inserts  output    =  ;* char(12)
          output    =  "IF (OBJECT_ID('BI_actions', 'U') IS NOT NULL) DROP TABLE BI_actions"
          output    =  "IF (OBJECT_ID('BI_gotos', 'U') IS NOT NULL) DROP TABLE BI_gotos"
          output    =  "GO"
@@ -285,7 +285,7 @@ inserts_end
 * print - print parser table
 *------------------------------------------------------------------------------*
          define('print()s,line,state,sym,line')            :(print_end)
-print    output    =  ;*// char(12)
+print    output    =  ;* char(12)
          s         =  terms ' $ ' nonterms
 print0   s         arb . sym endm =
          differ(sym)                                       :f(print1)
@@ -303,18 +303,18 @@ print4   output    =  lpad(state,3) ' |' line
          state     =  lt(state,maxstate) state + 1         :s(print2)f(return)
 print_end
 *//------------------------------------------------------------------------------*
-*// parse - parse the input string
+*   parse - parse the input string
 *//------------------------------------------------------------------------------*
-*// The current state of a shift-reduce parser is the state on top of the state stack. The detailed operation of such a parser is as follows:
-*// 1) Initialize the parse stack to contain a single state s0, where s0 is the distinguished initial state of the parser.
-*// 2) Use the state s on top of the parse stack and the current lookahead t to consult the action table entry action[s][t]:
-*//    2.1) If the action table entry is shift s' then push state s' onto the stack and advance the input so that the lookahead is set to the next token.
-*//    2.2) If the action table entry is reduce r and rule r has m symbols in its RHS, then pop m symbols off the parse stack.
-*//         Let s' be the state now revealed on top of the parse stack and N be the LHS nonterminal for rule r.
-*//         Then consult the goto table and push the state given by goto[s'][N] onto the stack. The lookahead token is not changed by this step.
-*//    2.3) If the action table entry is accept, then terminate the parse with success.
-*//    2.4) If the action table entry is error, then signal an error.
-*// 3) Repeat step (2) until the parser terminates.
+*   The current state of a shift-reduce parser is the state on top of the state stack. The detailed operation of such a parser is as follows:
+*   1) Initialize the parse stack to contain a single state s0, where s0 is the distinguished initial state of the parser.
+*   2) Use the state s on top of the parse stack and the current lookahead t to consult the action table entry action[s][t]:
+*      2.1) If the action table entry is shift s' then push state s' onto the stack and advance the input so that the lookahead is set to the next token.
+*      2.2) If the action table entry is reduce r and rule r has m symbols in its RHS, then pop m symbols off the parse stack.
+*           Let s' be the state now revealed on top of the parse stack and N be the LHS nonterminal for rule r.
+*           Then consult the goto table and push the state given by goto[s'][N] onto the stack. The lookahead token is not changed by this step.
+*      2.3) If the action table entry is accept, then terminate the parse with success.
+*      2.4) If the action table entry is error, then signal an error.
+*   3) Repeat step (2) until the parser terminates.
 *//
          define('parse()')                                 :(parse_end)
 parse    s         =  0
@@ -386,7 +386,7 @@ around   prod[i]   =  strip(line)
          prod[i]   break(' ') . rep[i] ' --> ' rem . pat[i]
          pat[i]    =  rpos(size(pat[i])) pat[i]
          prod[i]   break(' ') . X                          :(ploop)
-generate output    =  ;*// char(12)
+generate output    =  ;* char(12)
          symbol    =  term | nonterm
          nprod     =  i                                    :(return)
 error    output    =  'Invalid Grammar Definition'         :(END)
@@ -394,7 +394,7 @@ readg_end
 *------------------------------------------------------------------------------*
 * Main Program
 *------------------------------------------------------------------------------*
-*//      output    =  date() ' ' time()
+*        output    =  date() ' ' time()
          OUTPUT = 'READG'
          readg()
          OUTPUT = 'first'
@@ -409,8 +409,8 @@ readg_end
          print()
          OUTPUT = 'inserts'
          inserts()
-*//      output    =  date() ' ' time()
+*        output    =  date() ' ' time()
 *        parse()
 *
-*include "debug.inc"
+*-include "debug.inc"
 END

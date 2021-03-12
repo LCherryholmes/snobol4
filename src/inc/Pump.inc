@@ -1,47 +1,47 @@
-*//-------- --------------------------------------------------------------------------------------------
-*//         SQL Server Data Type defines.
-*//
-            SQLTEXT             =    35   ;*// 0x23
-            SQLVARBINARY        =    37   ;*// 0x25
-            SQLINTN             =    38   ;*// 0x26
-            SQLVARCHAR          =    39   ;*// 0x27
-            SQLBINARY           =    45   ;*// 0x2d
-            SQLIMAGE            =    34   ;*// 0x22
-            SQLCHARACTER        =    47   ;*// 0x2f
-            SQLINT1             =    48   ;*// 0x30
-            SQLBIT              =    50   ;*// 0x32
-            SQLINT2             =    52   ;*// 0x34
-            SQLINT4             =    56   ;*// 0x38
-            SQLMONEY            =    60   ;*// 0x3c
-            SQLDATETIME         =    61   ;*// 0x3d
-            SQLFLT8             =    62   ;*// 0x3e
-            SQLFLTN             =   109   ;*// 0x6d
-            SQLMONEYN           =   110   ;*// 0x6e
-            SQLDATETIMN         =   111   ;*// 0x6f
-            SQLFLT4             =    59   ;*// 0x3b
-            SQLMONEY4           =   122   ;*// 0x7a
-            SQLDATETIM4         =    58   ;*// 0x3a
-            SQLDECIMAL          =   106   ;*// 0x6a    New types for SQL 6.0 and later servers
-            SQLNUMERIC          =   108   ;*// 0x6c
-            SQLUNIQUEID         =    36   ;*// 0x24    New types for SQL 7.0 and later servers
-            SQLBIGCHAR          =   175   ;*// 0xaf
-            SQLBIGVARCHAR       =   167   ;*// 0xa7
-            SQLBIGBINARY        =   173   ;*// 0xad
-            SQLBIGVARBINARY     =   165   ;*// 0xa5
-            SQLBITN             =   104   ;*// 0x68
-            SQLNCHAR            =   239   ;*// 0xef
-            SQLNVARCHAR         =   231   ;*// 0xe7
-            SQLNTEXT            =    99   ;*// 0x63
-            SQLINT8             =   127   ;*// 0x7f    New types for SQL 2000 and later servers
-            SQLVARIANT          =    98   ;*// 0x62    
-            SQLUDT              =   240   ;*// 0xf0    New types for SQL 2005 and later servers
-            SQLXML              =   241   ;*// 0xf1
-            SQLTABLE            =   243   ;*// 0xf3    New types for SQL 2008 and later servers
-            SQLDATEN            =    40   ;*// 0x28
-            SQLTIMEN            =    41   ;*// 0x29
-            SQLDATETIME2N       =    42   ;*// 0x2a
-            SQLDATETIMEOFFSETN  =    43   ;*// 0x2b
-*//---------------------------------------------------------------------------------------------------------------------
+*---------- --------------------------------------------------------------------------------------------
+*           SQL Server Data Type defines.
+*
+            SQLTEXT             =    35   ;* 0x23
+            SQLVARBINARY        =    37   ;* 0x25
+            SQLINTN             =    38   ;* 0x26
+            SQLVARCHAR          =    39   ;* 0x27
+            SQLBINARY           =    45   ;* 0x2d
+            SQLIMAGE            =    34   ;* 0x22
+            SQLCHARACTER        =    47   ;* 0x2f
+            SQLINT1             =    48   ;* 0x30
+            SQLBIT              =    50   ;* 0x32
+            SQLINT2             =    52   ;* 0x34
+            SQLINT4             =    56   ;* 0x38
+            SQLMONEY            =    60   ;* 0x3c
+            SQLDATETIME         =    61   ;* 0x3d
+            SQLFLT8             =    62   ;* 0x3e
+            SQLFLTN             =   109   ;* 0x6d
+            SQLMONEYN           =   110   ;* 0x6e
+            SQLDATETIMN         =   111   ;* 0x6f
+            SQLFLT4             =    59   ;* 0x3b
+            SQLMONEY4           =   122   ;* 0x7a
+            SQLDATETIM4         =    58   ;* 0x3a
+            SQLDECIMAL          =   106   ;* 0x6a    New types for SQL 6.0 and later servers
+            SQLNUMERIC          =   108   ;* 0x6c
+            SQLUNIQUEID         =    36   ;* 0x24    New types for SQL 7.0 and later servers
+            SQLBIGCHAR          =   175   ;* 0xaf
+            SQLBIGVARCHAR       =   167   ;* 0xa7
+            SQLBIGBINARY        =   173   ;* 0xad
+            SQLBIGVARBINARY     =   165   ;* 0xa5
+            SQLBITN             =   104   ;* 0x68
+            SQLNCHAR            =   239   ;* 0xef
+            SQLNVARCHAR         =   231   ;* 0xe7
+            SQLNTEXT            =    99   ;* 0x63
+            SQLINT8             =   127   ;* 0x7f    New types for SQL 2000 and later servers
+            SQLVARIANT          =    98   ;* 0x62
+            SQLUDT              =   240   ;* 0xf0    New types for SQL 2005 and later servers
+            SQLXML              =   241   ;* 0xf1
+            SQLTABLE            =   243   ;* 0xf3    New types for SQL 2008 and later servers
+            SQLDATEN            =    40   ;* 0x28
+            SQLTIMEN            =    41   ;* 0x29
+            SQLDATETIME2N       =    42   ;* 0x2a
+            SQLDATETIMEOFFSETN  =    43   ;* 0x2b
+*-----------------------------------------------------------------------------------------------------------------------
             DATA('Fmt(bcpDataType,bcpPrefixLength,bcpDataLength,sqlDataSize,sqlDataLength,sqlDataType,bcpColumnCollation)')
             FmtT                      =   TABLE()
             FmtT['bit']               =   Fmt('SQLCHAR',    1,  3,   2,  1, SQLBITN,           '""')
@@ -70,24 +70,24 @@
             FmtT['varbinarymax']      =   Fmt('SQLBINARY',   ,  0,  -1,   , SQLBIGVARBINARY,   '""')
             FmtT['image']             =   Fmt('SQLIMAGE',    ,  0,   0,   , SQLIMAGE,          '""')
             FmtT['sql_variant']       =   Fmt('SQLVARIANT', 4,   ,   1,   , SQLVARIANT,        '""')
-            FmtT['timestamp']         =   Fmt('SQLBINARY',  1,  8,   8,   , SQLBINARY,         '""') ;*// 189
+            FmtT['timestamp']         =   Fmt('SQLBINARY',  1,  8,   8,   , SQLBINARY,         '""') ;* 189
             FmtT['uniqueidentifier']  =   Fmt('SQLCHAR',    1, 36,  16,   , SQLUNIQUEID,       '""')
             FmtT['xml']               =   Fmt('SQLCHAR',     ,  0,    ,   , SQLXML,            'SQL_Latin1_General_CP1_CI_AS')
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
-            BULK_Pump   =   1  ;*// BULK INSERT via format and data file
-            SQL_Pump    =   2  ;*// SQL INSERT via SQLNCLI ODBC routines
-            BCP_Pump    =   3  ;*// BCP API via SQLNCLI bcp_* routines
-            DynSQL_Pump =   4  ;*// Dynamic SQL via SQLNCLI ODBC routines
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
-            DATA('column(colName,colDataType,colExpr)')            
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
+*---------- ----------- --- --------------------------------------------------- --------------------------------
+            BULK_Pump   =   1  ;* BULK INSERT via format and data file
+            SQL_Pump    =   2  ;* SQL INSERT via SQLNCLI ODBC routines
+            BCP_Pump    =   3  ;* BCP API via SQLNCLI bcp_* routines
+            DynSQL_Pump =   4  ;* Dynamic SQL via SQLNCLI ODBC routines
+*---------- ----------- --- --------------------------------------------------- --------------------------------
+            DATA('column(colName,colDataType,colExpr)')
+*---------- ----------- --- --------------------------------------------------- --------------------------------
             DEFINE('PumpInit(columns,name,ftcol)SQL')                           :(PumpInitEnd)
 PumpInit    SQL         =   GenTABLE(columns, name)
             SQL_A_ExecDirect(hstmt, SQL)                                        :F(PumpInitE)
             SQL_EndTranCommit()                                                 :F(PumpInitE)
-*//         SQL         =   DIFFER(ftcol) GenFTIndex(name, ftcol)               :F(PumpInit0)
-*//         SQL_A_ExecDirect(hstmt, SQL)                                        :F(PumpInitE)
-*//         SQL_EndTranCommit()                                                 :F(PumpInitE)
+*           SQL         =   DIFFER(ftcol) GenFTIndex(name, ftcol)               :F(PumpInit0)
+*           SQL_A_ExecDirect(hstmt, SQL)                                        :F(PumpInitE)
+*           SQL_EndTranCommit()                                                 :F(PumpInitE)
 PumpInit0   DIFFER(xPump)                                                       :S($('PumpInit' xPump))F(RETURN)
 PumpInit1   BULK_Fmt(columns, name)
             BULK_Cmds(columns, name)                                            :(RETURN)
@@ -96,14 +96,14 @@ PumpInit3   BCP_Init(columns, name)                                             
 PumpInitE   OUTPUT      =   SQL_GetLastError()
             OUTPUT      =   SQL                                                 :(FRETURN)
 PumpInitEnd
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
+*---------- ----------- --- --------------------------------------------------- --------------------------------
             DEFINE('PumpOpen(nm,name)')                                         :(PumpOpenEnd)
 PumpOpen    DIFFER(xPump)                                                       :S($('PumpOpen' xPump))F(RETURN)
 PumpOpen1   OUTPUT(nm, 4, name '.bcp[-r1 -w]')                                  :S(RETURN)F(ioerr)
 PumpOpen2   $nm         =                                                       :(RETURN)
 PumpOpen3                                                                       :(RETURN)
 PumpOpenEnd
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
+*---------- ----------- --- --------------------------------------------------- --------------------------------
             DEFINE('PumpRow(nm,columns)')                                       :(PumpRowEnd)
 PumpRow     DIFFER(xPump)                                                       :S($('PumpRow' xPump))F(RETURN)
 PumpRow1    BULK_Row(nm, columns)                                               :S(RETURN)F(FRETURN)
@@ -111,7 +111,7 @@ PumpRow2    $nm         =   $nm nl (DIFFER($nm) ', ', '  ')
             $nm         =   $nm SQL_Vals(columns)                               :(RETURN)
 PumpRow3    BCP_Row(columns)                                                    :S(RETURN)F(FRETURN)
 PumpRowEnd
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
+*---------- ----------- --- --------------------------------------------------- --------------------------------
             DEFINE('PumpClose(nm,name,count)SQL')                               :(PumpCloseEnd)
 PumpClose   DIFFER(xPump)                                                       :S($('PumpClose' xPump))F(RETURN)
 PumpClose1  ENDFILE(4)                                                          :F(ioerr)
@@ -126,20 +126,20 @@ PumpClose5  GT(count)                                                           
 PumpCloseE  OUTPUT      =   SQL_GetLastError()
             OUTPUT      =   SQL                                                 :(FRETURN)
 PumpCloseEnd
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
+*---------- ----------- --- --------------------------------------------------- --------------------------------
             DEFINE('PumpFini()')                                                :(PumpFiniEnd)
 PumpFini    DIFFER(xPump)                                                       :S($('PumpFini' xPump))F(RETURN)
 PumpFini1                                                                       :(RETURN)
 PumpFini2                                                                       :(RETURN)
 PumpFini3   BCP_Fini()                                                          :S(RETURN)F(FRETURN)
 PumpFiniEnd
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
+*---------- ----------- --- --------------------------------------------------- --------------------------------
             DEFINE('BCP_Init(columns,name)'
 +               'cbIndicator,cbUserData,colDataType,colName,'
 +               'column,eDataType,fmt,iC,p,s'
 +           )                                                                   :(BCP_InitEnd)
 BCP_Init    bcp_init(name)                                                      :F(FRETURN)
-            iC          =   0           
+            iC          =   0
 BCP_Init3   iC          =   iC + 1
             column      =   columns[iC]                                         :F(BCP_Init7)
             colName     =   DIFFER(colName(column), 'id$') colName(column)      :F(BCP_Init3)
@@ -154,14 +154,14 @@ BCP_Init4   colDataType =   DTDigest(colDataType, .p, .s)
             bcp_colfmt(iC, eDataType, cbIndicator, cbUserData, colName)         :S(BCP_Init3)F(FRETURN)
 BCP_Init7                                                                       :(RETURN)
 BCP_InitEnd
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
+*---------- ----------- --- --------------------------------------------------- --------------------------------
             DEFINE('BCP_Row(columns)'
 +               'cbUserData,colDataType,colExpr,colMore,colName,colSize,colVal,'
 +               'column,eDataType,fmt,iC,iP,p,s'
 +           )                                                                   :(BCP_RowEnd)
 BCP_Row     iP          =   0
 BCP_Row1    iP          =   LT(iP, 2) iP + 1                                    :F(BCP_Row9)
-            iC          =   0           
+            iC          =   0
 BCP_Row3    iC          =   iC + 1
             column      =   columns[iC]                                         :F(BCP_Row7)
             colName     =   DIFFER(colName(column), 'id$') colName(column)      :F(BCP_Row3)
@@ -194,19 +194,19 @@ BCP_Row7    (EQ(iP, 1))                                                         
 BCP_Row9                                                                        :(RETURN)
 BCP_RowE    OUTPUT      =   SQL_GetLastError()                                  :(FRETURN)
 BCP_RowEnd
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
+*---------- ----------- --- --------------------------------------------------- --------------------------------
             DEFINE('BCP_Close()')                                               :(BCP_CloseEnd)
 BCP_Close   bcp_batch()                                                         :S(RETURN)
             OUTPUT      =   SQL_GetLastError()                                  :(FRETURN)
 BCP_CloseEnd
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
+*---------- ----------- --- --------------------------------------------------- --------------------------------
             DEFINE('BCP_Fini()')                                                :(BCP_FiniEnd)
 BCP_Fini    bcp_done()                                                          :S(RETURN)
             OUTPUT      =   SQL_GetLastError()                                  :(FRETURN)
 BCP_FiniEnd
-*//-------- --------------- --- --------------------------------------------------- ----------------------------
+*---------- --------------- --- --------------------------------------------------- ----------------------------
             bcpInt          =   SPAN('0123456789')
-*//-------- --------------- --- --------------------------------------------------- ----------------------------
+*---------- --------------- --- --------------------------------------------------- ----------------------------
             DEFINE('DTDigest(DTDigest,nmP,nmS)max')                             :(DTDigestEnd)
 DTDigest    $nmP            =
             $nmS            =
@@ -220,7 +220,7 @@ DTDigest10  DTDigest        =   LEQ($nmP, 'max') DTDigest 'max'
             $nmP            =   LEQ(DTDigest, 'ntext') max                      :S(RETURN)
             $nmP            =   LEQ(DTDigest, 'image') max                      :(RETURN)
 DTDigestEnd
-*//-------- --------------- --- --------------------------------------------------- ----------------------------
+*---------- --------------- --- --------------------------------------------------- ----------------------------
             DEFINE('BULK_Pfx(len,datatype)fmt,pfxLen')                          :(BULK_PfxEnd)
 BULK_Pfx    fmt             =   FmtT[datatype]
             pfxLen          =   bcpPrefixLength(fmt)
@@ -234,7 +234,7 @@ BULK_Pfx5   pfxLen          =   GT(pfxLen, 0) pfxLen - 1                        
             BULK_Pfx        =   BULK_Pfx CHAR(REMDR(len, 256))
             len             =   len / 256                                       :(BULK_Pfx5)
 BULK_PfxEnd
-*//-------- --------------- --- --------------------------------------------------- ----------------------------
+*---------- --------------- --- --------------------------------------------------- ----------------------------
             DEFINE('BULK_Fmt(columns,name)'
 +              'bcpOutput,fmt,column,colName,colDataLen,colDataType,i,j,p,pfxLen,s'
 +           )                                                                       :(BULK_FmtEnd)
@@ -264,7 +264,7 @@ BULK_Fmt1   i               =   i + 1
 +                               ' ' bcpColumnCollation(fmt)                         :(BULK_Fmt1)
 BULK_Fmt9   ENDFILE(4)                                                              :(RETURN)
 BULK_FmtEnd
-*//-------- --------------- --- ----------------------------------------------- ----------------------------
+*---------- --------------- --- ----------------------------------------------- ----------------------------
             DEFINE('GenTABLE(columns,name)i,n')                                 :(GenTABLEEnd)
 GenTABLE    GenTABLE        =   "IF (OBJECT_ID('" name "', 'U') IS NULL)" nl
             GenTABLE        =   GenTABLE "    CREATE TABLE " name nl
@@ -281,16 +281,16 @@ GenTABLE1   i               =   i + 1
 GenTABLE9   GenTABLE        =   GenTABLE "    , CONSTRAINT PK_" name " PRIMARY KEY CLUSTERED (id$)"
             GenTABLE        =   GenTABLE "    )" nl                             :(RETURN)
 GenTABLEEnd
-*//-------- --------------- --- ----------------------------------------------- ----------------------------
+*---------- --------------- --- ----------------------------------------------- ----------------------------
             xFT_Catalog =   '5ivesAlive'
-*//-------- --------------- --- ----------------------------------------------- ----------------------------
+*---------- --------------- --- ----------------------------------------------- ----------------------------
             DEFINE('GenFTCat()')                                                :(GenFTCatEnd)
 GenFTCat    GenFTCat        =   "CREATE FULLTEXT"
                                 "        CATALOG [" xFT_Catalog "]"
                                 "           WITH ACCENT_SENSITIVITY = OFF"
                                 "  AUTHORIZATION dbo"                           :(RETURN)
 GenFTCatEnd
-*//-------- --------------- --- ----------------------------------------------- ----------------------------
+*---------- --------------- --- ----------------------------------------------- ----------------------------
             DEFINE('GenFTIndex(name,ftcol)')                                    :(GenFTIndexEnd)
 GenFTIndex  GenFTIndex      =   "DECLARE @object_id int" nl
 +                               "SET @object_id = OBJECT_ID('dbo." name "')" nl
@@ -302,7 +302,7 @@ GenFTIndex  GenFTIndex      =   "DECLARE @object_id int" nl
 +                               "               WITH CHANGE_TRACKING = MANUAL" nl
 +                               "                  , STOPLIST = OFF" nl         :(RETURN)
 GenFTIndexEnd
-*//-------- --------------- --- ----------------------------------------------- ----------------------------
+*---------- --------------- --- ----------------------------------------------- ----------------------------
             DEFINE('BULK_Cmds(columns,name)'
 +              'sqlOutput,bcpdir,fmt,column,colName,colDataType,i'
 +           )                                                                   :(BULK_CmdsEnd)
@@ -327,7 +327,7 @@ BULK_Cmds9  sqlOutput       =   ")"
             sqlOutput       =   "GO"
             ENDFILE(4)                                                          :(RETURN)
 BULK_CmdsEnd
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
+*---------- ----------- --- --------------------------------------------------- --------------------------------
             DEFINE('BULK_Row(nm,columns)'
 +              'column,colName,colDataType,colExpr,colVal,colLen,j,p,row,s'
 +           )                                                                   :(BULK_RowEnd)
@@ -348,17 +348,17 @@ BULK_Row3   j           =   j + 1
             row         =   row BULK_Pfx(colLen, colDataType) colVal            :(BULK_Row3)
 BULK_Row7   $nm         =   row                                                 :(RETURN)
 BULK_RowEnd
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
+*---------- ----------- --- --------------------------------------------------- --------------------------------
             DEFINE('SQL_Vals(columns)'
 +              'column,colName,colDataType,colExpr,colVal,colLen,i,j,p,row,s'
 +           )                                                                   :(SQL_ValsEnd)
 SQL_Vals    row         =   "("
-            i           =   0           
+            i           =   0
             j           =   0
 SQL_Vals3   j           =   j + 1
             column      =   columns[j]                                          :F(SQL_Vals7)
             colName     =   DIFFER(column) colName(column)                      :F(SQL_Vals3)
-            i           =   DIFFER(colName, 'id$') i + 1                        :F(SQL_Vals3)                     
+            i           =   DIFFER(colName, 'id$') i + 1                        :F(SQL_Vals3)
             row         =   GT(i, 1) row ', '
             colDataType =   colDataType(column)
             colDataType =   DTDigest(colDataType, .p, .s)
@@ -372,8 +372,8 @@ SQL_Vals3   j           =   j + 1
             colVal      =   IDENT(colDataType, 'nvarchar')    "N'" SqlSQize(colVal) "'"
             colVal      =   IDENT(colDataType, 'nvarcharmax') "N'" SqlSQize(colVal) "'"
             colVal      =   IDENT(colDataType, 'datetime')    "'" SqlSQize(colVal) "'"
-*//         colVal      =   IDENT(colDataType, 'decimal')     "'" SqlSQize(colVal) "'"
-*//         colVal      =   IDENT(colDataType, 'numeric')     "'" SqlSQize(colVal) "'"
+*           colVal      =   IDENT(colDataType, 'decimal')     "'" SqlSQize(colVal) "'"
+*           colVal      =   IDENT(colDataType, 'numeric')     "'" SqlSQize(colVal) "'"
             colVal      =   IDENT(colDataType, 'bigint') colVal
             colVal      =   IDENT(colDataType, 'int') +colVal
             colVal      =   IDENT(colDataType, 'smallint') +colVal
@@ -384,7 +384,7 @@ SQL_Vals5   row         =   row colVal                                          
 SQL_Vals7   row         =   row ')'
             SQL_Vals    =   row                                                 :(RETURN)
 SQL_ValsEnd
-*//-------- ----------- --- ---------------------------------------------------
+*---------- ----------- --- ---------------------------------------------------
             DEFINE('MinId(id1,id2)cmp,dflt,idx1,idx2,ret')
             DEFINE('MaxId(id1,id2)cmp,dflt,idx1,idx2,ret')                      :(IdEnd)
 MinId       ret         =   .MinId
@@ -400,7 +400,7 @@ Id          idx1        =   (DIFFER(id1) id1, dflt)
             $ret        =   id1
             $ret        =   EVAL(cmp) id2                                       :(RETURN)
 IdEnd
-*//-------- ----------- --- ---------------------------------------------------
+*---------- ----------- --- ---------------------------------------------------
             DEFINE('MinDate(d1,d2)cmp,dflt,dx1,dx2,ret')
             DEFINE('MaxDate(d1,d2)cmp,dflt,dx1,dx2,ret')                        :(DateEnd)
 MinDate     ret         =   .MinDate
@@ -414,7 +414,7 @@ Date        dx1         =   (DIFFER(d1) d1, dflt)
             $ret        =   d1
             $ret        =   EVAL(cmp) d2                                        :(RETURN)
 DateEnd
-*//-------- ----------- --- ---------------------------------------------------
+*---------- ----------- --- ---------------------------------------------------
             DEFINE('ReadConfig(name,incl_domains,modulo,number)'
 +               'eDomain,eId,eName,eQuery,hQuery,sQuery'
 +           )                                                                   :(ReadConfigEnd)
@@ -444,16 +444,16 @@ ReadConfig2 SQL_Fetch(hQuery)                                                   
             eDomain     =   SQL_GetData(hQuery, 4)                              :F(ReadConfigE)
             eId         =   +eId
             (EQ(incl_domains, FALSE) IDENT(eDomain), EQ(incl_domains, TRUE))    :F(ReadConfig2)
-            xMaxEntity  =   GT(eId, xMaxEntity) eId                             
-            xIT[eId]    =   IDENT(xIT[eId]) TABLE(7)                            ;*// :F(ReadConfig2)
+            xMaxEntity  =   GT(eId, xMaxEntity) eId
+            xIT[eId]    =   IDENT(xIT[eId]) TABLE(7)                            ;* :F(ReadConfig2)
             xIT[eId]['Name'] = eName
-            xIT[eId]['Query'] = eQuery                                          
+            xIT[eId]['Query'] = eQuery
             xIT[eId]['Domain'] = eDomain                                        :(ReadConfig2)
 ReadConfig3 SQL_FreeStmt(hQuery)                                                :F(SQLFail)
             IniWrite(name '.ini', xIT)                                          :(RETURN)
 ReadConfigE OUTPUT      =   'SQL Failure: ' SQL_GetLastError()                  :(FRETURN)
 ReadConfigEnd
-*//-------- ----------- --- ---------------------------------------------------
+*---------- ----------- --- ---------------------------------------------------
             DEFINE('ReadCities()'
 +               'cId,cCity,cState,cLatDeg,cLatMin,cLonDeg,cLonMin,hQuery'
 +           )
@@ -474,12 +474,12 @@ ReadCities1 SQL_Fetch(hQuery)                                                   
             cLon        =   GE(cLonDeg) cLonDeg + cLonDeg / 60.0
             cLon        =   LT(cLonDeg) cLonDeg - cLonMin / 60.0
             cId         =   +cId
-            xMaxCities  =   GT(cId, xMaxCities) cId                             
+            xMaxCities  =   GT(cId, xMaxCities) cId
             xCT[cId]    =   City(cCity ', ' cState, cLat, cLon)                 :(ReadCities1)
 ReadCities2 SQL_FreeStmt(hQuery)                                                :S(RETURN)F(SQLFail)
 ReadCitiesE OUTPUT      =   'SQL Failure: ' SQL_GetLastError()                  :(FRETURN)
 ReadCitiesEnd
-*//-------- ----------- --- ---------------------------------------------------
+*---------- ----------- --- ---------------------------------------------------
             DEFINE('ReadSchema(p)SQL,aS,f,hQuery,iS,o,st')                      :(ReadSchemaEnd)
 ReadSchema  tS          =   TABLE()
             hQuery      =   SQL_AllocStmt()                                     :F(SQLFail)
@@ -509,7 +509,7 @@ ReadSchema4 SQL_Fetch(hQuery)                                                   
 ReadSchema5 SQL_FreeStmt(hQuery)                                                :S(ReadSchema3)F(SQLFail)
 ReadSchemaE OUTPUT      =   'SQL Failure: ' SQL_GetLastError()                  :(FRETURN)
 ReadSchemaEnd
-*//-------- ----------- --- ---------------------------------------------------
+*---------- ----------- --- ---------------------------------------------------
             DEFINE('SetupCancel()eventName')                                    :(SetupCancelEnd)
             hCancel     =   -1
 ErrExit     OUTPUT      =   DIFFER(&ERRTYPE, 320) &ERRTEXT                      :S(ABORT)
@@ -517,15 +517,15 @@ ErrExit     OUTPUT      =   DIFFER(&ERRTYPE, 320) &ERRTEXT                      
             OUTPUT      =   'Cancelling ...'
             isCancelled =   TRUE                                                :(SCONTINUE)
 SetupCancel isCancelled =   FALSE
-*//         SETEXIT(.ErrExit)
-*//         &ERRLIMIT   =   1
+*           SETEXIT(.ErrExit)
+*           &ERRLIMIT   =   1
             eventName   =   '5ivesAlive_' xListener xNumber '_' getpid()
             hCancel     =   CreateEvent(TRUE, FALSE, eventName)
             OUTPUT      =   DIFFER(hCancel, -1) 'Event "' eventName '"'
 +                           ' created (' hCancel ').'                           :S(RETURN)
             OUTPUT      =   'Error: Cannot create cancel event "' eventName '"' :(FRETURN)
 SetupCancelEnd
-*//-------- ----------- --- ---------------------------------------------------
+*---------- ----------- --- ---------------------------------------------------
             DEFINE('IsCancelled()iRv')                                          :(IsCancelledEnd)
 IsCancelled IsCancelled =   EQ(isCancelled, TRUE) TRUE                          :S(RETURN)
             iRv         =   WaitForSingleObject(hCancel, 0)
@@ -535,21 +535,21 @@ IsCancelled IsCancelled =   EQ(isCancelled, TRUE) TRUE                          
             isCancelled =   EQ(iRv, 0) TRUE                                     :F(error)
             IsCancelled =   isCancelled                                         :(RETURN)
 IsCancelledEnd
-*//-------- ----------- --- ---------------------------------------------------
+*---------- ----------- --- ---------------------------------------------------
             DEFINE('SetupWait()')
             hTimer      =   -1                                                  :(SetupWaitEnd)
 SetupWait   hTimer      =   CreateWaitableTimer(TRUE)
             OUTPUT      =   DIFFER(hTimer, -1) 'Timer created (' hTimer ').'    :S(RETURN)
             OUTPUT      =   'Error: Cannot create waitable timer'               :(FRETURN)
 SetupWaitEnd
-*//-------- ----------- --- ---------------------------------------------------
+*---------- ----------- --- ---------------------------------------------------
             DEFINE('Wait(iMilliSecs)iObject')                                   :(WaitEnd)
 Wait        SetWaitableTimer(hTimer, iMilliSecs)                                :F(error)
             iObject     =   WaitForDoubleObjects(hCancel, hTimer, FALSE, -1)    :F(error)
-            isCancelled =   EQ(iObject, 0) TRUE                                 
+            isCancelled =   EQ(iObject, 0) TRUE
             OUTPUT      =   EQ(isCancelled, TRUE) 'Wait Interrupted ...'        :(RETURN)
 WaitEnd
-*//-------- ----------- --- ---------------------------------------------------
+*---------- ----------- --- ---------------------------------------------------
             DEFINE('Args(name)iArg,sArg,sOpt')                                  :(ArgsEnd)
 Args        xDebug      =   FALSE
             xOffline    =   FALSE
@@ -560,7 +560,7 @@ Args        xDebug      =   FALSE
             xUser       =
             xModulo     =
             xNumber     =
-            xPump       =   BCP_Pump            
+            xPump       =   BCP_Pump
             xTrace      =   0
             xVerbose    =   1
             iArg        =   HOST(3) - 1
@@ -582,7 +582,7 @@ Args1       sArg        =   HOST(2, iArg = iArg + 1)                            
 Args2       sArg        =   HOST(2, iArg = iArg + 1)                            :F(ArgsE)
             sArg        FENCE '-'                                               :S(ArgsE)
             sArg        FENCE RPOS(0)                                           :S(ArgsE)
-            sArg        FENCE REM . $sOpt RPOS(0)                               
+            sArg        FENCE REM . $sOpt RPOS(0)
             xPump       =   IDENT(sOpt, 'xPump') upr(xPump)                     :F(Args1)
             xPump       =   IDENT(xPump, 'BULK') BULK_Pump                      :S(Args1)
             xPump       =   IDENT(xPump, 'SQL') SQL_Pump                        :S(Args1)
@@ -602,4 +602,4 @@ ArgsE       OUTPUT      =   'Usage: ' name
             OUTPUT      =   '    -p "bulk" | "sql" | "bcp"  ; BULK insert, SQL insert, or BCP API'
             OUTPUT      =                                                       :(FRETURN)
 ArgsEnd
-*//-------- ----------- --- --------------------------------------------------- --------------------------------
+*---------- ----------- --- --------------------------------------------------- --------------------------------

@@ -1,11 +1,8 @@
-*//
-*// $Workfile: sqlncli.inc $ $Revision: 2 $ $Date: 3/10/05 11:44a $ 
-*//
-*// SQL Native Client. Interface to SQLNCLI10.dll
-*// 
-*//-----------------------------------------------------------------------------------------------------
-*// Load functions using their external names.
-*//
+*-------------------------------------------------------------------------------------------------------
+* SQL Native Client. Interface to SQLNCLI10.dll
+*-------------------------------------------------------------------------------------------------------
+* Load functions using their external names.
+*
             LOAD('EXT_COINITIALIZE_()',                   xInstall 'snolibc.dll')  :F(error)
             LOAD('EXT_SQL_CONNECT_(STRING,STRING,STRING,STRING,STRING,STRING)', xInstall 'snolibc.dll')  :F(error)
             LOAD('EXT_SQL_ALLOCSTMT_()',                  xInstall 'snolibc.dll')  :F(error)
@@ -28,9 +25,9 @@
             LOAD('EXT_BCP_MORETEXT(EXTERNAL)',            xInstall 'snolibc.dll')  :F(error)
             LOAD('EXT_BCP_BATCH()',                       xInstall 'snolibc.dll')  :F(error)
             LOAD('EXT_BCP_DONE()',                        xInstall 'snolibc.dll')  :F(error)
-*//-----------------------------------------------------------------------------------------------------
-*// Make functions available with nicer names.
-*//
+*-------------------------------------------------------------------------------------------------------
+* Make functions available with nicer names.
+*
             OPSYN("CoInitialize",         "EXT_COINITIALIZE_")              :F(error)
             OPSYN("SQL_Connect",          "EXT_SQL_CONNECT_")               :F(error)
             OPSYN("SQL_AllocStmt",        "EXT_SQL_ALLOCSTMT_")             :F(error)
@@ -53,7 +50,7 @@
             OPSYN("bcp_moretext",         "EXT_BCP_MORETEXT")               :F(error)
             OPSYN("bcp_batch",            "EXT_BCP_BATCH")                  :F(error)
             OPSYN("bcp_done",             "EXT_BCP_DONE")                   :F(error)
-*//-----------------------------------------------------------------------------------------------------
+*-------------------------------------------------------------------------------------------------------
             SQL_SUCCESS             =   0
             SQL_SUCCESS_WITH_INFO   =   1
             SQL_NO_DATA             =   100
@@ -61,4 +58,4 @@
             SQL_INVALID_HANDLE      =   -2
             SQL_STILL_EXECUTING     =   2
             SQL_NEED_DATA           =   99
-*//-----------------------------------------------------------------------------------------------------
+*-------------------------------------------------------------------------------------------------------

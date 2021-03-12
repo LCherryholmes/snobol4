@@ -126,8 +126,8 @@ L010        CoInitialize()                                                      
             xServer     =   'subs.company.pro'
             xFailover   =   'subf.company.pro'
             xDB         =   '5ivesAlive'
-            xUser       =   'apple'
-            xPassword   =   'apple123'
+            xUser       =   'prod'
+            xPassword   =   'prod123'
             SQL_Connect(xServer, xDB, xUser, xPassword, xAppl, xFailOver)       :S(L020S)F(L020F)
 L020F       TERMINAL    =   'SQL CONNECT Failure.'                              :(E010)
 L020S       TERMINAL    =   'SQL CONNECT Success.'

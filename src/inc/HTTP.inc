@@ -1,24 +1,22 @@
-*//-----------------------------------------------------------------------------------------------------
-*// $Workfile: HTTP.inc $ $Revision: 1 $ $Date: 2010/11/17 10:18a $ 
-*//-------- ----------- --- ----------------------------------------------------------------------------
+*-------------------------------------------------------------------------------------------------------
             xUserAgent   =   'Blogzilla/1.0 (compatible; MSIE 6.0; Windows NT 5.1; .NET CLR 1.1.4322)'
-*//-------- ----------- --- --------------------------------------------------- ------------------------
+*---------- ----------- --- --------------------------------------------------- ------------------------
             DEFINE('Pause(secs)')                                               :(PauseEnd)
 Pause       EQ(doHTTP, TRUE)                                                    :F(RETURN)
             sleep(RANDOM(secs * 1000))                                          :(RETURN)
 PauseEnd
-*//-------- ----------- --- ----------------------------------------------------------------------------
+*---------- ----------- --- ----------------------------------------------------------------------------
             DEFINE('HTTP_Init(name)cookies')                                    :(HTTP_InitEnd)
 HTTP_Init   EQ(doHTTP, TRUE)                                                    :F(RETURN)
             cookies     =   name 'Cookies.txt'
             curl        =   curl_easy_init()                                    :F(FRETURN)
-*//         EQ(cc = curl_easy_setopt(curl, CURLOPT_VERBOSE, TRUE))              :F(FRETURN)
+*           EQ(cc = curl_easy_setopt(curl, CURLOPT_VERBOSE, TRUE))              :F(FRETURN)
             EQ(cc = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, FALSE))      :F(FRETURN)
             EQ(cc = curl_easy_setopt(curl, CURLOPT_USERAGENT, xUserAgent))      :F(FRETURN)
             EQ(cc = curl_easy_setopt(curl, CURLOPT_COOKIEFILE, cookies))        :F(FRETURN)
             EQ(cc = curl_easy_setopt(curl, CURLOPT_COOKIEJAR, cookies))         :S(RETURN)F(FRETURN)
 HTTP_InitEnd
-*//-------- ----------- --- --------------------------------------------------- ------------------------
+*---------- ----------- --- --------------------------------------------------- ------------------------
             DEFINE('HTTP_Get(name,url,flds)slist')                              :(HTTP_GetEnd)
 HTTP_Get    xHTTP_Count = xHTTP_Count + 1
             url         =   DIFFER(flds) url '?' flds
@@ -44,7 +42,7 @@ HTTP_Get2   HTTP_Get    =   curl_easy_getdata()                                 
 HTTP_Get3   HTTP_Get    =   Read(name '-' xHTTP_Count '.txt', .t8Map)           :S(HTTP_Get9)F(error)
 HTTP_Get9   xxUrl       =   url                                                 :(RETURN)
 HTTP_GetEnd
-*//-------- ----------- --- --------------------------------------------------- ------------------------
+*---------- ----------- --- --------------------------------------------------- ------------------------
             DEFINE('HTTP_Post(name,url,flds,xtra)')                             :(HTTP_PostEnd)
 HTTP_Post   xHTTP_Count =   xHTTP_Count + 1
             url         =   DIFFER(xtra) url '?' xtra
@@ -62,4 +60,4 @@ HTTP_Post   xHTTP_Count =   xHTTP_Count + 1
 HTTP_Post3  HTTP_Post   =   Read(name '-' xHTTP_Count '.txt', .t8Map)           :S(HTTP_Post9)F(error)
 HTTP_Post9  xxUrl       =   url                                                 :(RETURN)
 HTTP_PostEnd
-*//-------- ----------- --- --------------------------------------------------- ------------------------
+*---------- ----------- --- --------------------------------------------------- ------------------------
