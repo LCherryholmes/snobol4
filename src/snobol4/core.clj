@@ -8,7 +8,7 @@
   (:require [clojure.tools.trace :refer :all])
   (:require [criterium.core :as criterium :refer :all])
   (:require [instaparse.core :as insta :refer [defparser]]); Clojure
-  (:refer-clojure :exclude [= + - * /])
+  (:refer-clojure :exclude [= + - * / num])
 ; (:require [instaparse.core :as insta :refer-macros [defparser]]); ClojureScript
 )
 ;---------------------------------------------------------------------------------------------------
@@ -221,29 +221,42 @@
 (defn TIME       [])
 ;---------------------------------------------------------------------------------------------------
 ; Conversions
-(defn     number [x] (try (Integer. x) (catch Exception E (try (Float. x) (catch Exception E ##NaN)))))
-(defn     ncvt   [x] (list 'number x)); `(try (Integer. ~x) (catch Exception E (try (Float. ~x) (catch Exception E #Nan))))
+(deftrace num    [x] (cond
+                       (double? x) x
+		                     (integer? x) (.doubleValue x)
+		                     true (try (Double/parseDouble x)
+		                            (catch NumberFormatException E ##NaN))))
+(defn     ncvt   [x] (list 'num x)); `(try (Integer. ~x) (catch Exception E (try (Float. ~x) (catch Exception E #Nan))))
 (defn     scvt   [x] (list 'str x))
 (defmacro numcvt [x] `(ncvt ~x)); `(try (Integer. ~x) (catch Exception E (try (Float. ~x) (catch Exception E #Nan))))
 (defmacro strcvt [x] `(str ~x))
 ;---------------------------------------------------------------------------------------------------
 ; Operators
-(defn assign        [n x]    nil)
-(defn annihilate    [x]      nil)
-(defn match         [s p]    nil)
-(defn match-replace [n s p]  nil)
-(defn keyword-value [n]      nil)
-(defn dollar-value  [n]      nil)
-(defn dot-name      [n]     `(if (list? ~n) ~n (list 'identity ~n)))
+(defn assign        [n x]     nil)
+(defn annihilate    [x]       nil)
+(defn match         [s p]     nil)
+(defn match-replace [n s p]   nil)
+(defn keyword-value [n]       nil)
+(defn dollar-value  [n]       nil)
+(defn dot-name      [n]      `(if (list? ~n) ~n (list 'identity ~n)))
 (defn $=            [p n])
 (defn .=            [p n])
-(defn negate        [p]     `(if (nil? ~p) ε nil))
-(defmacro uneval    [x]     `(if (list? ~x) ~x (list 'identity ~x)))
-(defn     x-2 [op x y]       (list op x y))
-(defn     x-n [op x y & zs]  (list op x y (map identity zs)))
-(defmacro n-1 [op x]         (list op (numcvt x)))
-(defmacro n-2 [op x y]       (list op (numcvt x) (numcvt y)))
-(defmacro n-n [op x y & zs] `(~op (numcvt ~x) (numcvt ~y) ~(map ncvt zs)))
+(defn negate        [p]      `(if (nil? ~p) ε nil))
+(defmacro vectorize [x]      `(if (vector? ~x) ~x (vector ~x)))
+(defn flatten-1     [Ω]       (mapcat #(if (sequential? %) % [%]) Ω))
+(defn flatten-one   [op & Ω]  (apply list (reduce
+												                    (fn [Φ ω] (reduce
+										                        (fn [Σ σ] (conj Σ σ)) Φ ω))
+										                      [op]
+										                      (vectorize Ω))))
+(defn     x-2 [op x y]        (list op x y))
+(defn     x-3 [op x y z]      (list op x y z))
+(defn     x-n [op x y z & Ω]  (flatten-1 (conj Ω z y x op)))
+(defmacro n-1 [op x]          (list op (numcvt x)))
+(defmacro n-2 [op x y]        (list op (numcvt x) (numcvt y)))
+(defmacro n-3 [op x y z]      (list op (numcvt x) (numcvt y)))
+(defmacro n-n [op x y z & Ω]  (flatten-1 (map ncvt (conj Ω z y x op))))
+(defmacro uneval [x]         `(if (list? ~x) ~x (list 'identity ~x)))
 ;---- ----- -------------------------------------------- ------- -- ----- ----------------------------------------------
 (defn =     ([x]        ##NaN)                        ; unary            programable
             ([n x]      (assign n x)))                ; binary   0 right assignment
@@ -419,7 +432,7 @@
 (def STMTNOS {:START 1 :END 21})
 (def CODE {
 :START    []
-2         ['(= BD [(| "BE" "BO" "B") (| "AR" "A") (| "DS" "D")])]
+2         ['(= BD [(EQ 0 0.0) (| "BE" "BO" "B") (| "AR" "A") (| "DS" "D")])]
 3         ['(? "BEARDS" BD)]
 4         ['(? "BEARD" BD)]
 5         ['(? "BEADS" BD)]
@@ -466,6 +479,7 @@
                  (let [[n & params] spec, f (symbol n)]
                    (eval (trace (list 'defn f ['& 'args] ε))) ε)))
     REPLACE  (let [[s1 s2 s3] args] (REPLACE s1 s2 s3))
+    EQ       (EQ (first args) (second args))
     Roman    ε;(apply Roman args)
   )
 )
