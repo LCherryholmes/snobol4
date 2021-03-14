@@ -6,7 +6,10 @@
   :dependencies [
     [org.clojure/clojure "1.10.1"]
     [org.clojure/tools.trace "0.7.11"]
-    [instaparse "1.4.10"]]
+    [org.clojure/tools.trace "0.7.11"]
+    [org.clojure/math.numeric-tower "0.0.4"]
+    [instaparse "1.4.10"]
+    [criterium "0.4.6"]]
   :main ^:skip-aot snobol4.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all

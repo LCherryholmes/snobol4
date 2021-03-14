@@ -5,20 +5,27 @@
   (:require [clojure.pprint :as pp])
   (:require [clojure.string :as string])
   (:require [clojure.java.io :as io])
-  (:require [instaparse.core :as insta :refer [defparser]]); Clojure
   (:require [clojure.tools.trace :refer :all])
+  (:require [criterium.core :as criterium :refer :all])
+  (:require [instaparse.core :as insta :refer [defparser]]); Clojure
+  (:refer-clojure :exclude [= + - * /])
 ; (:require [instaparse.core :as insta :refer-macros [defparser]]); ClojureScript
 )
 ;---------------------------------------------------------------------------------------------------
 (defn bug [x] (println (type x) " " x) x)
 (defn re-quote [& ss]
   (str "#'" (string/replace (apply str ss) #"(\\|')" #(str \\ (second %1))) "'"))
-(def label #"([^ \t\r\n+-]|\+)+")
+(def label #"[0-9A-Za-z][^ \t\r\n]*")
 (def white  #"([ \t]+|\n\+|\n\.)")
 (def grammar
-  (str "
-  stmt      ::=  label? (<_> body? <__> goto?)? <__> <eos?>
-  body      ::=  invoking | matching | replacing | assigning
+" stmt      ::=  label? body? goto? <__> <eos?>
+  label     ::=  #'[0-9A-Za-z][^ \\t\\r\\n]*'
+  body      ::=  <_> (invoking | matching | replacing | assigning)
+  goto      ::=  <_ ':' __>
+                 ( branch
+                 | sbranch (<__> fbranch)?
+                 | fbranch (<__> sbranch)?
+                 )
   invoking  ::=  subject
   matching  ::=  subject <_> pattern
   replacing ::=  subject <_> pattern <_ '='> replace
@@ -26,11 +33,6 @@
  <subject>  ::=  uop
  <pattern>  ::=  (<'?' _>)? and
  <replace>  ::=  (<_> expr)?
-  goto      ::=  <__ ':' __>
-                 ( branch
-                 | sbranch (<__> fbranch)?
-                 | fbranch (<__> sbranch)?
-                 )
   branch    ::=  target
   sbranch   ::=  <'S'> target
   fbranch   ::=  <'F'> target
@@ -74,21 +76,18 @@
   R         ::=  #'[0-9]+\\.[0-9]+'
   S         ::=  #'\"([^\"]|\\x3B)*\"'
               |  #'\\'([^\\']|\\x3B)*\\''
-  N         ::=  #'[A-Za-z][A-Z_a-z0-9\\.\\-]*'
-  label     ::=  #'[^ \\t\\r\\n+-.*][^ \\t\\r\\n]*'
+  N         ::=  #'[A-Za-z][A-Z_a-z0-9\\.]*'
   white     ::=  #'[ \\t]'
-"))
+")
 ;---------------------------------------------------------------------------------------------------
 (defn coder [ast stmtno]
   (insta/transform
     { :comment   (fn comment     [cmt]   [:comment cmt])
       :control   (fn control     [ctl]   [:control ctl])
       ;--------------------------------------------------------------------------
-      :stmt      (fn stmt [& ss]
-                   (let [{L :label B :body G :goto} (apply conj ss)]
-                     (apply vector ss)
-                     {(if L L stmtno) [B G]}
-                 ))
+      :stmt      (fn stmt        [& ss]  (let [{L :label B :body G :goto} (apply conj ss)]
+																						                     (apply vector ss)
+																						                     {(if L L stmtno) [B G]}))
       :label     (fn label       [L]     {:label (if (re-find #"^[0-9A-Z_a-z]+$" L) (keyword L) (str L))})
       :body      (fn body        [B]     {:body  B})
       :invoking  (fn invoking    [S    ] S)
@@ -98,11 +97,10 @@
       :assigning (fn assigning  ([S    ] (list '= S 'epsilon))
                                 ([S R  ] (list '= S R)))
       :goto      (fn goto        [& gs]  {:goto (reduce
-																																											(fn [bs b]
-																																												(let [key (first b) tgt (second b)]
-																																													(assoc bs key
-																																														(if (symbol? tgt) (keyword tgt) tgt)))) {} gs)
-                                         })
+																																																		(fn [bs b]
+																																																			(let [key (first b) tgt (second b)]
+																																																				(assoc bs key
+																																																					(if (symbol? tgt) (keyword tgt) tgt)))) {} gs)})
       :branch    (fn branch      [L]     [:G L])
       :sbranch   (fn sbranch     [L]     [:S L])
       :fbranch   (fn fbranch     [L]     [:F L])
@@ -116,7 +114,7 @@
       :cat       (fn cat        ([x] x) ([x  & ys]  (apply vector x ys)))
       :at        (fn at         ([x] x) ([x     y]  (list 'at x y)))
       :sum       (fn sum        ([x] x) ([x  op y]  (list (symbol op) x y)))
-      :hsh       (fn hsh        ([x] x) ([x     y]  (list 'hash x y)))
+      :hsh       (fn hsh        ([x] x) ([x     y]  (list 'sharp x y)))
       :div       (fn div        ([x] x) ([x     y]  (list '/ x y)))
       :mul       (fn mul        ([x] x) ([x     y]  (list '* x y)))
       :pct       (fn pct        ([x] x) ([x     y]  (list '% x y)))
@@ -125,41 +123,27 @@
       :ttl       (fn ttl        ([x] x) ([x     y]  (list 'tilde x y)))
       :uop       (fn uop        ([x] x) ([   op y]  (case op
                                                       "@" (list 'at y)
-                                                      "#" (list 'hash y)
+                                                      "#" (list 'sharp y)
                                                       "~" (list 'tilde y)
                                                           (list (symbol op) y))))
       :ndx       (fn ndx        ([n] n) ([n  & xs]  (apply list n xs)))
       :cnd       (fn cnd        ([x] x) ([x  & ys]  (apply vector 'comma x ys)))
       :inv       (fn inv         [f  & xs]          (apply list f xs))
       :N         (fn N           [n]                (symbol n))
-      :S         (fn S           [s]                (subs s 1 (- (count s) 1)))
+      :S         (fn S           [s]                (subs s 1 (clojure.core/- (count s) 1)))
       :I         edn/read-string
       :R         edn/read-string
     } ast))
 ;---------------------------------------------------------------------------------------------------
-(def parse-program    )
 (def parse-command    (insta/parser grammar :start :command))
 (def parse-statement  (insta/parser grammar :start :stmt :total true))
 (def parse-expression (insta/parser grammar :start :expr))
-
-(defn files [directories]
-  (reduce (fn [files directory]
-    (reduce (fn [files file]
-      (let [filenm (str file)]
-        (if (re-find #"^.+\.(sno|spt|inc|SNO|SPT|INC)$" filenm)
-          (conj files filenm) files)))
-      files
-      (file-seq (io/file directory))))
-    []
-    directories))
-
-(def dirs ["./src/sno" "./src/inc" "./src/test ./src/rinky"])
+;---------------------------------------------------------------------------------------------------
+(def stmtno (atom 0))
 (def out
   (fn [item]
       (binding [pp/*print-right-margin* 120, pp/*print-miser-width* 100]
         (pp/pprint item))))
-;---------------------------------------------------------------------------------------------------
-(def stmtno (atom 0))
 (defn compile-stmt [cmd]
    (let [stmt1 (string/replace cmd #"[ \t]*\r?\n[+.][ \t]*" " ")
 		       stmt2 (string/replace stmt1 #"\r?\n$" "")
@@ -174,98 +158,231 @@
 		       (out error))
 		     (out code))))
 ;---------------------------------------------------------------------------------------------------
-(def SNO [
-  "START"
-  " BD = ('BE' | 'B') ('AR' | 'A') ('DS' | 'D')"
-  " 'BEARDS' ? BD"
-  " 'BEARD'  ? BD"
-  " 'BEADS'  ? BD"
-  " 'BEAD'   ? BD"
-  " 'BARDS'  ? BD"
-  " 'BARD'   ? BD"
-  " 'BADS'   ? BD"
-  " 'BAD'    ? BD"
-  " 'BATS'   ? BD"
-  " BR  = ('B' | 'R') ('E' | 'EA') ('D' | 'DS')"
-  " 'BED'   ? BR"
-  " 'BEDS'  ? BR"
-  " 'BEAD'  ? BR"
-  " 'BEADS' ? BR"
-  " 'RED'   ? BR"
-  " 'REDS'  ? BR"
-  " 'READ'  ? BR"
-  " 'READS' ? BR"
-  "END"
-])
+(def  ε          "")
+(def  η          ##NaN)
+(def  &ALPHABET  (atom (apply vector (map #(char %) (range 256)))))
+(def  &ANCHOR    (atom 0))
+(def  &DUMP      (atom 0)); 1, 2, and 3 levels
+(def  &ERRLIMIT  (atom 0))
+(def  &ERRTEXT   (atom ε))
+(def  &ERRTYPE   (atom 0))
+(def  &FTRACE    (atom 0))
+(def  &FULLLSCAN (atom 0))
+(def  &LASTNO    (atom 0))
+(def  &LCASE     (atom "abcdefghijklmnopqrstuvwxyz"))
+(def  &MAXLNGTH  (atom 4194304))
+(def  &PROFILE   (atom 0))
+(def  &TRACE     (atom 0))
+(def  &TRIM      (atom 0))
+(def  &STCOUNT   (atom 0))
+(def  &STLIMIT   (atom 2147483647))
+(def  &UCASE     (atom "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
 ;---------------------------------------------------------------------------------------------------
-(defn re-cat [& regexs] (re-pattern (apply str regexs)))
-(def  eol     #"[\n]")
-(def  eos     #"[;\n]")
-(def  skip    #"[^\n]*")
-(def  fill    #"[^;\n]*")
-(def  komment (re-cat #"[*]" skip eol))
-(def  control (re-cat #"[-]" fill eos))
-(def  kode    (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
-(def  block   (re-cat komment "|" control "|" kode "|" eol))
-(defn doit []
-  (case 1
-    1 (doseq [s SNO] (compile-stmt s))
-    2 (doseq [filenm (files dirs)]
-        (let [program (slurp filenm)]
-          (println ";------------------------------------------------------ " filenm)
-          (doseq [command (re-seq block program)]
-            (let [cmd (first command)]
-                (cond
-                  (nil? cmd) nil
-                  (re-find #"^\*" cmd) nil
-                  (re-find #"^\-" cmd) nil
-                  true (compile-stmt cmd))))))
-    3 (doseq [filenm (files dirs)]
-        (with-open [rdr (io/reader filenm)]
-          (doseq [line (line-seq rdr)]
-            (let [ast (parse-command line) code (coder ast)]
-              (println code)))))
-  ))
+; Arrays and Tables
+(defn ARRAY      [A] ε)
+(defn ITEM       [])
+(defn PROTOTYPE  [])
+(defn SORT       [])
+(defn RSORT      [A])
+(defn TABLE      [T] ε)
 ;---------------------------------------------------------------------------------------------------
-(defn ZIP [E]
-  (loop [E (z/zipper #(or (list? %) (vector? %)) rest nil E) depth 0 direction :down]
-    (out (z/node E))
-    (case direction
-    :down  (if (z/branch? E)
-                    (recur (z/down E) (inc depth) :down)
-                    (if (= E (z/rightmost E))
-                          (if (= depth 0)
-                        (z/root E)
-                        (recur (z/up E) (dec depth) :right))
-                          (recur (z/right E) depth :down)))
-     :right (if (= E (z/rightmost E))
-                      (if (= depth 0)
-                        (z/root E)
-                        (recur (z/up E) (dec depth) :right))
-                      (recur (z/right E) depth :down)))))
+; Compilation
+(declare EVAL); accepts string or unevaluated expression
+(declare CODE)
 ;---------------------------------------------------------------------------------------------------
-;(defn assign [n new] (alter-var-root n (fn [old] new)))
-;(def x 10)
-;(println x)
-;(assign #'x 20)
-;(println x)
-;(def ^:dynamic x 10)
-;(defn tryit [] x)
-;(println x)
-;(println (binding [x 20] x))
-;(println (binding [x 20] (tryit)))
-;(println x)
+; Function control
+(defn APPLY      [])
+(defn ARG        [])
+(defn DEFINE     [])
+(defn LOAD       [])
+(defn LOCAL      [])
+(defn OPSYN      [])
+(defn UNLOAD     [])
 ;---------------------------------------------------------------------------------------------------
-;(import '[clojure.lang Var])
-;(Var/create 42); root binding
-;(let [V (.setDynamic (Var/create 0))]
-;  (do (var-get V); 0
-;      (with-bindings {V 42} (var-get V)))); 42
-;(the-ns 'snobol4.core)
-;(ns-map 'snobol4.core)
-;(ns-aliases 'snobol4.string)
-;(ns-publics 'snobol4.core)
-;(set! symbol expr)
+; Input/output
+(def  INPUT$     (atom ε))
+(def  OUTPUT$    (atom ε))
+(def  TERMINAL$  (atom ε))
+(defn BACKSPACE  [] ε)
+(defn DETACH     [] ε)
+(defn EJECT      [] ε)
+(defn ENDFILE    [] ε)
+(defn INPUT      [] ε)
+(defn OUTPUT     [] ε)
+(defn REWIND     [] ε)
+(defn SET        [] ε)
+;---------------------------------------------------------------------------------------------------
+; Memory
+(defn CLEAR      [] ε)
+(defn COLLECT    [] ε)
+(defn DUMP       [] ε)
+;---------------------------------------------------------------------------------------------------
+; Miscellaneous
+(defn CHAR       [] ε)
+(defn CONVERT    [] ε)
+(defn CONVERT    [] ε)
+(defn DATATYPE   [])
+(defn DATE       [])
+(defn SIZE       [s] 0)
+(defn TIME       [])
+;---------------------------------------------------------------------------------------------------
+; Conversions
+(defn     number [x] (try (Integer. x) (catch Exception E (try (Float. x) (catch Exception E ##NaN)))))
+(defn     ncvt   [x] (list 'number x)); `(try (Integer. ~x) (catch Exception E (try (Float. ~x) (catch Exception E #Nan))))
+(defn     scvt   [x] (list 'str x))
+(defmacro numcvt [x] `(number ~x)); `(try (Integer. ~x) (catch Exception E (try (Float. ~x) (catch Exception E #Nan))))
+(defmacro strcvt [x] `(str ~x))
+;---------------------------------------------------------------------------------------------------
+; Operators
+(defn assign        [n x]    nil)
+(defn annihilate    [x]      nil)
+(defn match         [s p]    nil)
+(defn match-replace [n s p]  nil)
+(defn keyword-value [n]      nil)
+(defn dollar-value  [n]      nil)
+(defn dot-name      [n]      `(if (list? ~n) ~n (list 'identity ~n)))
+(defn $=            [p n])
+(defn .=            [p n])
+(defn negate        [p]      `(if (nil? p) ε nil))
+(defmacro uneval    [x]      `(if (list? ~x) ~x (list 'identity ~x)))
+(defn     x-2 [op x y]      (list op x y))
+(defn     x-n [op x y & zs] (list op x y zs))
+(defmacro n-1 [op x]        (list op (numcvt x)))
+(defmacro n-2 [op x y]      (list op (numcvt x) (numcvt y)))
+(defmacro n-n [op x y & zs] `(~op (numcvt ~x) (numcvt ~y) ~(map ncvt zs)))
+;---- ----- -------------------------------------------- ------- -- ----- ----------------------------------------------
+(defn =     ([x]        ##NaN)                        ; unary            programable
+            ([n x]      (assign n x)))                ; binary   0 right assignment
+(defn ?     ([x]        (annihilate x))               ; unary            interrogation value annihilation
+            ([s p]      (match s p))                  ; binary   1 right match pattern
+            ([n s p]    (match-replace n s p)))       ; tertiary 1 right match pattern then replace
+(defn ?=    ([n s p]    (match-replace n s p)))       ; tertiary 1 right match pattern then replace
+(defn &     ([n]        (keyword-value n))            ; unary            keyword
+            ([x y]      ##NaN))                       ; binary   2 left  programable
+(defn |     ([x]        ##NaN)                        ; unary            programable
+            ([x y]      (x-2 'ALT x y))               ; binary   3 right pattern, alternation
+            ([x y & zs] (x-n 'ALT x y zs)))           ; multi    3 right pattern, alternation
+(defn at    ([n]        (list 'cursor n))             ; unary            pattern, assign cursor position
+            ([x y]      ##NaN))                       ; binary   4 right programable
+(defn +     ([x]        (n-1 clojure.core/+ x))       ; unary            addition
+            ([x y]      (n-2 clojure.core/+ x y))     ; binary   6 left  addition
+            ([x y & zs] (n-n clojure.core/+ x y zs))) ; multi    6 left  addition
+(defn -     ([x]        (n-1 clojure.core/- x))       ; unary            subtraction
+            ([x y]      (n-2 clojure.core/- x y))     ; binary   6 left  subtraction
+            ([x y & zs] (n-n clojure.core/- x y zs))) ; multi    6 left  subtraction
+(defn sharp ([x]        ##NaN)                        ; unary            programable
+            ([x y]      ##NaN))                       ; binary   7 left  programable
+(defn /     ([x]        ##NaN)                        ; unary            programable
+            ([x y]      (n-2 clojure.core// x y)))    ; binary   8 left  division
+(defn *     ([x]        (uneval x))                   ; unary            defer evaluation, unevaluated expression
+            ([x y]      (n-2 clojure.core/* x y))     ; binary   9 left  multiplication
+            ([x y & zs] (n-n clojure.core/* x y zs))) ; multi    9 left  multiplication
+(defn %     ([x]        ##NaN)                        ; unary            programable
+            ([x y]      ##NaN))                       ; binary  10 left  programable
+(defn !     ([x]        ##NaN)                        ; unary            programable
+            ([x y]      (n-2 Math/pow x y)))          ; binary  11 right exponentiation
+(defn **    ([x y]      (n-2 Math/pow x y)))          ; binary  11 right exponentiation
+(defn $     ([n]        (dollar-value n))             ; unary            indirection
+            ([x y]      (x-2 $= x y))                 ; binary  12 left  immediate assignment
+            ([x y & zs] (x-n $= x y zs)))             ; multi   12 left  immediate assignment
+(defn .     ([x]        (dot-name x))                 ; unary            name
+            ([x y]      (x-2 .= x y))                 ; binary  12 left  conditional assignment
+            ([x y & zs] (x-n .= x y zs)))             ; multi   12 left  conditional assignment
+(defn tilde ([x]        (list 'negate x))             ; unary            pattern, negates failure or success
+            ([x y]      ##NaN))                       ; binary  13 left  programable
+;---------------------------------------------------------------------------------------------------
+; Comparison
+(defmacro INTEGER [x])
+(defn primitive
+          [func default missing cvt condition]
+									 (list 'defn func
+									   (list []             missing)
+										  (list ['x]           (list 'if (condition (cvt 'x) default) ε))
+										  (list ['x 'y '& '_]  (list 'if (condition (cvt 'x) (cvt 'y)) ε))))
+(eval (primitive 'EQ     0   ε ncvt     #(list 'clojure.core/= %1 %2))); Numeric comparison
+(eval (primitive 'NE     0 nil ncvt     #(list 'not= %1 %2)))
+(eval (primitive 'LE     0   ε ncvt     #(list '<=   %1 %2)))
+(eval (primitive 'LT     0 nil ncvt     #(list '<    %1 %2)))
+(eval (primitive 'GE     0   ε ncvt     #(list '>=   %1 %2)))
+(eval (primitive 'GT     0 nil ncvt     #(list '>    %1 %2)))
+(eval (primitive 'IDENT  ε   ε identity #(list 'identical? %1 %2))); Object comparison
+(eval (primitive 'DIFFER ε nil identity #(list 'not  (list 'identical? %1 %2))))
+(eval (primitive 'LEQ    ε   ε scvt     #(list 'clojure.core/= %1 %2))); String comparison
+(eval (primitive 'LNE    ε nil scvt     #(list 'not= %1 %2)))
+(eval (primitive 'LLE    ε   ε scvt     #(list '<=   %1 %2)))
+(eval (primitive 'LLT    ε nil scvt     #(list '<    %1 %2)))
+(eval (primitive 'LGE    ε   ε scvt     #(list '>=   %1 %2)))
+(eval (primitive 'LGT    ε nil scvt     #(list '>    %1 %2)))
+;---- ----- -------------------------------------------- ------- -- ----- ----------------------------------------------
+; Numeric
+(defmacro SIN    []  `(defn SIN  [x] (Math/sin  ~(numcvt 'x))))
+(defmacro COS    []  `(defn COS  [x] (Math/cos  ~(numcvt 'x))))
+(defmacro TAN    []  `(defn TAN  [x] (Math/tan  ~(numcvt 'x))))
+(defmacro ASIN   []  `(defn ASIN [x] (Math/asin ~(numcvt 'x))))
+(defmacro ACOS   []  `(defn ACOS [x] (Math/acos ~(numcvt 'x))))
+(defmacro ATAN   []  `(defn ATAN [x] (Math/atan ~(numcvt 'x))))
+(defmacro EXP    []  `(defn EXP  [x] (Math/exp  ~(numcvt 'x))))
+(defmacro LN     []  `(defn LN   [x] (Math/log  ~(numcvt 'x))))
+(defmacro SQRT   []  `(defn SQRT [x] (Math/sqrt ~(numcvt 'x))))
+(defmacro REMDR  []  `(defn REMDR [x y] (clojure.core/rem ~(numcvt 'x) ~(numcvt 'y))))
+(defmacro CHOP   []  `(defn CHOP [x] (let [_x ~(numcvt 'x)] (if (< _x 0.0) (Math/ceil _x) (Math/floor _x)))))
+;---------------------------------------------------------------------------------------------------
+; Pattern match
+(defn ALT        [& Ps]   )
+(defn SEQ        [& Ps]   )
+(defn ANY        [S]      (list 'ANY$     S))
+(defn ARBNO      [P]      (list 'ARBNO!   P))
+(defn BREAK      [S]      (list 'BREAK$   S))
+(defn BREAKX     [S]      (list 'BREAKX$  S))
+(defn FENCE      [P]      (list 'FENCE!   P))
+(defn LEN        [I]      (list 'LEN#     I))
+(defn NOTANY     [S]      (list 'NOTANY$  S))
+(defn POS        [I]      (list 'POS#     I))
+(defn RPOS       [I]      (list 'RPOS#    I))
+(defn RTAB       [I]      (list 'RTAB#    I))
+(defn SPAN       [S]      (list 'SPAN$    S))
+(defn TAB        [I]      (list 'TAB#     I))
+(def  ARB                 (list 'ARB!      ))
+(def  BAL                 (list 'BAL!      ))
+(def  REM                 (list 'REM!      ))
+(def  ABORT               (list 'ABORT!    ))
+(def  FAIL                (list 'FAIL!     ))
+(def  SUCCEED             (list 'SUCCEED!  ))
+(def  FENCE               (list 'FENCE!))
+;---------------------------------------------------------------------------------------------------
+; Program control
+(defn EXIT       []); string or integer argument
+(defn HOST       [])
+(defn SETEXIT    [])
+(defn STOPTR     [])
+(defn TRACE      [])
+;---------------------------------------------------------------------------------------------------
+; Program-defined datatype
+(defn DATA       [])
+(defn FIELD      [])
+(defn DATATYPE   [])
+;---------------------------------------------------------------------------------------------------
+; Synthesis (string, pattern, and object)
+(defn DUPL       [x i]); using string concat or pattern sequence
+(defn LPAD       [])
+(defn REPLACE    [s1 s2 s3] "")
+(defn REVERSE    [])
+(defn RPAD       [])
+(defn SUBSTR     [])
+(defn TRIM       [])
+(defn COPY       [x]); Object creation
+;---------------------------------------------------------------------------------------------------
+(defn LEN$       [s length] (loop [s s len length] (if (<= len 0) s (if (not (seq s)) nil (recur (rest s) (dec len))))))
+(defn POS#       [i])
+(defn RPOS#      [i])
+(defn TAB#       [i])
+(defn RTAB#      [i])
+(defn ANY$       [s])
+(defn NOTANY$    [s])
+(defn BREAK$     [s])
+(defn BREAKX$    [s])
+;---------------------------------------------------------------------------------------------------
+(defn LEN$$ [s len] (if (<= len 0) s (if (not (seq s)) nil (lazy-seq (cons (first s) (LEN$$ (rest s) (dec len)))))))
 ;---------------------------------------------------------------------------------------------------
 (defn reference [N]
   (if-let [ns-name (namespace N)]
@@ -274,23 +391,22 @@
 								          (find-ns (symbol ns-name)))]
       (get (ns-publics ns-ref) (symbol (name N))))
     (get (ns-map *ns*) (symbol (name N)))))
-(defn $$ [N] (if-let [V (reference N)] (var-get V) "")); (var-get (eval (list 'var N)))
+(defn $$ [N] (if-let [V (reference N)] (var-get V) ε)); (var-get (eval (list 'var N)))
 ;---------------------------------------------------------------------------------------------------
 (declare RUN)
 (declare dq path part)
 (declare Roman n)
-(defn dq [_path] (binding [dq "" path _path part ""] (RUN :dq) dq));DEFINE('dq(path)part')
-(defn Roman-binding [_n] (binding [Roman "" n _n] (RUN :Roman) Roman))
+(defn dq [_path] (binding [dq ε path _path part ε] (RUN :dq) dq));DEFINE('dq(path)part')
+(defn Roman-binding [_n] (binding [Roman ε n _n] (RUN :Roman) Roman))
 (defn Roman-save-restore [_n]
  '(let [_Roman ($$ 'Roman) __n ($$ 'n)]
-    (def Roman "")
+    (def Roman ε)
     (def n _n)
     (RUN :Roman)
     (def n __n)
     (let [__Roman Roman]
       (def Roman _Roman)
       __Roman)))
-
 ;---------------------------------------------------------------------------------------------------
 (def LABELS-Roman {3 :Roman 6 :RomanEnd 8 :END})
 (def STMTNOS-Roman {:Roman 3 :RomanEnd 6 :END 8})
@@ -331,34 +447,6 @@
 :END      []
 })
 ;---------------------------------------------------------------------------------------------------
-(defn ALT     [& ps])
-(defn SEQ     [& ps])
-(defn |       [& Ps]   (apply list 'ALT Ps))
-(defn $       [P & Ns] (apply list '=$ P Ns)) (defn =$    [p n])
-(defn .       [P & Ns] (apply list '=. P Ns)) (defn =.    [p n])
-(defn LEN     [I]      (list 'Len I))
-(defn POS     [I]      (list 'Pos I))         (defn Pos   [i])
-(defn RPOS    [I]      (list 'RPos I))        (defn RPos  [i])
-(defn BREAK   [S]      (list 'Break S))       (defn Break [s])
-(defn ?       [S P])
-(defn ?=      ([N P] "") ([N P R] ""))
-(defn REPLACE [S1 S2 S3] "")
-(defn DEFINE  [proto] "")
-;---------------------------------------------------------------------------------------------------
-(defn Len$ [s len]; lazy
-  (if (<= len 0) s
-    (if (not (seq s)) nil
-		    (lazy-seq
-		      (cons
-		        (first s)
-		        (Len$ (rest s) (dec len)))))))
-(defn Len [s length]; eager
-  (loop [s s len length]
-		  (if (<= len 0) s; Success
-		    (if (not (seq s)) nil; Failure
-		      (recur (rest s) (dec len))))))
-
-(declare EVAL)
 (deftrace INVOKE [op & args]
   (case op
     |        (apply | args)
@@ -382,9 +470,9 @@
     DEFINE   (let [[proto] args]
                (let [spec (apply vector (re-seq #"[0-9A-Z_a-z]+" proto))]
                  (let [[n & params] spec, f (symbol n)]
-                   (eval (trace (list 'defn f ['& 'args] ""))) "")))
+                   (eval (trace (list 'defn f ['& 'args] ε))) ε)))
     REPLACE  (let [[s1 s2 s3] args] (REPLACE s1 s2 s3))
-    Roman    "";(apply Roman args)
+    Roman    ε;(apply Roman args)
   )
 )
 ;---------------------------------------------------------------------------------------------------
@@ -400,43 +488,109 @@
         (list? E)
           (let [[op & parms] E]
             (cond
-              (= op '.)  (let [[P N]   parms] (INVOKE '. (EVAL P) N))
-              (= op '$)  (let [[P N]   parms] (INVOKE '$ (EVAL P) N))
-              (= op '=)  (let [[N R]   parms] (INVOKE '= N (EVAL R)))
-              (= op '?=) (let [[N P R] parms] (INVOKE '?= N (EVAL P) R))
-              true       (let [args (apply vector (map EVAL parms))]
-                           (apply INVOKE op args))
+              (clojure.core/= op '.)  (let [[P N]   parms] (INVOKE '. (EVAL P) N))
+              (clojure.core/= op '$)  (let [[P N]   parms] (INVOKE '$ (EVAL P) N))
+              (clojure.core/= op '=)  (let [[N R]   parms] (INVOKE '= N (EVAL R)))
+              (clojure.core/= op '?=) (let [[N P R] parms] (INVOKE '?= N (EVAL P) R))
+              true (let [args (apply vector (map EVAL parms))]
+                     (apply INVOKE op args))
           ))
-        nil nil
-      ))
-)
+        nil nil)))
 ;---------------------------------------------------------------------------------------------------
-;(deftype Address [no label])
-;(defmethod key Address [a] (if (.label a) (.label a) (.no a)))
-;(->Address at); construct via factory
-;(Address. at); construct
+(defn skey [address]   (let [[no label] address] (if label label no)))
+(defn saddr [at] (cond (keyword? at) [(STMTNOS at) at]
+											 							    (string?  at) [(STMTNOS at) at]
+																			    (integer? at) [at (LABELS at)]))
+(deftrace          RUN [at]
+  (loop [      current (saddr at)]
+    (if-let [      key (skey current)]
+      (if-let [   stmt (CODE key)]
+        (let [   ferst (first stmt)
+                seqond (second stmt)
+                  goto (if (map? ferst) ferst seqond)
+                  body (if (map? ferst) seqond ferst)]
+									              (if (EVAL body)
+									                (if (contains? goto :G)   (recur (saddr (:G goto)))
+									                  (if (contains? goto :S) (recur (saddr (:S goto)))
+									                                          (recur (saddr (inc (current 0))))))
+									                (if (contains? goto :G)   (recur (saddr (:G goto)))
+									                  (if (contains? goto :F) (recur (saddr (:F goto)))
+									                                          (recur (saddr (inc (current 0))))))
+				                   ))))))
 ;---------------------------------------------------------------------------------------------------
-;(definline skey [address] (let [[no label] address] (if label label no)))
-(defn skey [address] (let [[no label] address] (if label label no)))
-(defn saddr [at]  (cond (keyword? at) [(STMTNOS at) at]
-											 								    (string?  at) [(STMTNOS at) at]
-																				    (integer? at) [at (LABELS at)]))
-(deftrace RUN [at]
-  (loop [current       (saddr at)]
-      (if-let [key     (skey current)]
-		      (if-let [stmt  (CODE key)]
-		        (let [ferst  (first stmt)
-		              seqond (second stmt)
-		              goto   (if (map? ferst) ferst seqond)
-		              body   (if (map? ferst) seqond ferst)]
-            (if (EVAL body)
-              (if (contains? goto :G)   (recur (saddr (:G goto)))
-                (if (contains? goto :S) (recur (saddr (:S goto)))
-                                        (recur (saddr (inc (current 0))))))
-              (if (contains? goto :G)   (recur (saddr (:G goto)))
-                (if (contains? goto :F) (recur (saddr (:F goto)))
-                                        (recur (saddr (inc (current 0))))))
-            )
-		        )))))
+(defn files [directories]
+  (reduce (fn [files directory]
+    (reduce (fn [files file]
+      (let [filenm (str file)]
+        (if (re-find #"^.+\.(sno|spt|inc|SNO|SPT|INC)$" filenm)
+          (conj files filenm) files)))
+      files
+      (file-seq (io/file directory))))
+    []
+    directories))
+(def dirs ["./src/sno" "./src/inc" "./src/test ./src/rinky"])
+;---------------------------------------------------------------------------------------------------
+(def SNO [
+"copy OUTPUT = INPUT :S(copy)F(END)"
+" n = 0 ;copy OUTPUT = INPUT :F(done) ; n = n + 1 :(copy) ;done OUTPUT = \"Program copied \" n \" lines.\" ;END"
+" &TRIM = 1 ;nextl chars = chars + SIZE(INPUT) :F(done); lines = lines + 1 :(nextl) ;done OUTPUT = chars \" characters, \" +lines \" lines read.\" ;END"
+" &TRIM = 1
+  TERMINAL = 'Enter test lines, terminate with EOF'
+* Read input line, convert lower case to upper.
+loop s = REPLACE(TERMINAL, &LCASE, &UCASE) :F(END)
+* Check for palindrome:
+  TERMINAL = IDENT(s, REVERSE(s)) 'Palindrome!' :S(loop)
+  TERMINAL = 'No, try again.' :(loop)
+END
+"
+  " A = (X ? Y) (Q ? P)"
+  " IDENT(,, TERMINAL = 'Sneaky!')"
+])
+;---------------------------------------------------------------------------------------------------
+(defn re-cat [& regexs] (re-pattern (apply str regexs)))
+(def  eol     #"[\n]")
+(def  eos     #"[;\n]")
+(def  skip    #"[^\n]*")
+(def  fill    #"[^;\n]*")
+(def  komment (re-cat #"[*]" skip eol))
+(def  control (re-cat #"[-]" fill eos))
+(def  kode    (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
+(def  block   (re-cat komment "|" control "|" kode "|" eol))
+(defn doit []
+  (case 1
+    1 (doseq [s SNO] (compile-stmt s))
+    2 (doseq [filenm (files dirs)]
+        (let [program (slurp filenm)]
+          (println ";------------------------------------------------------ " filenm)
+          (doseq [command (re-seq block program)]
+            (let [cmd (first command)]
+                (cond
+                  (nil? cmd) nil
+                  (re-find #"^\*" cmd) nil
+                  (re-find #"^\-" cmd) nil
+                  true (compile-stmt cmd))))))
+    3 (doseq [filenm (files dirs)]
+        (with-open [rdr (io/reader filenm)]
+          (doseq [line (line-seq rdr)]
+            (let [ast (parse-command line) code (coder ast 1)]
+              (println code)))))
+  ))
+;---------------------------------------------------------------------------------------------------
+(defn ZIP [E]
+  (loop [E (z/zipper #(or (list? %) (vector? %)) rest nil E) depth 0 direction :down]
+    (out (z/node E))
+    (case direction
+    :down  (if (z/branch? E)
+                    (recur (z/down E) (inc depth) :down)
+                    (if (clojure.core/= E (z/rightmost E))
+                          (if (clojure.core/= depth 0)
+                        (z/root E)
+                        (recur (z/up E) (dec depth) :right))
+                          (recur (z/right E) depth :down)))
+     :right (if (clojure.core/= E (z/rightmost E))
+                      (if (clojure.core/= depth 0)
+                        (z/root E)
+                        (recur (z/up E) (dec depth) :right))
+                      (recur (z/right E) depth :down)))))
 ;---------------------------------------------------------------------------------------------------
 (defn -main "SNOBOL4/Clojure." [& args] (RUN 1))

@@ -3,6 +3,40 @@
             [snobol4.core :refer :all]))
 
 
+;---------------------------------------------------------------------------------------------------
+;(defmacro test (println &form &env))
+;(-> {} (assoc :a 1) (assoc :b 2))
+;(defn assign [n new] (alter-var-root n (fn [old] new)))
+;(def x 10)
+;(println x)
+;(assign #'x 20)
+;(println x)
+;(def ^:dynamic x 10)
+;(defn tryit [] x)
+;(println x)
+;(println (binding [x 20] x))
+;(println (binding [x 20] (tryit)))
+;(println x)
+;---------------------------------------------------------------------------------------------------
+;(import '[clojure.lang Var])
+;(Var/create 42); root binding
+;(let [V (.setDynamic (Var/create 0))]
+;  (do (var-get V); 0
+;      (with-bindings {V 42} (var-get V)))); 42
+;(the-ns 'snobol4.core)
+;(ns-map 'snobol4.core)
+;(ns-aliases 'snobol4.string)
+;(ns-publics 'snobol4.core)
+;(set! symbol expr)
+
+;---------------------------------------------------------------------------------------------------
+;(deftype Address [no label])
+;(defmethod key Address [a] (if (.label a) (.label a) (.no a)))
+;(->Address at); construct via factory
+;(Address. at); construct
+;---------------------------------------------------------------------------------------------------
+;(definline skey [address] (let [[no label] address] (if label label no)))
+
 (is (= 4 (+ 2 2)))
 (is (thrown? ArithmeticException (/ 1 0)))
 (is (thrown-with-msg? ArithmeticException #"Divide by zero" (/ 1 0)))
@@ -142,24 +176,8 @@
     (defn NOTANY [S])
     (defn BREAKX [S])
 
-    (defn EQ [x y] (= x y))
-    (defn NE [x y] (not= x y))
-    (defn LT [x y] (< x y))
-    (defn GT [x y] (> x y))
-    (defn LE [x y] (<= x y))
-    (defn GE [x y] (>= x y))
     (defmacro Ident [])
-    (defn IDENT
-         ([]    true)
-         ([x]   (identical? x ""))
-         ([x y] (identical? x y))
-    )
     (defmacro Differ [])
-    (defn DIFFER
-         ([]    false)
-         ([x]   (not (identical? x "")))
-         ([x y] (not (identical? x y)))
- )
     (defn SIZE [O] (count O))
     (defn TABLE [proto] {})
     (defn ARRAY [proto] [])
