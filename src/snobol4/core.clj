@@ -21,11 +21,7 @@
 " stmt      ::=  label? body? goto? <__> <eos?>
   label     ::=  #'[0-9A-Za-z][^ \\t\\r\\n]*'
   body      ::=  <_> (invoking | matching | replacing | assigning)
-  goto      ::=  <_ ':' __>
-                 ( branch
-                 | sbranch (<__> fbranch)?
-                 | fbranch (<__> sbranch)?
-                 )
+  goto      ::=  <_ ':' __> (jmp  |  sjmp (<__> fjmp)?  |  fjmp (<__> sjmp)?)
   invoking  ::=  subject
   matching  ::=  subject <_> pattern
   replacing ::=  subject <_> pattern <_ '='> replace
@@ -33,15 +29,14 @@
  <subject>  ::=  uop
  <pattern>  ::=  (<'?' _>)? and
  <replace>  ::=  (<_> expr)?
-  branch    ::=  target
-  sbranch   ::=  <'S'> target
-  fbranch   ::=  <'F'> target
+  jmp    ::=  target
+  sjmp   ::=  <'S'> target
+  fjmp   ::=  <'F'> target
  <target>   ::=  <'('> expr <')'>
   comment   ::=  <'*'> #'.*' <eol>
   control   ::=  <'-'> #'[^;\\n]*' <eos>
   eos       ::=  '\\n' | ';'
   eol       ::=  '\\n'
-
  <expr>     ::=  <__> asn <__>
   asn       ::=  mch | mch  <_  '='  _>  asn
   mch       ::=  and | and  <_  '?'  _>  and (<_ '=' _> and)?
@@ -74,8 +69,7 @@
   <__>      ::=  <white*>
   I         ::=  #'[0-9]+'
   R         ::=  #'[0-9]+\\.[0-9]+'
-  S         ::=  #'\"([^\"]|\\x3B)*\"'
-              |  #'\\'([^\\']|\\x3B)*\\''
+  S         ::=  #'\"([^\"]|\\x3B)*\"'  |  #'\\'([^\\']|\\x3B)*\\''
   N         ::=  #'[A-Za-z][A-Z_a-z0-9\\.]*'
   white     ::=  #'[ \\t]'
 ")
@@ -101,9 +95,9 @@
 																																																			(let [key (first b) tgt (second b)]
 																																																				(assoc bs key
 																																																					(if (symbol? tgt) (keyword tgt) tgt)))) {} gs)})
-      :branch    (fn branch      [L]     [:G L])
-      :sbranch   (fn sbranch     [L]     [:S L])
-      :fbranch   (fn fbranch     [L]     [:F L])
+      :jmp       (fn jmp         [L]     [:G L])
+      :sjmp      (fn sjmp        [L]     [:S L])
+      :fjmp      (fn fjmp        [L]     [:F L])
       ;--------------------------------------------------------------------------
       :expr      (fn expr        [x] x)
       :asn       (fn asn        ([x] x) ([x     y]  (list '= x y)))
@@ -230,7 +224,7 @@
 (defn     number [x] (try (Integer. x) (catch Exception E (try (Float. x) (catch Exception E ##NaN)))))
 (defn     ncvt   [x] (list 'number x)); `(try (Integer. ~x) (catch Exception E (try (Float. ~x) (catch Exception E #Nan))))
 (defn     scvt   [x] (list 'str x))
-(defmacro numcvt [x] `(number ~x)); `(try (Integer. ~x) (catch Exception E (try (Float. ~x) (catch Exception E #Nan))))
+(defmacro numcvt [x] `(ncvt ~x)); `(try (Integer. ~x) (catch Exception E (try (Float. ~x) (catch Exception E #Nan))))
 (defmacro strcvt [x] `(str ~x))
 ;---------------------------------------------------------------------------------------------------
 ; Operators
@@ -240,15 +234,15 @@
 (defn match-replace [n s p]  nil)
 (defn keyword-value [n]      nil)
 (defn dollar-value  [n]      nil)
-(defn dot-name      [n]      `(if (list? ~n) ~n (list 'identity ~n)))
+(defn dot-name      [n]     `(if (list? ~n) ~n (list 'identity ~n)))
 (defn $=            [p n])
 (defn .=            [p n])
-(defn negate        [p]      `(if (nil? p) ε nil))
-(defmacro uneval    [x]      `(if (list? ~x) ~x (list 'identity ~x)))
-(defn     x-2 [op x y]      (list op x y))
-(defn     x-n [op x y & zs] (list op x y zs))
-(defmacro n-1 [op x]        (list op (numcvt x)))
-(defmacro n-2 [op x y]      (list op (numcvt x) (numcvt y)))
+(defn negate        [p]     `(if (nil? ~p) ε nil))
+(defmacro uneval    [x]     `(if (list? ~x) ~x (list 'identity ~x)))
+(defn     x-2 [op x y]       (list op x y))
+(defn     x-n [op x y & zs]  (list op x y (map identity zs)))
+(defmacro n-1 [op x]         (list op (numcvt x)))
+(defmacro n-2 [op x y]       (list op (numcvt x) (numcvt y)))
 (defmacro n-n [op x y & zs] `(~op (numcvt ~x) (numcvt ~y) ~(map ncvt zs)))
 ;---- ----- -------------------------------------------- ------- -- ----- ----------------------------------------------
 (defn =     ([x]        ##NaN)                        ; unary            programable
@@ -294,11 +288,11 @@
 ; Comparison
 (defmacro INTEGER [x])
 (defn primitive
-          [func default missing cvt condition]
-									 (list 'defn func
-									   (list []             missing)
-										  (list ['x]           (list 'if (condition (cvt 'x) default) ε))
-										  (list ['x 'y '& '_]  (list 'if (condition (cvt 'x) (cvt 'y)) ε))))
+      [func default missing cvt condition]
+					 (list 'defn func
+					   (list []             missing)
+						  (list ['x]           (list 'if (condition (cvt 'x) default) ε))
+						  (list ['x 'y '& '_]  (list 'if (condition (cvt 'x) (cvt 'y)) ε))))
 (eval (primitive 'EQ     0   ε ncvt     #(list 'clojure.core/= %1 %2))); Numeric comparison
 (eval (primitive 'NE     0 nil ncvt     #(list 'not= %1 %2)))
 (eval (primitive 'LE     0   ε ncvt     #(list '<=   %1 %2)))
@@ -425,7 +419,7 @@
 (def STMTNOS {:START 1 :END 21})
 (def CODE {
 :START    []
-2         ['(= BD [(| "BE" "B") (| "AR" "A") (| "DS" "D")])]
+2         ['(= BD [(| "BE" "BO" "B") (| "AR" "A") (| "DS" "D")])]
 3         ['(? "BEARDS" BD)]
 4         ['(? "BEARD" BD)]
 5         ['(? "BEADS" BD)]
@@ -435,7 +429,7 @@
 9         ['(? "BADS" BD)]
 10        ['(? "BAD" BD)]
 11        ['(? "BATS" BD)]
-12        ['(= BR [(| "B" "R") (| "E" "EA") (| "D" "DS")])]
+12        ['(= BR [(| "B" "F" "L" "R") (| "E" "EA") (| "D" "DS")])]
 13        ['(? "BED" BR)]
 14        ['(? "BEDS" BR)]
 15        ['(? "BEAD" BR)]
