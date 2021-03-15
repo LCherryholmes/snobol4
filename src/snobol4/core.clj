@@ -12,6 +12,21 @@
 ; (:require [instaparse.core :as insta :refer-macros [defparser]]); ClojureScript
 )
 ;---------------------------------------------------------------------------------------------------
+(defn equal         [x y] (clojure.core/= x y))
+(defn not-equal     [x y] (clojure.core/not= x y))
+(defn neg           [x]   (clojure.core/- x))
+(defn add          ([x]   (clojure.core/+ x))  ([x y] (clojure.core/+ x y)))
+(defn subtract     ([x]   (clojure.core/- x))  ([x y] (clojure.core/- x y)))
+(defn multiply     ([x]   (clojure.core/* x))  ([x y] (clojure.core/* x y)))
+(defn divide        [x y] (clojure.core// x y))
+(declare CODE)
+(declare RUN)
+(declare EVAL); accepts string or unevaluated expression
+(declare INVOKE)
+(declare MATCH)
+(declare ALT)
+(declare SEQ)
+;---------------------------------------------------------------------------------------------------
 (defn bug [x] (println (type x) " " x) x)
 (defn re-quote [& ss]
   (str "#'" (string/replace (apply str ss) #"(\\|')" #(str \\ (second %1))) "'"))
@@ -80,8 +95,8 @@
       :control   (fn control     [ctl]   [:control ctl])
       ;--------------------------------------------------------------------------
       :stmt      (fn stmt        [& ss]  (let [{L :label B :body G :goto} (apply conj ss)]
-																						                     (apply vector ss)
-																						                     {(if L L stmtno) [B G]}))
+                                           (apply vector ss)
+                                           {(if L L stmtno) [B G]}))
       :label     (fn label       [L]     {:label (if (re-find #"^[0-9A-Z_a-z]+$" L) (keyword L) (str L))})
       :body      (fn body        [B]     {:body  B})
       :invoking  (fn invoking    [S    ] S)
@@ -91,10 +106,10 @@
       :assigning (fn assigning  ([S    ] (list '= S 'epsilon))
                                 ([S R  ] (list '= S R)))
       :goto      (fn goto        [& gs]  {:goto (reduce
-																																																		(fn [bs b]
-																																																			(let [key (first b) tgt (second b)]
-																																																				(assoc bs key
-																																																					(if (symbol? tgt) (keyword tgt) tgt)))) {} gs)})
+                                                  (fn [bs b]
+                                                   (let [key (first b) tgt (second b)]
+                                                    (assoc bs key
+                                                     (if (symbol? tgt) (keyword tgt) tgt)))) {} gs)})
       :jmp       (fn jmp         [L]     [:G L])
       :sjmp      (fn sjmp        [L]     [:S L])
       :fjmp      (fn fjmp        [L]     [:F L])
@@ -124,7 +139,7 @@
       :cnd       (fn cnd        ([x] x) ([x  & ys]  (apply vector 'comma x ys)))
       :inv       (fn inv         [f  & xs]          (apply list f xs))
       :N         (fn N           [n]                (symbol n))
-      :S         (fn S           [s]                (subs s 1 (clojure.core/- (count s) 1)))
+      :S         (fn S           [s]                (subs s 1 (subtract (count s) 1)))
       :I         edn/read-string
       :R         edn/read-string
     } ast))
@@ -140,17 +155,17 @@
         (pp/pprint item))))
 (defn compile-stmt [cmd]
    (let [stmt1 (string/replace cmd #"[ \t]*\r?\n[+.][ \t]*" " ")
-		       stmt2 (string/replace stmt1 #"\r?\n$" "")
-		       stmtno (swap! stmtno inc)
-		       ast (parse-statement stmt2)
-		       code (coder ast stmtno)]
-		   (if (and (map? code) (:reason code))
-		     (let [line   (:line code)
-		           column (:column code)
-		           text   (:text code)
-		           error  {stmtno [(list 'ERROR line column)]}]; text
-		       (out error))
-		     (out code))))
+         stmt2 (string/replace stmt1 #"\r?\n$" "")
+         stmtno (swap! stmtno inc)
+         ast (parse-statement stmt2)
+         code (coder ast stmtno)]
+     (if (and (map? code) (:reason code))
+       (let [line   (:line code)
+             column (:column code)
+             text   (:text code)
+             error  {stmtno [(list 'ERROR line column)]}]; text
+         (out error))
+       (out code))))
 ;---------------------------------------------------------------------------------------------------
 (def  ε          "")
 (def  η          ##NaN)
@@ -179,10 +194,6 @@
 (defn SORT       [])
 (defn RSORT      [A])
 (defn TABLE      [T] ε)
-;---------------------------------------------------------------------------------------------------
-; Compilation
-(declare EVAL); accepts string or unevaluated expression
-(declare CODE)
 ;---------------------------------------------------------------------------------------------------
 ; Function control
 (defn APPLY      [])
@@ -223,9 +234,9 @@
 ; Conversions
 (deftrace num    [x] (cond
                        (double? x) x
-		                     (integer? x) (.doubleValue x)
-		                     true (try (Double/parseDouble x)
-		                            (catch NumberFormatException E ##NaN))))
+                       (integer? x) (.doubleValue x)
+                       true (try (Double/parseDouble x)
+                              (catch NumberFormatException E ##NaN))))
 (defn     ncvt   [x] (list 'num x)); `(try (Integer. ~x) (catch Exception E (try (Float. ~x) (catch Exception E #Nan))))
 (defn     scvt   [x] (list 'str x))
 (defmacro numcvt [x] `(ncvt ~x)); `(try (Integer. ~x) (catch Exception E (try (Float. ~x) (catch Exception E #Nan))))
@@ -234,7 +245,6 @@
 ; Operators
 (defn assign        [n x]     nil)
 (defn annihilate    [x]       nil)
-(defn match         [s p]     nil)
 (defn match-replace [n s p]   nil)
 (defn keyword-value [n]       nil)
 (defn dollar-value  [n]       nil)
@@ -245,10 +255,10 @@
 (defmacro vectorize [x]      `(if (vector? ~x) ~x (vector ~x)))
 (defn flatten-1     [Ω]       (mapcat #(if (sequential? %) % [%]) Ω))
 (defn flatten-one   [op & Ω]  (apply list (reduce
-												                    (fn [Φ ω] (reduce
-										                        (fn [Σ σ] (conj Σ σ)) Φ ω))
-										                      [op]
-										                      (vectorize Ω))))
+                                (fn [Φ ω] (reduce
+                                  (fn [Σ σ] (conj Σ σ))
+                                  Φ ω))
+                                [op] (vectorize Ω))))
 (defn     x-2 [op x y]        (list op x y))
 (defn     x-3 [op x y z]      (list op x y z))
 (defn     x-n [op x y z & Ω]  (flatten-1 (conj Ω z y x op)))
@@ -258,54 +268,54 @@
 (defmacro n-n [op x y z & Ω]  (flatten-1 (map ncvt (conj Ω z y x op))))
 (defmacro uneval [x]         `(if (list? ~x) ~x (list 'identity ~x)))
 ;---- ----- -------------------------------------------- ------- -- ----- ----------------------------------------------
-(defn =     ([x]        ##NaN)                        ; unary            programable
-            ([n x]      (assign n x)))                ; binary   0 right assignment
-(defn ?     ([x]        (annihilate x))               ; unary            interrogation value annihilation
-            ([s p]      (match s p))                  ; binary   1 right match pattern
-            ([n s p]    (match-replace n s p)))       ; tertiary 1 right match pattern then replace
-(defn ?=    ([n s p]    (match-replace n s p)))       ; tertiary 1 right match pattern then replace
-(defn &     ([n]        (keyword-value n))            ; unary            keyword
-            ([x y]      ##NaN))                       ; binary   2 left  programable
-(defn |     ([x]        ##NaN)                        ; unary            programable
-            ([x y]      (x-2 'ALT x y))               ; binary   3 right pattern, alternation
-            ([x y & zs] (x-n 'ALT x y zs)))           ; multi    3 right pattern, alternation
-(defn at    ([n]        (list 'cursor n))             ; unary            pattern, assign cursor position
-            ([x y]      ##NaN))                       ; binary   4 right programable
-(defn +     ([x]        (n-1 clojure.core/+ x))       ; unary            addition
-            ([x y]      (n-2 clojure.core/+ x y))     ; binary   6 left  addition
-            ([x y & zs] (n-n clojure.core/+ x y zs))) ; multi    6 left  addition
-(defn -     ([x]        (n-1 clojure.core/- x))       ; unary            subtraction
-            ([x y]      (n-2 clojure.core/- x y))     ; binary   6 left  subtraction
-            ([x y & zs] (n-n clojure.core/- x y zs))) ; multi    6 left  subtraction
-(defn sharp ([x]        ##NaN)                        ; unary            programable
-            ([x y]      ##NaN))                       ; binary   7 left  programable
-(defn /     ([x]        ##NaN)                        ; unary            programable
-            ([x y]      (n-2 clojure.core// x y)))    ; binary   8 left  division
-(defn *     ([x]        (uneval x))                   ; unary            defer evaluation, unevaluated expression
-            ([x y]      (n-2 clojure.core/* x y))     ; binary   9 left  multiplication
-            ([x y & zs] (n-n clojure.core/* x y zs))) ; multi    9 left  multiplication
-(defn %     ([x]        ##NaN)                        ; unary            programable
-            ([x y]      ##NaN))                       ; binary  10 left  programable
-(defn !     ([x]        ##NaN)                        ; unary            programable
-            ([x y]      (n-2 Math/pow x y)))          ; binary  11 right exponentiation
-(defn **    ([x y]      (n-2 Math/pow x y)))          ; binary  11 right exponentiation
-(defn $     ([n]        (dollar-value n))             ; unary            indirection
-            ([x y]      (x-2 $= x y))                 ; binary  12 left  immediate assignment
-            ([x y & zs] (x-n $= x y zs)))             ; multi   12 left  immediate assignment
-(defn .     ([x]        (dot-name x))                 ; unary            name
-            ([x y]      (x-2 .= x y))                 ; binary  12 left  conditional assignment
-            ([x y & zs] (x-n .= x y zs)))             ; multi   12 left  conditional assignment
-(defn tilde ([x]        (list 'negate x))             ; unary            pattern, negates failure or success
-            ([x y]      ##NaN))                       ; binary  13 left  programable
+(defn =     ([x]        ##NaN)                   ; unary            programable
+            ([n x]      (assign n x)))           ; binary   0 right assignment
+(defn ?     ([x]        (annihilate x))          ; unary            interrogation value annihilation
+            ([s p]      (MATCH s 0 p))           ; binary   1 right match pattern
+            ([n s p]    (match-replace n s p)))  ; tertiary 1 right match pattern then replace
+(defn ?=    ([n s p]    (match-replace n s p)))  ; tertiary 1 right match pattern then replace
+(defn &     ([n]        (keyword-value n))       ; unary            keyword
+            ([x y]      ##NaN))                  ; binary   2 left  programable
+(defn |     ([x]        ##NaN)                   ; unary            programable
+            ([x y]      (x-2 'ALT x y))          ; binary   3 right pattern, alternation
+            ([x y & zs] (x-n 'ALT x y zs)))      ; multi    3 right pattern, alternation
+(defn at    ([n]        (list 'cursor n))        ; unary            pattern, assign cursor position
+            ([x y]      ##NaN))                  ; binary   4 right programable
+(defn +     ([x]        (n-1 add x))             ; unary            addition
+            ([x y]      (n-2 add x y))           ; binary   6 left  addition
+            ([x y & zs] (n-n add x y zs)))       ; multi    6 left  addition
+(defn -     ([x]        (n-1 subtract x))        ; unary            subtraction
+            ([x y]      (n-2 subtract x y))      ; binary   6 left  subtraction
+            ([x y & zs] (n-n subtract x y zs)))  ; multi    6 left  subtraction
+(defn sharp ([x]        ##NaN)                   ; unary            programable
+            ([x y]      ##NaN))                  ; binary   7 left  programable
+(defn /     ([x]        ##NaN)                   ; unary            programable
+            ([x y]      (n-2 divide x y)))       ; binary   8 left  division
+(defn *     ([x]        (uneval x))              ; unary            defer evaluation, unevaluated expression
+            ([x y]      (n-2 multiply x y))      ; binary   9 left  multiplication
+            ([x y & zs] (n-n multiply x y zs)))  ; multi    9 left  multiplication
+(defn %     ([x]        ##NaN)                   ; unary            programable
+            ([x y]      ##NaN))                  ; binary  10 left  programable
+(defn !     ([x]        ##NaN)                   ; unary            programable
+            ([x y]      (n-2 Math/pow x y)))     ; binary  11 right exponentiation
+(defn **    ([x y]      (n-2 Math/pow x y)))     ; binary  11 right exponentiation
+(defn $     ([n]        (dollar-value n))        ; unary            indirection
+            ([x y]      (x-2 $= x y))            ; binary  12 left  immediate assignment
+            ([x y & zs] (x-n $= x y zs)))        ; multi   12 left  immediate assignment
+(defn .     ([x]        (dot-name x))            ; unary            name
+            ([x y]      (x-2 .= x y))            ; binary  12 left  conditional assignment
+            ([x y & zs] (x-n .= x y zs)))        ; multi   12 left  conditional assignment
+(defn tilde ([x]        (list 'negate x))        ; unary            pattern, negates failure or success
+            ([x y]      ##NaN))                  ; binary  13 left  programable
 ;---------------------------------------------------------------------------------------------------
 ; Comparison
 (defmacro INTEGER [x])
 (defn primitive
       [func default missing cvt condition]
-					 (list 'defn func
-					   (list []             missing)
-						  (list ['x]           (list 'if (condition (cvt 'x) default) ε))
-						  (list ['x 'y '& '_]  (list 'if (condition (cvt 'x) (cvt 'y)) ε))))
+      (list 'defn func
+        (list []             missing)
+        (list ['x]           (list 'if (condition (cvt 'x) default) ε))
+        (list ['x 'y '& '_]  (list 'if (condition (cvt 'x) (cvt 'y)) ε))))
 (eval (primitive 'EQ     0   ε ncvt     #(list 'clojure.core/= %1 %2))); Numeric comparison
 (eval (primitive 'NE     0 nil ncvt     #(list 'not= %1 %2)))
 (eval (primitive 'LE     0   ε ncvt     #(list '<=   %1 %2)))
@@ -335,13 +345,12 @@
 (defmacro CHOP   []  `(defn CHOP [x] (let [_x ~(numcvt 'x)] (if (< _x 0.0) (Math/ceil _x) (Math/floor _x)))))
 ;---------------------------------------------------------------------------------------------------
 ; Pattern match
-(defn ALT        [& Ps]   )
-(defn SEQ        [& Ps]   )
 (defn ANY        [S]      (list 'ANY$     S))
 (defn ARBNO      [P]      (list 'ARBNO!   P))
 (defn BREAK      [S]      (list 'BREAK$   S))
 (defn BREAKX     [S]      (list 'BREAKX$  S))
-(defn FENCE      [P]      (list 'FENCE!   P))
+(defn FENCE     ([]       (list 'FENCE!    )); FENCE pattern variable
+                ([P]      (list 'FENCE!  P))); FENCE pattern function
 (defn LEN        [I]      (list 'LEN#     I))
 (defn NOTANY     [S]      (list 'NOTANY$  S))
 (defn POS        [I]      (list 'POS#     I))
@@ -355,7 +364,6 @@
 (def  ABORT               (list 'ABORT!    ))
 (def  FAIL                (list 'FAIL!     ))
 (def  SUCCEED             (list 'SUCCEED!  ))
-(def  FENCE               (list 'FENCE!))
 ;---------------------------------------------------------------------------------------------------
 ; Program control
 (defn EXIT       []); string or integer argument
@@ -379,28 +387,17 @@
 (defn TRIM       [])
 (defn COPY       [x]); Object creation
 ;---------------------------------------------------------------------------------------------------
-(defn LEN$       [s length] (loop [s s len length] (if (<= len 0) s (if (not (seq s)) nil (recur (rest s) (dec len))))))
-(defn POS#       [i])
-(defn RPOS#      [i])
-(defn TAB#       [i])
-(defn RTAB#      [i])
-(defn ANY$       [s])
-(defn NOTANY$    [s])
-(defn BREAK$     [s])
-(defn BREAKX$    [s])
-;---------------------------------------------------------------------------------------------------
 (defn LEN$$ [s len] (if (<= len 0) s (if (not (seq s)) nil (lazy-seq (cons (first s) (LEN$$ (rest s) (dec len)))))))
 ;---------------------------------------------------------------------------------------------------
 (defn reference [N]
   (if-let [ns-name (namespace N)]
     (when-let [ns-ref
-								      (or (get (ns-aliases *ns*) (symbol ns-name))
-								          (find-ns (symbol ns-name)))]
+              (or (get (ns-aliases *ns*) (symbol ns-name))
+                  (find-ns (symbol ns-name)))]
       (get (ns-publics ns-ref) (symbol (name N))))
     (get (ns-map *ns*) (symbol (name N)))))
-(defn $$ [N] (if-let [V (reference N)] (var-get V) ε)); (var-get (eval (list 'var N)))
+(deftrace $$ [N] (if-let [V (reference N)] (var-get V) ε)); (var-get (eval (list 'var N)))
 ;---------------------------------------------------------------------------------------------------
-(declare RUN)
 (declare dq path part)
 (declare Roman n)
 (defn dq [_path] (binding [dq ε path _path part ε] (RUN :dq) dq));DEFINE('dq(path)part')
@@ -432,7 +429,7 @@
 (def STMTNOS {:START 1 :END 21})
 (def CODE {
 :START    []
-2         ['(= BD [(EQ 0 0.0) (| "BE" "BO" "B") (| "AR" "A") (| "DS" "D")])]
+2         ['(= BD [(| "BE" "BO" "B") (| "AR" "A") (| "DS" "D")])]
 3         ['(? "BEARDS" BD)]
 4         ['(? "BEARD" BD)]
 5         ['(? "BEADS" BD)]
@@ -454,11 +451,54 @@
 :END      []
 })
 ;---------------------------------------------------------------------------------------------------
-(deftrace INVOKE [op & args]
+; Scanners
+(deftrace ARB!     [Σ Δ Π]   [nil (neg Δ)])
+(deftrace BAL!     [Σ Δ Π]   [nil (neg Δ)])
+(deftrace ARBNO!   [Σ Δ Π]   [nil (neg Δ)])
+(deftrace FENCE!   [Σ Δ Π]   [nil (neg Δ)])
+(deftrace FENCE!!  [Σ Δ Π]   [nil (neg Δ)])
+(deftrace BREAKX$  [Σ Δ Π]   [nil (neg Δ)])
+(deftrace ABORT!   [Σ Δ Π]   [nil (neg Δ)])
+(deftrace SUCCEED! [Σ Δ Π]   [Σ Δ])
+(deftrace FAIL!    [Σ Δ Π]   [Σ (neg Δ)])
+(deftrace POS#     [Σ Δ Π]   (if (equal Δ Π)         [Σ Δ]       [Σ (neg Δ)]))
+(deftrace RPOS#    [Σ Δ Π]   (if (equal (count Σ) Π) [Σ Δ]       [Σ (neg Δ)]))
+(deftrace ANY$     [Σ Δ Π]   (if (not (seq Σ))      [Σ (neg Δ)] (if     (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (neg Δ)])))
+(deftrace NOTANY$  [Σ Δ Π]   (if (not (seq Σ))      [Σ (neg Δ)] (if-not (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (neg Δ)])))
+(deftrace REM!     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (not (seq σ))    [σ δ] (recur (rest σ) (inc δ)))))
+(defn     LIT$     [Σ Δ Π]   (loop [σ Σ δ Δ π Π]
+                               (if (not (seq π))    [σ δ]
+                                  (if (not (seq σ)) [σ (neg δ)]
+                                    (if (not-equal (first σ) (first π)) [σ (neg δ)]
+                                      (recur (rest σ) (inc δ) (rest π)))))))
+(deftrace LEN#     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= δ (add Δ Π)) [σ δ] (if (not (seq σ)) [σ (neg δ)] (recur (rest σ) (inc δ))))))
+(deftrace TAB#     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= δ Π)         [σ δ] (if (not (seq σ)) [σ (neg δ)] (recur (rest σ) (inc δ))))))
+(deftrace RTAB#    [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= (count σ) Π) [σ δ] (if (not (seq σ)) [σ (neg δ)] (recur (rest σ) (inc δ))))))
+(deftrace SPAN$    [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (and (not (seq σ)) (identical? σ Σ)) [σ (neg δ)] (if (and (not (contains? Π (first Σ))) (identical? σ Σ)) [σ (neg δ)] (recur (rest σ) (inc δ))))))
+(deftrace BREAK$   [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (not (seq σ))    [σ (neg δ)] (if (contains? Π (first Σ)) [σ δ] (recur (rest σ) (inc δ))))))
+(deftrace ALT      [Σ Δ Π]   (loop [        π Π]
+                               (if (not (seq π))    [Σ (neg Δ)]
+                                 (let [[σ δ] (MATCH Σ Δ (first π))]
+                                   (if (>= δ 0) [σ δ]
+                                     (recur (rest π)))))))
+(deftrace SEQ      [Σ Δ Π]   (loop [σ Σ δ Δ π Π]
+                               (if (not (seq π))    [σ δ]
+                                  (let [[σ δ] (MATCH σ δ (first π))]
+                                    (if (<  δ 0) [σ δ]
+                                      (recur σ δ (rest π)))))))
+(deftrace MATCH    [Σ Δ Π]   (if-let [Σ (seq Σ)]
+                               (cond
+                                 (string? Π) (LIT$ Σ Δ Π)
+                                 (list? Π) (let [[λ & π] Π] (INVOKE λ Σ Δ π)))))
+;---------------------------------------------------------------------------------------------------
+(defn INVOKE [op & args]
   (case op
     |        (apply | args)
     $        (apply $ args)
     .        (apply . args)
+    ALT      (let [[Σ Δ π] args] (ALT Σ Δ (flatten-1 π)))
+    SEQ      (let [[Σ Δ π] args] (SEQ Σ Δ (flatten-1 π)))
+    LIT$     (let [[Σ Δ π] args] (LIT$ Σ Δ (flatten-1 π)))
     LEN      (LEN (first args))
     POS      (POS (first args))
     RPOS     (RPOS (first args))
@@ -484,31 +524,31 @@
   )
 )
 ;---------------------------------------------------------------------------------------------------
-(deftrace EVAL [E]
+(defn EVAL [E]
   (when E
-      (cond
-        (nil? E) E
-        (float? E) E
-        (string? E) E
-        (integer? E) E
-        (symbol? E) ($$ E)
-        (vector? E) (apply list 'SEQ (map EVAL E))
-        (list? E)
-          (let [[op & parms] E]
-            (cond
-              (clojure.core/= op '.)  (let [[P N]   parms] (INVOKE '. (EVAL P) N))
-              (clojure.core/= op '$)  (let [[P N]   parms] (INVOKE '$ (EVAL P) N))
-              (clojure.core/= op '=)  (let [[N R]   parms] (INVOKE '= N (EVAL R)))
-              (clojure.core/= op '?=) (let [[N P R] parms] (INVOKE '?= N (EVAL P) R))
-              true (let [args (apply vector (map EVAL parms))]
-                     (apply INVOKE op args))
-          ))
-        nil nil)))
+    (cond
+      (nil? E) E
+      (float? E) E
+      (string? E) E
+      (integer? E) E
+      (symbol? E) ($$ E)
+      (vector? E) (apply list 'SEQ (map EVAL E))
+      (list? E)
+        (let [[op & parms] E]
+          (cond
+            (clojure.core/= op '.)  (let [[P N]   parms] (INVOKE '. (EVAL P) N))
+            (clojure.core/= op '$)  (let [[P N]   parms] (INVOKE '$ (EVAL P) N))
+            (clojure.core/= op '=)  (let [[N R]   parms] (INVOKE '= N (EVAL R)))
+            (clojure.core/= op '?=) (let [[N P R] parms] (INVOKE '?= N (EVAL P) R))
+            true (let [args (apply vector (map EVAL parms))]
+                   (apply INVOKE op args))
+        ))
+      nil nil)))
 ;---------------------------------------------------------------------------------------------------
 (defn skey [address]   (let [[no label] address] (if label label no)))
 (defn saddr [at] (cond (keyword? at) [(STMTNOS at) at]
-											 							    (string?  at) [(STMTNOS at) at]
-																			    (integer? at) [at (LABELS at)]))
+                       (string?  at) [(STMTNOS at) at]
+                       (integer? at) [at (LABELS at)]))
 (deftrace          RUN [at]
   (loop [      current (saddr at)]
     (if-let [      key (skey current)]
@@ -517,14 +557,14 @@
                 seqond (second stmt)
                   goto (if (map? ferst) ferst seqond)
                   body (if (map? ferst) seqond ferst)]
-									              (if (EVAL body)
-									                (if (contains? goto :G)   (recur (saddr (:G goto)))
-									                  (if (contains? goto :S) (recur (saddr (:S goto)))
-									                                          (recur (saddr (inc (current 0))))))
-									                (if (contains? goto :G)   (recur (saddr (:G goto)))
-									                  (if (contains? goto :F) (recur (saddr (:F goto)))
-									                                          (recur (saddr (inc (current 0))))))
-				                   ))))))
+                       (if (EVAL body)
+                         (if (contains? goto :G)   (recur (saddr (:G goto)))
+                           (if (contains? goto :S) (recur (saddr (:S goto)))
+                                                   (recur (saddr (inc (current 0))))))
+                         (if (contains? goto :G)   (recur (saddr (:G goto)))
+                           (if (contains? goto :F) (recur (saddr (:F goto)))
+                                                   (recur (saddr (inc (current 0))))))
+                       ))))))
 ;---------------------------------------------------------------------------------------------------
 (defn files [directories]
   (reduce (fn [files directory]

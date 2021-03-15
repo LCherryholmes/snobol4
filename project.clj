@@ -8,6 +8,7 @@
     [org.clojure/tools.trace "0.7.11"]
     [org.clojure/tools.trace "0.7.11"]
     [org.clojure/math.numeric-tower "0.0.4"]
+  ; [aysylu/loom "1.0.2"]
     [instaparse "1.4.10"]
     [criterium "0.4.6"]]
   :main ^:skip-aot snobol4.core
