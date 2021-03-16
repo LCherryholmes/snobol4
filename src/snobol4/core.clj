@@ -500,31 +500,32 @@
 (defn     right-end [ζ] (equal ζ (rightmost ζ)))
 (defn     left-end  [ζ] (equal ζ (leftmost ζ)))
 (defn     MATCH     [Σ Δ Π]
-  (loop [ζ (zipper BRANCH? rest nil Π), direction :proceed-down, Σ Σ, Δ Δ, Ψ 0, Ω []]
-    (out Ω)
-    (case direction
-    :proceed-down
-      (if (branch? ζ)     (recur (pro-down ζ) :proceed-down  Σ Δ (inc Ψ) (conj Ω [Δ Ψ]))
+  (loop [ζ (zipper BRANCH? rest nil Π), direction :proceed-down, Σ Σ, Δ Δ, Ψ 0, Φ 0, Ω []]
+    (let [cnt (dec (count (node ζ)))]
+      (out Ω)
+      (case direction
+      :proceed-down
+        (if (branch? ζ)     (recur (pro-down ζ) :proceed-down  Σ Δ (inc Ψ)      0  (conj Ω [Ψ Φ cnt]))
+          (if (right-end ζ)
+            (if (equal Ψ 0) (recur (re-down  ζ) :receed-down   Σ Δ (inc Ψ)      Φ  (pop  Ω))
+                            (recur (up       ζ) :proceed-right Σ Δ (dec Ψ)      Φ  (conj Ω [Ψ Φ cnt])))
+                            (recur (right    ζ) :proceed-down  Σ Δ      Ψ  (inc Φ) (conj Ω [Ψ Φ cnt]))))
+      :proceed-right
         (if (right-end ζ)
-          (if (equal Ψ 0) (recur (re-down  ζ) :receed-down   Σ Δ (inc Ψ) (pop  Ω))
-                          (recur (up       ζ) :proceed-right Σ Δ (dec Ψ) (conj Ω [Δ Ψ])))
-                          (recur (right    ζ) :proceed-down  Σ Δ      Ψ  (conj Ω [Δ Ψ]))))
-     :proceed-right
-       (if (right-end ζ)
-         (if (equal Ψ 0)  (recur (re-down  ζ) :receed-down   Σ Δ (inc Ψ) (pop  Ω))
-                          (recur (up       ζ) :proceed-right Σ Δ (dec Ψ) (conj Ω [Δ Ψ])))
-                          (recur (right    ζ) :proceed-down  Σ Δ      Ψ  (conj Ω [Δ Ψ])))
-     :receed-down
-      (if (branch? ζ)     (recur (re-down  ζ) :receed-down   Σ Δ (inc Ψ) (pop  Ω))
+          (if (equal Ψ 0)   (recur (re-down  ζ) :receed-down   Σ Δ (inc Ψ)      Φ  (pop  Ω))
+                            (recur (up       ζ) :proceed-right Σ Δ (dec Ψ)      Φ  (conj Ω [Ψ Φ cnt])))
+                            (recur (right    ζ) :proceed-down  Σ Δ      Ψ  (inc Φ) (conj Ω [Ψ Φ cnt])))
+      :receed-down
+        (if (branch? ζ)     (recur (re-down  ζ) :receed-down   Σ Δ (inc Ψ)      Φ  (pop  Ω))
+          (if (left-end ζ)
+            (if (equal Ψ 0)        (root     ζ)
+                            (recur (up       ζ) :receed-left   Σ Δ (dec Ψ)      Φ  (pop  Ω)))
+                            (recur (left     ζ) :receed-down   Σ Δ      Ψ  (inc Φ) (pop  Ω))))
+      :receed-left
         (if (left-end ζ)
-          (if (equal Ψ 0)        (root     ζ)
-                          (recur (up       ζ) :receed-left   Σ Δ (dec Ψ) (pop  Ω)))
-                          (recur (left     ζ) :receed-down   Σ Δ      Ψ  (pop  Ω))))
-     :receed-left
-       (if (left-end ζ)
-         (if (equal Ψ 0)         (root     ζ)
-                          (recur (up       ζ) :receed-left   Σ Δ (dec Ψ) (pop  Ω)))
-                          (recur (left     ζ) :receed-down   Σ Δ      Ψ  (pop  Ω))))))
+          (if (equal Ψ 0)          (root     ζ)
+                            (recur (up       ζ) :receed-left   Σ Δ (dec Ψ)      Φ  (pop  Ω)))
+                            (recur (left     ζ) :receed-down   Σ Δ      Ψ  (inc Φ) (pop  Ω)))))))
 ;---------------------------------------------------------------------------------------------------
 (defn INVOKE [op & args]
   (case op
