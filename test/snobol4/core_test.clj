@@ -4,36 +4,45 @@
 
 
 ;---------------------------------------------------------------------------------------------------
-;(defmacro test (println &form &env))
-;(-> {} (assoc :a 1) (assoc :b 2))
-;(defn assign [n new] (alter-var-root n (fn [old] new)))
-;(def x 10)
-;(println x)
-;(assign #'x 20)
-;(println x)
-;(def ^:dynamic x 10)
-;(defn tryit [] x)
-;(println x)
-;(println (binding [x 20] x))
-;(println (binding [x 20] (tryit)))
-;(println x)
-;---------------------------------------------------------------------------------------------------
-;(import '[clojure.lang Var])
-;(Var/create 42); root binding
-;(let [V (.setDynamic (Var/create 0))]
-;  (do (var-get V); 0
-;      (with-bindings {V 42} (var-get V)))); 42
-;(the-ns 'snobol4.core)
-;(ns-map 'snobol4.core)
-;(ns-aliases 'snobol4.string)
-;(ns-publics 'snobol4.core)
-;(set! symbol expr)
+(comment
 
-;---------------------------------------------------------------------------------------------------
-;(deftype Address [no label])
-;(defmethod key Address [a] (if (.label a) (.label a) (.no a)))
-;(->Address at); construct via factory
-;(Address. at); construct
+		(def x 10)
+		(def ^:dynamic x 10)
+		(defn assign [n new] (alter-var-root n (fn [old] new)))
+		(assign #'x 20)
+		(defn tryit [] x)
+		(println (binding [x 20] x))
+		(println (binding [x 20] (tryit)))
+		(import '[clojure.lang Var])
+		(Var/create 42); root binding
+		(let [V (.setDynamic (Var/create 0))]
+		  (do (var-get V); 0
+		      (with-bindings {V 42} (var-get V)))); 42
+		(find-var snobol4.core/SEQ)
+		(var SEQ)
+		(var-get x)
+		(var-set x val)
+  (intern ns name)
+  (intern ns name val)
+
+		(defmacro test (println &form &env))
+		(-> {} (assoc :a 1) (assoc :b 2))
+		(println x)
+		(println x)
+		(println x)
+		(println x)
+
+		(the-ns 'snobol4.core)
+		(ns-map 'snobol4.core)
+		(ns-aliases 'snobol4.string)
+		(ns-publics 'snobol4.core)
+		(set! symbol expr)
+
+		(deftype Address [no label])
+		(defmethod key Address [a] (if (.label a) (.label a) (.no a)))
+		(->Address at); construct via factory
+		(Address. at); construct
+)
 ;---------------------------------------------------------------------------------------------------
 ;(definline skey [address] (let [[no label] address] (if label label no)))
 
