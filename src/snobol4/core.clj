@@ -1,6 +1,6 @@
 (ns snobol4.core
   (:gen-class)
-  (:require [clojure.zip :as z])
+  (:require [clojure.zip :as z :refer [zipper root node down up right left branch? rightmost leftmost]])
   (:require [clojure.edn :as edn])
   (:require [clojure.pprint :as pp])
   (:require [clojure.string :as string])
@@ -14,7 +14,7 @@
 ;---------------------------------------------------------------------------------------------------
 (defn equal         [x y] (clojure.core/= x y))
 (defn not-equal     [x y] (clojure.core/not= x y))
-(defn neg           [x]   (clojure.core/- -1 x))
+(defn err           [x]   (clojure.core/- -1 x))
 (defn add          ([x]   (clojure.core/+ x))  ([x y] (clojure.core/+ x y)))
 (defn subtract     ([x]   (clojure.core/- x))  ([x y] (clojure.core/- x y)))
 (defn multiply     ([x]   (clojure.core/* x))  ([x y] (clojure.core/* x y)))
@@ -393,10 +393,10 @@
   (comment)
   (if-let [ns-name (namespace N)]
     (do (comment "ns-name: " ns-name " " N)
-		    (when-let [ns-ref (or (get (ns-aliases *ns*) (symbol ns-name))
-		                          (find-ns (symbol ns-name)))]
-		      (do (comment "ns-ref: " ns-ref)
-		        (get (ns-publics ns-ref) (symbol (name N))))))
+      (when-let [ns-ref (or (get (ns-aliases *ns*) (symbol ns-name))
+                            (find-ns (symbol ns-name)))]
+        (do (comment "ns-ref: " ns-ref)
+          (get (ns-publics ns-ref) (symbol (name N))))))
     (do (comment "*ns*: " *ns* " " N)
       (if-let [var-ref (get (ns-map *ns*) (symbol (name N)))] var-ref
         (get (ns-map (find-ns (symbol "snobol4.core"))) (symbol (name N)))))))
@@ -456,43 +456,75 @@
 })
 ;---------------------------------------------------------------------------------------------------
 ; Scanners
-(deftrace ARB!     [Σ Δ Π]   [nil (neg Δ)])
-(deftrace BAL!     [Σ Δ Π]   [nil (neg Δ)])
-(deftrace ARBNO!   [Σ Δ Π]   [nil (neg Δ)])
-(deftrace FENCE!   [Σ Δ Π]   [nil (neg Δ)])
-(deftrace FENCE!!  [Σ Δ Π]   [nil (neg Δ)])
-(deftrace BREAKX$  [Σ Δ Π]   [nil (neg Δ)])
-(deftrace ABORT!   [Σ Δ Π]   [nil (neg Δ)])
+(deftrace ARB!     [Σ Δ Π]   [nil (err Δ)])
+(deftrace BAL!     [Σ Δ Π]   [nil (err Δ)])
+(deftrace ARBNO!   [Σ Δ Π]   [nil (err Δ)])
+(deftrace FENCE!   [Σ Δ Π]   [nil (err Δ)])
+(deftrace FENCE!!  [Σ Δ Π]   [nil (err Δ)])
+(deftrace BREAKX$  [Σ Δ Π]   [nil (err Δ)])
+(deftrace ABORT!   [Σ Δ Π]   [nil (err Δ)])
 (deftrace SUCCEED! [Σ Δ Π]   [Σ Δ])
-(deftrace FAIL!    [Σ Δ Π]   [Σ (neg Δ)])
-(deftrace POS#     [Σ Δ Π]   (if (equal Δ Π)         [Σ Δ]       [Σ (neg Δ)]))
-(deftrace RPOS#    [Σ Δ Π]   (if (equal (count Σ) Π) [Σ Δ]       [Σ (neg Δ)]))
-(deftrace ANY$     [Σ Δ Π]   (if (not (seq Σ))       [Σ (neg Δ)] (if     (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (neg Δ)])))
-(deftrace NOTANY$  [Σ Δ Π]   (if (not (seq Σ))       [Σ (neg Δ)] (if-not (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (neg Δ)])))
+(deftrace FAIL!    [Σ Δ Π]   [Σ (err Δ)])
+(deftrace POS#     [Σ Δ Π]   (if (equal Δ Π)         [Σ Δ]       [Σ (err Δ)]))
+(deftrace RPOS#    [Σ Δ Π]   (if (equal (count Σ) Π) [Σ Δ]       [Σ (err Δ)]))
+(deftrace ANY$     [Σ Δ Π]   (if (not (seq Σ))       [Σ (err Δ)] (if     (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (err Δ)])))
+(deftrace NOTANY$  [Σ Δ Π]   (if (not (seq Σ))       [Σ (err Δ)] (if-not (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (err Δ)])))
 (deftrace REM!     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (not (seq σ))    [σ δ] (recur (rest σ) (inc δ)))))
 (deftrace LIT$     [Σ Δ Π]   (loop [σ Σ δ Δ π Π]
                                (if (not (seq π))     [σ δ]
-                                  (if (not (seq σ))  [σ (neg δ)]
-                                    (if (not-equal (first σ) (first π)) [σ (neg δ)]
+                                  (if (not (seq σ))  [σ (err δ)]
+                                    (if (not-equal (first σ) (first π)) [σ (err δ)]
                                       (recur (rest σ) (inc δ) (rest π)))))))
-(deftrace LEN#     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= δ (add Δ Π)) [σ δ] (if (not (seq σ)) [σ (neg δ)] (recur (rest σ) (inc δ))))))
-(deftrace TAB#     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= δ Π)         [σ δ] (if (not (seq σ)) [σ (neg δ)] (recur (rest σ) (inc δ))))))
-(deftrace RTAB#    [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= (count σ) Π) [σ δ] (if (not (seq σ)) [σ (neg δ)] (recur (rest σ) (inc δ))))))
-(deftrace SPAN$    [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (and (not (seq σ)) (identical? σ Σ)) [σ (neg δ)] (if (and (not (contains? Π (first Σ))) (identical? σ Σ)) [σ (neg δ)] (recur (rest σ) (inc δ))))))
-(deftrace BREAK$   [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (not (seq σ))    [σ (neg δ)] (if (contains? Π (first Σ)) [σ δ] (recur (rest σ) (inc δ))))))
+(deftrace LEN#     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= δ (add Δ Π)) [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
+(deftrace TAB#     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= δ Π)         [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
+(deftrace RTAB#    [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= (count σ) Π) [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
+(deftrace SPAN$    [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (and (not (seq σ)) (identical? σ Σ)) [σ (err δ)] (if (and (not (contains? Π (first Σ))) (identical? σ Σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
+(deftrace BREAK$   [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (not (seq σ))    [σ (err δ)] (if (contains? Π (first Σ)) [σ δ] (recur (rest σ) (inc δ))))))
 (deftrace ALT      [Σ Δ & Π] (loop [        π Π]
-                               (if (not (seq π)) [Σ (neg Δ)]
+                               (if (not (seq π)) [Σ (err Δ)]
                                  (let [[σ δ] (MATCH Σ Δ (first π))]
                                    (if (>= δ 0) [σ δ]
                                      (recur (rest π)))))))
 (deftrace SEQ      [Σ Δ & Π] (loop [σ Σ δ Δ π Π]
                                (if (not (seq π)) [σ δ]
                                   (let [[σ δ] (MATCH σ δ (first π))]
-                                    (if (<  δ 0) [σ δ]
+                                    (if (< δ 0) [σ δ]
                                       (recur σ δ (rest π)))))))
-(defn     MATCH    [Σ Δ Π] (cond
-                             (string? Π) (LIT$ Σ Δ Π)
-                             (seq? Π) (let [[λ & π] Π, λ ($$ λ)] (apply λ Σ Δ π))))
+(comment  MATCH    [Σ Δ Π]   (cond
+                               (string? Π) (LIT$ Σ Δ Π)
+                               (seq? Π) (let [[λ & π] Π, λ ($$ λ)] (apply λ Σ Δ π))))
+;---------------------------------------------------------------------------------------------------
+(defn     BRANCH?   [π] (or (list? π) (seq? π) (vector? π)))
+(defn     pro-down  [ζ] (down ζ))
+(defn     re-down   [ζ] (rightmost (down ζ)))
+(defn     right-end [ζ] (equal ζ (rightmost ζ)))
+(defn     left-end  [ζ] (equal ζ (leftmost ζ)))
+(defn     MATCH     [Σ Δ Π]
+  (loop [ζ (zipper BRANCH? rest nil Π), direction :proceed-down, Σ Σ, Δ Δ, Ψ 0, Ω []]
+    (out Ω)
+    (case direction
+    :proceed-down
+      (if (branch? ζ)     (recur (pro-down ζ) :proceed-down  Σ Δ (inc Ψ) (conj Ω [Δ Ψ]))
+        (if (right-end ζ)
+          (if (equal Ψ 0) (recur (re-down  ζ) :receed-down   Σ Δ (inc Ψ) (pop  Ω))
+                          (recur (up       ζ) :proceed-right Σ Δ (dec Ψ) (conj Ω [Δ Ψ])))
+                          (recur (right    ζ) :proceed-down  Σ Δ      Ψ  (conj Ω [Δ Ψ]))))
+     :proceed-right
+       (if (right-end ζ)
+         (if (equal Ψ 0)  (recur (re-down  ζ) :receed-down   Σ Δ (inc Ψ) (pop  Ω))
+                          (recur (up       ζ) :proceed-right Σ Δ (dec Ψ) (conj Ω [Δ Ψ])))
+                          (recur (right    ζ) :proceed-down  Σ Δ      Ψ  (conj Ω [Δ Ψ])))
+     :receed-down
+      (if (branch? ζ)     (recur (re-down  ζ) :receed-down   Σ Δ (inc Ψ) (pop  Ω))
+        (if (left-end ζ)
+          (if (equal Ψ 0)        (root     ζ)
+                          (recur (up       ζ) :receed-left   Σ Δ (dec Ψ) (pop  Ω)))
+                          (recur (left     ζ) :receed-down   Σ Δ      Ψ  (pop  Ω))))
+     :receed-left
+       (if (left-end ζ)
+         (if (equal Ψ 0)         (root     ζ)
+                          (recur (up       ζ) :receed-left   Σ Δ (dec Ψ) (pop  Ω)))
+                          (recur (left     ζ) :receed-down   Σ Δ      Ψ  (pop  Ω))))))
 ;---------------------------------------------------------------------------------------------------
 (defn INVOKE [op & args]
   (case op
@@ -623,22 +655,5 @@ END
             (let [ast (parse-command line) code (coder ast 1)]
               (println code)))))
   ))
-;---------------------------------------------------------------------------------------------------
-(defn ZIP [E]
-  (loop [E (z/zipper #(or (list? %) (vector? %)) rest nil E) depth 0 direction :down]
-    (out (z/node E))
-    (case direction
-    :down  (if (z/branch? E)
-                    (recur (z/down E) (inc depth) :down)
-                    (if (clojure.core/= E (z/rightmost E))
-                          (if (clojure.core/= depth 0)
-                        (z/root E)
-                        (recur (z/up E) (dec depth) :right))
-                          (recur (z/right E) depth :down)))
-     :right (if (clojure.core/= E (z/rightmost E))
-                      (if (clojure.core/= depth 0)
-                        (z/root E)
-                        (recur (z/up E) (dec depth) :right))
-                      (recur (z/right E) depth :down)))))
 ;---------------------------------------------------------------------------------------------------
 (defn -main "SNOBOL4/Clojure." [& args] (RUN 1))
