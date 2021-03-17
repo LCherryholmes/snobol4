@@ -514,26 +514,26 @@
     (let [Π (ζΠ ζ) λ (ζλ ζ)]
       (println (format "%-14s %s %s" action λ ζ Ω))
       (case λ
-		      nil   (case action      :proceed true  :recede  false
-		                              :success true  :failure false)
-		      ALT   (case action
-  		            :proceed
-	  	              (if (ζω ζ)    (recur :recede  Σ Δ (top Ω) (pull Ω))
-		                              (recur :proceed Σ Δ (ζ>> ζ) Ω))
-		              :recede         (recur :proceed Σ Δ (ζ++ ζ) Ω)
-		              :success        (recur :success Σ Δ (ζ<< ζ) (push Ω ζ))
-		              :failure        (recur :proceed Σ Δ (ζ++ ζ) Ω))
-		      SEQ   (case action
-  		            :proceed
-		                (if (ζω ζ)    (recur :success Σ Δ (ζ<< ζ) Ω)
-		                              (recur :proceed Σ Δ (ζ++ ζ) Ω))
-		              :success        (recur :proceed Σ Δ (ζ++ ζ) Ω))
-		      LIT$  (case action
-		              :proceed
-		              (let [[σ δ]
-		                (LIT$ Σ Δ Π)]
-					             (if (> δ 0)   (recur :success σ δ (ζ<< ζ) Ω)
-					                           (recur :failure Σ Δ (ζ<< ζ) Ω))))
+        nil   (case action      :proceed true  :recede  false
+                                :success true  :failure false)
+        ALT   (case action
+                :proceed
+                  (if (ζω ζ)    (recur :recede  Σ Δ (top Ω) (pull Ω))
+                                (recur :proceed Σ Δ (ζ>> ζ) Ω))
+                :recede         (recur :proceed Σ Δ (ζ++ ζ) Ω)
+                :success        (recur :success Σ Δ (ζ<< ζ) (push Ω ζ))
+                :failure        (recur :proceed Σ Δ (ζ++ ζ) Ω))
+        SEQ   (case action
+                :proceed
+                  (if (ζω ζ)    (recur :success Σ Δ (ζ<< ζ) Ω)
+                                (recur :proceed Σ Δ (ζ++ ζ) Ω))
+                :success        (recur :proceed Σ Δ (ζ++ ζ) Ω))
+        LIT$  (case action
+                :proceed
+                (let [[σ δ]
+                  (LIT$ Σ Δ Π)]
+                  (if (> δ 0)   (recur :success σ δ (ζ<< ζ) Ω)
+                                (recur :failure Σ Δ (ζ<< ζ) Ω))))
       ))))
 ;===================================================================================================
 (defn INVOKE [op & args]
