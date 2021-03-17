@@ -316,20 +316,20 @@
         (list []             missing)
         (list ['x]           (list 'if (condition (cvt 'x) default) ε))
         (list ['x 'y '& '_]  (list 'if (condition (cvt 'x) (cvt 'y)) ε))))
-(eval (primitive 'EQ     0   ε ncvt     #(list 'clojure.core/= %1 %2))); Numeric comparison
-(eval (primitive 'NE     0 nil ncvt     #(list 'not= %1 %2)))
-(eval (primitive 'LE     0   ε ncvt     #(list '<=   %1 %2)))
-(eval (primitive 'LT     0 nil ncvt     #(list '<    %1 %2)))
-(eval (primitive 'GE     0   ε ncvt     #(list '>=   %1 %2)))
-(eval (primitive 'GT     0 nil ncvt     #(list '>    %1 %2)))
+(eval (primitive 'EQ     0   ε ncvt     #(list 'equal %1 %2))); Numeric comparison
+(eval (primitive 'NE     0 nil ncvt     #(list 'not=  %1 %2)))
+(eval (primitive 'LE     0   ε ncvt     #(list '<=    %1 %2)))
+(eval (primitive 'LT     0 nil ncvt     #(list '<     %1 %2)))
+(eval (primitive 'GE     0   ε ncvt     #(list '>=    %1 %2)))
+(eval (primitive 'GT     0 nil ncvt     #(list '>     %1 %2)))
+(eval (primitive 'LEQ    ε   ε scvt     #(list 'equal %1 %2))); String comparison
+(eval (primitive 'LNE    ε nil scvt     #(list 'not=  %1 %2)))
+(eval (primitive 'LLE    ε   ε scvt     #(list '<=    %1 %2)))
+(eval (primitive 'LLT    ε nil scvt     #(list '<     %1 %2)))
+(eval (primitive 'LGE    ε   ε scvt     #(list '>=    %1 %2)))
+(eval (primitive 'LGT    ε nil scvt     #(list '>     %1 %2)))
 (eval (primitive 'IDENT  ε   ε identity #(list 'identical? %1 %2))); Object comparison
-(eval (primitive 'DIFFER ε nil identity #(list 'not  (list 'identical? %1 %2))))
-(eval (primitive 'LEQ    ε   ε scvt     #(list 'clojure.core/= %1 %2))); String comparison
-(eval (primitive 'LNE    ε nil scvt     #(list 'not= %1 %2)))
-(eval (primitive 'LLE    ε   ε scvt     #(list '<=   %1 %2)))
-(eval (primitive 'LLT    ε nil scvt     #(list '<    %1 %2)))
-(eval (primitive 'LGE    ε   ε scvt     #(list '>=   %1 %2)))
-(eval (primitive 'LGT    ε nil scvt     #(list '>    %1 %2)))
+(eval (primitive 'DIFFER ε nil identity #(list 'not   (list 'identical? %1 %2))))
 ;---- ----- -------------------------------------------- ------- -- ----- ----------------------------------------------
 ; Numeric
 (defmacro SIN    []  `(defn SIN  [x] (Math/sin  ~(numcvt 'x))))
@@ -429,29 +429,31 @@
 :END      []
 })
 ;---------------------------------------------------------------------------------------------------
-(def LABELS {1 :START 21 :END})
-(def STMTNOS {:START 1 :END 21})
+(def LABELS {1 :START 4 :END})
+(def STMTNOS {:START 1 :END 4})
 (def CODE {
 :START    []
-2         ['(= BD [(| "BE" "BO" "B") (| "AR" "A") (| "DS" "D")])]
-3         ['(? "BEARDS" BD)]
-4         ['(? "BEARD" BD)]
-5         ['(? "BEADS" BD)]
-6         ['(? "BEAD" BD)]
-7         ['(? "BARDS" BD)]
-8         ['(? "BARD" BD)]
-9         ['(? "BADS" BD)]
-10        ['(? "BAD" BD)]
-11        ['(? "BATS" BD)]
-12        ['(= BR [(| "B" "F" "L" "R") (| "E" "EA") (| "D" "DS")])]
-13        ['(? "BED" BR)]
-14        ['(? "BEDS" BR)]
-15        ['(? "BEAD" BR)]
-16        ['(? "BEADS" BR)]
-17        ['(? "RED" BR)]
-18        ['(? "REDS" BR)]
-19        ['(? "READ" BR)]
-20        ['(? "READS" BR)]
+2         ['(= P [(| "A" "B" "C") (| "1" "2")])]
+3         ['(? "C2" P)]
+;2        ['(= BD [(| "BE" "BO" "B") (| "AR" "A") (| "DS" "D")])]
+;3        ['(? "BEARDS" BD)]
+;4        ['(? "BEARD" BD)]
+;5        ['(? "BEADS" BD)]
+;6        ['(? "BEAD" BD)]
+;7        ['(? "BARDS" BD)]
+;8        ['(? "BARD" BD)]
+;9        ['(? "BADS" BD)]
+;10       ['(? "BAD" BD)]
+;11       ['(? "BATS" BD)]
+;12       ['(= BR [(| "B" "F" "L" "R") (| "E" "EA") (| "D" "DS")])]
+;13       ['(? "BED" BR)]
+;14       ['(? "BEDS" BR)]
+;15       ['(? "BEAD" BR)]
+;16       ['(? "BEADS" BR)]
+;17       ['(? "RED" BR)]
+;18       ['(? "REDS" BR)]
+;19       ['(? "READ" BR)]
+;20       ['(? "READS" BR)]
 :END      []
 })
 ;---------------------------------------------------------------------------------------------------
@@ -493,40 +495,47 @@
 (comment  MATCH    [Σ Δ Π]   (cond
                                (string? Π) (LIT$ Σ Δ Π)
                                (seq? Π) (let [[λ & π] Π, λ ($$ λ)] (apply λ Σ Δ π))))
+;===================================================================================================
+(defmacro push [Ψ ζ] '(conj ~Ψ ~ζ))
+(defmacro pull [Ψ]   '(pop ~Ψ))
+(defmacro top  [Ψ]   '(last ~Ψ))
+(defmacro ζΠ   [ζ]   '(~ζ 0))
+(defmacro ζΦ   [ζ]   '(~ζ 1))
+(defmacro ζΨ   [ζ]   '(~ζ 2))
+(defmacro ζλ   [ζ]   '(if (list? (ζΠ ~ζ)) (first (ζΠ ~ζ)) LIT$))
+(defmacro ζα   [ζ]   '(<= (ζΦ ~ζ) 0))
+(defmacro ζω   [ζ]   '(>= (ζΦ ~ζ) (count (ζΠ ~ζ))))
+(defmacro ζ++  [ζ]   '[(ζΠ ~ζ) (inc (ζΦ ~ζ)) (ζΨ ~ζ)])
+(defmacro ζ>>  [ζ]   '[(nth (ζΠ ~ζ) (ζΦ ~ζ)) 0 (push (ζΨ ~ζ) ~ζ)])
+(defmacro ζ<<  [ζ]   '[(ζΠ (top ζΨ)) (ζΦ (top ζΨ)) (pull ζΨ)])
 ;---------------------------------------------------------------------------------------------------
-(defn     BRANCH?   [π] (or (list? π) (seq? π) (vector? π)))
-(defn     pro-down  [ζ] (down ζ))
-(defn     re-down   [ζ] (rightmost (down ζ)))
-(defn     right-end [ζ] (equal ζ (rightmost ζ)))
-(defn     left-end  [ζ] (equal ζ (leftmost ζ)))
-(defn     MATCH     [Σ Δ Π]
-  (loop [ζ (zipper BRANCH? rest nil Π), direction :proceed-down, Σ Σ, Δ Δ, Ψ 0, Φ 0, Ω []]
-    (let [cnt (dec (count (node ζ)))]
-      (out Ω)
-      (case direction
-      :proceed-down
-        (if (branch? ζ)     (recur (pro-down ζ) :proceed-down  Σ Δ (inc Ψ)      0  (conj Ω [Ψ Φ cnt]))
-          (if (right-end ζ)
-            (if (equal Ψ 0) (recur (re-down  ζ) :receed-down   Σ Δ (inc Ψ)      Φ  (pop  Ω))
-                            (recur (up       ζ) :proceed-right Σ Δ (dec Ψ)      Φ  (conj Ω [Ψ Φ cnt])))
-                            (recur (right    ζ) :proceed-down  Σ Δ      Ψ  (inc Φ) (conj Ω [Ψ Φ cnt]))))
-      :proceed-right
-        (if (right-end ζ)
-          (if (equal Ψ 0)   (recur (re-down  ζ) :receed-down   Σ Δ (inc Ψ)      Φ  (pop  Ω))
-                            (recur (up       ζ) :proceed-right Σ Δ (dec Ψ)      Φ  (conj Ω [Ψ Φ cnt])))
-                            (recur (right    ζ) :proceed-down  Σ Δ      Ψ  (inc Φ) (conj Ω [Ψ Φ cnt])))
-      :receed-down
-        (if (branch? ζ)     (recur (re-down  ζ) :receed-down   Σ Δ (inc Ψ)      Φ  (pop  Ω))
-          (if (left-end ζ)
-            (if (equal Ψ 0)        (root     ζ)
-                            (recur (up       ζ) :receed-left   Σ Δ (dec Ψ)      Φ  (pop  Ω)))
-                            (recur (left     ζ) :receed-down   Σ Δ      Ψ  (inc Φ) (pop  Ω))))
-      :receed-left
-        (if (left-end ζ)
-          (if (equal Ψ 0)          (root     ζ)
-                            (recur (up       ζ) :receed-left   Σ Δ (dec Ψ)      Φ  (pop  Ω)))
-                            (recur (left     ζ) :receed-down   Σ Δ      Ψ  (inc Φ) (pop  Ω)))))))
-;---------------------------------------------------------------------------------------------------
+(defn     MATCH [Σ Δ Π]; ζ
+  (loop [action :proceed, Σ Σ, Δ Δ, ζ [Π 0 []] Ω []]
+    (let [Π (ζΠ ζ) λ (ζλ ζ)]
+      (println (format "%-14s %s %s" action λ ζ Ω))
+      (case λ
+		      nil   (case action      :proceed true  :recede  false
+		                              :success true  :failure false)
+		      ALT   (case action
+  		            :proceed
+	  	              (if (ζω ζ)    (recur :recede  Σ Δ (top Ω) (pull Ω))
+		                              (recur :proceed Σ Δ (ζ>> ζ) Ω))
+		              :recede         (recur :proceed Σ Δ (ζ++ ζ) Ω)
+		              :success        (recur :success Σ Δ (ζ<< ζ) (push Ω ζ))
+		              :failure        (recur :proceed Σ Δ (ζ++ ζ) Ω))
+		      SEQ   (case action
+  		            :proceed
+		                (if (ζω ζ)    (recur :success Σ Δ (ζ<< ζ) Ω)
+		                              (recur :proceed Σ Δ (ζ++ ζ) Ω))
+		              :success        (recur :proceed Σ Δ (ζ++ ζ) Ω))
+		      LIT$  (case action
+		              :proceed
+		              (let [[σ δ]
+		                (LIT$ Σ Δ Π)]
+					             (if (> δ 0)   (recur :success σ δ (ζ<< ζ) Ω)
+					                           (recur :failure Σ Δ (ζ<< ζ) Ω))))
+      ))))
+;===================================================================================================
 (defn INVOKE [op & args]
   (case op
     |        (apply | args)
