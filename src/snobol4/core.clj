@@ -24,8 +24,8 @@
 (declare EVAL); accepts string or unevaluated expression
 (declare INVOKE)
 (declare MATCH)
-(declare ALT)
-(declare SEQ)
+;(declare ALT)
+;(declare SEQ)
 ;---------------------------------------------------------------------------------------------------
 (defn bug [x] (println (type x) " " x) x)
 (defn re-quote [& ss]
@@ -243,30 +243,21 @@
 (defmacro strcvt [x] `(str ~x))
 ;---------------------------------------------------------------------------------------------------
 ; Operators
-(defn assign        [n x]     nil)
-(defn annihilate    [x]       nil)
-(defn match-replace [n s p]   nil)
-(defn keyword-value [n]       nil)
-(defn dollar-value  [n]       nil)
-(defn dot-name      [n]      `(if (list? ~n) ~n (list 'identity ~n)))
+(defn assign        [n x]       nil)
+(defn annihilate    [x]         nil)
+(defn match-replace [n s p]     nil)
+(defn keyword-value [n]         nil)
+(defn dollar-value  [n]         nil)
+(defn dot-name      [n]        `(if (list? ~n) ~n (list 'identity ~n)))
 (defn $=            [p n])
 (defn .=            [p n])
-(defn negate        [p]      `(if (nil? ~p) ε nil))
-(defmacro vectorize [x]      `(if (vector? ~x) ~x (vector ~x)))
-(defn flatten-1     [Ω]       (mapcat #(if (sequential? %) % [%]) Ω))
-(defn flatten-one   [op & Ω]  (apply list (reduce
-                                (fn [Φ ω] (reduce
-                                  (fn [Σ σ] (conj Σ σ))
-                                  Φ ω))
-                                [op] (vectorize Ω))))
-(defn     x-2 [op x y]        (list op x y))
-(defn     x-3 [op x y z]      (list op x y z))
-(defn     x-n [op x y z & Ω]  (flatten-1 (conj Ω z y x op)))
-(defmacro n-1 [op x]          (list op (numcvt x)))
-(defmacro n-2 [op x y]        (list op (numcvt x) (numcvt y)))
-(defmacro n-3 [op x y z]      (list op (numcvt x) (numcvt y)))
-(defmacro n-n [op x y z & Ω]  (flatten-1 (map ncvt (conj Ω z y x op))))
-(defmacro uneval [x]         `(if (list? ~x) ~x (list 'identity ~x)))
+(defn negate        [p]        `(if (nil? ~p) ε nil))
+(defn x-2           [op x y]    (list op x y))
+(defn x-n           [op x y Ω]  (apply list (conj Ω y x op)))
+(defn n-1           [op x]      (list op (numcvt x)))
+(defn n-2           [op x y]    (list op (numcvt x) (numcvt y)))
+(defn n-n           [op x y Ω]  (apply list op (map ncvt (conj Ω y x))))
+(defmacro uneval [x]           `(if (list? ~x) ~x (list 'identity ~x)))
 ;---- ----- -------------------------------------------- ------- -- ----- ----------------------------------------------
 (defn =     ([x]        ##NaN)                   ; unary            programable
             ([n x]      (assign n x)))           ; binary   0 right assignment
@@ -297,8 +288,8 @@
 (defn %     ([x]        ##NaN)                   ; unary            programable
             ([x y]      ##NaN))                  ; binary  10 left  programable
 (defn !     ([x]        ##NaN)                   ; unary            programable
-            ([x y]      (n-2 Math/pow x y)))     ; binary  11 right exponentiation
-(defn **    ([x y]      (n-2 Math/pow x y)))     ; binary  11 right exponentiation
+            ([x y]      (n-2 'Math/pow x y)))    ; binary  11 right exponentiation
+(defn **    ([x y]      (n-2 'Math/pow x y)))    ; binary  11 right exponentiation
 (defn $     ([n]        (dollar-value n))        ; unary            indirection
             ([x y]      (x-2 $= x y))            ; binary  12 left  immediate assignment
             ([x y & zs] (x-n $= x y zs)))        ; multi   12 left  immediate assignment
@@ -429,111 +420,134 @@
 :END      []
 })
 ;---------------------------------------------------------------------------------------------------
-(def LABELS {1 :START 4 :END})
-(def STMTNOS {:START 1 :END 4})
+(def LABELS {1 :START 23 :END})
+(def STMTNOS {:START 1 :END 23})
 (def CODE {
 :START    []
-2         ['(= P [(| "A" "B" "C") (| "1" "2")])]
-3         ['(? "C2" P)]
-;2        ['(= BD [(| "BE" "BO" "B") (| "AR" "A") (| "DS" "D")])]
-;3        ['(? "BEARDS" BD)]
-;4        ['(? "BEARD" BD)]
-;5        ['(? "BEADS" BD)]
-;6        ['(? "BEAD" BD)]
-;7        ['(? "BARDS" BD)]
-;8        ['(? "BARD" BD)]
-;9        ['(? "BADS" BD)]
-;10       ['(? "BAD" BD)]
-;11       ['(? "BATS" BD)]
-;12       ['(= BR [(| "B" "F" "L" "R") (| "E" "EA") (| "D" "DS")])]
-;13       ['(? "BED" BR)]
-;14       ['(? "BEDS" BR)]
-;15       ['(? "BEAD" BR)]
-;16       ['(? "BEADS" BR)]
-;17       ['(? "RED" BR)]
-;18       ['(? "REDS" BR)]
-;19       ['(? "READ" BR)]
-;20       ['(? "READS" BR)]
+2         ['(= P [(| "Z" "Z" "Z") (| "9" "9") (FAIL)])]
+3         ['(? "Z9" P)]
+4         ['(= BD [(| "BE" "BO" "B") (| "AR" "A") (| "DS" "D")])]
+5         ['(? "BEARDS" BD)]
+6         ['(? "BEARD" BD)]
+7         ['(? "BEADS" BD)]
+8         ['(? "BEAD" BD)]
+9         ['(? "BARDS" BD)]
+10        ['(? "BARD" BD)]
+11        ['(? "BADS" BD)]
+12        ['(? "BAD" BD)]
+13        ['(? "BATS" BD)]
+14        ['(= BR [(| "B" "F" "L" "R") (| "E" "EA") (| "D" "DS")])]
+15        ['(? "BED" BR)]
+16        ['(? "BEDS" BR)]
+17        ['(? "BEAD" BR)]
+18        ['(? "BEADS" BR)]
+19        ['(? "RED" BR)]
+20        ['(? "REDS" BR)]
+21        ['(? "READ" BR)]
+22        ['(? "READS" BR)]
 :END      []
 })
 ;---------------------------------------------------------------------------------------------------
 ; Scanners
-(deftrace ARB!     [Σ Δ Π]   [nil (err Δ)])
-(deftrace BAL!     [Σ Δ Π]   [nil (err Δ)])
-(deftrace ARBNO!   [Σ Δ Π]   [nil (err Δ)])
-(deftrace FENCE!   [Σ Δ Π]   [nil (err Δ)])
-(deftrace FENCE!!  [Σ Δ Π]   [nil (err Δ)])
-(deftrace BREAKX$  [Σ Δ Π]   [nil (err Δ)])
-(deftrace ABORT!   [Σ Δ Π]   [nil (err Δ)])
-(deftrace SUCCEED! [Σ Δ Π]   [Σ Δ])
-(deftrace FAIL!    [Σ Δ Π]   [Σ (err Δ)])
-(deftrace POS#     [Σ Δ Π]   (if (equal Δ Π)         [Σ Δ]       [Σ (err Δ)]))
-(deftrace RPOS#    [Σ Δ Π]   (if (equal (count Σ) Π) [Σ Δ]       [Σ (err Δ)]))
-(deftrace ANY$     [Σ Δ Π]   (if (not (seq Σ))       [Σ (err Δ)] (if     (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (err Δ)])))
-(deftrace NOTANY$  [Σ Δ Π]   (if (not (seq Σ))       [Σ (err Δ)] (if-not (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (err Δ)])))
-(deftrace REM!     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (not (seq σ))    [σ δ] (recur (rest σ) (inc δ)))))
-(deftrace LIT$     [Σ Δ Π]   (loop [σ Σ δ Δ π Π]
-                               (if (not (seq π))     [σ δ]
-                                  (if (not (seq σ))  [σ (err δ)]
-                                    (if (not-equal (first σ) (first π)) [σ (err δ)]
-                                      (recur (rest σ) (inc δ) (rest π)))))))
-(deftrace LEN#     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= δ (add Δ Π)) [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
-(deftrace TAB#     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= δ Π)         [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
-(deftrace RTAB#    [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= (count σ) Π) [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
-(deftrace SPAN$    [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (and (not (seq σ)) (identical? σ Σ)) [σ (err δ)] (if (and (not (contains? Π (first Σ))) (identical? σ Σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
-(deftrace BREAK$   [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (not (seq σ))    [σ (err δ)] (if (contains? Π (first Σ)) [σ δ] (recur (rest σ) (inc δ))))))
-(deftrace ALT      [Σ Δ & Π] (loop [        π Π]
-                               (if (not (seq π)) [Σ (err Δ)]
-                                 (let [[σ δ] (MATCH Σ Δ (first π))]
-                                   (if (>= δ 0) [σ δ]
-                                     (recur (rest π)))))))
-(deftrace SEQ      [Σ Δ & Π] (loop [σ Σ δ Δ π Π]
-                               (if (not (seq π)) [σ δ]
-                                  (let [[σ δ] (MATCH σ δ (first π))]
-                                    (if (< δ 0) [σ δ]
-                                      (recur σ δ (rest π)))))))
-(comment  MATCH    [Σ Δ Π]   (cond
-                               (string? Π) (LIT$ Σ Δ Π)
-                               (seq? Π) (let [[λ & π] Π, λ ($$ λ)] (apply λ Σ Δ π))))
+(defn ARB!     [Σ Δ Π]   [nil (err Δ)])
+(defn BAL!     [Σ Δ Π]   [nil (err Δ)])
+(defn ARBNO!   [Σ Δ Π]   [nil (err Δ)])
+(defn FENCE!   [Σ Δ Π]   [nil (err Δ)])
+(defn FENCE!!  [Σ Δ Π]   [nil (err Δ)])
+(defn BREAKX$  [Σ Δ Π]   [nil (err Δ)])
+(defn ABORT!   [Σ Δ Π]   [nil (err Δ)])
+(defn SUCCEED! [Σ Δ Π]   [Σ Δ])
+(defn FAIL!    [Σ Δ Π]   [Σ (err Δ)])
+(defn POS#     [Σ Δ Π]   (if (equal Δ Π)         [Σ Δ]       [Σ (err Δ)]))
+(defn RPOS#    [Σ Δ Π]   (if (equal (count Σ) Π) [Σ Δ]       [Σ (err Δ)]))
+(defn ANY$     [Σ Δ Π]   (if (not (seq Σ))       [Σ (err Δ)] (if     (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (err Δ)])))
+(defn NOTANY$  [Σ Δ Π]   (if (not (seq Σ))       [Σ (err Δ)] (if-not (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (err Δ)])))
+(defn REM!     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (not (seq σ))    [σ δ] (recur (rest σ) (inc δ)))))
+(defn LIT$     [Σ Δ Π]   (loop [σ Σ δ Δ π Π]
+                           (if (not (seq π))     [σ δ]
+                              (if (not (seq σ))  [σ (err δ)]
+                                (if (not-equal (first σ) (first π)) [σ (err δ)]
+                                  (recur (rest σ) (inc δ) (rest π)))))))
+(defn LEN#     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= δ (add Δ Π)) [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
+(defn TAB#     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= δ Π)         [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
+(defn RTAB#    [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= (count σ) Π) [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
+(defn SPAN$    [Σ Δ Π]   (loop [σ Σ δ Δ    ]
+                           (if (and (not (seq σ)) (identical? σ Σ)) [σ (err δ)]
+                             (if (and (not (contains? Π (first Σ))) (identical? σ Σ)) [σ (err δ)]
+                               (recur (rest σ) (inc δ))))))
+(defn BREAK$   [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (not (seq σ))    [σ (err δ)] (if (contains? Π (first Σ)) [σ δ] (recur (rest σ) (inc δ))))))
+(defn ALT      [Σ Δ & Π] (loop [        π Π]
+                           (if (not (seq π)) [Σ (err Δ)]
+                             (let [[σ δ] (MATCH Σ Δ (first π))]
+                               (if (>= δ 0) [σ δ]
+                                 (recur (rest π)))))))
+(defn SEQ      [Σ Δ & Π] (loop [σ Σ δ Δ π Π]
+                           (if (not (seq π)) [σ δ]
+                              (let [[σ δ] (MATCH σ δ (first π))]
+                                (if (< δ 0) [σ δ]
+                                  (recur σ δ (rest π)))))))
+(comment  MATCH    [Σ Δ Π] (cond
+                             (string? Π) (LIT$ Σ Δ Π)
+                             (seq? Π) (let [[λ & π] Π, λ ($$ λ)] (apply λ Σ Δ π))))
 ;===================================================================================================
-(defmacro push [Ψ ζ] '(conj ~Ψ ~ζ))
-(defmacro pull [Ψ]   '(pop ~Ψ))
-(defmacro top  [Ψ]   '(last ~Ψ))
-(defmacro ζΠ   [ζ]   '(~ζ 0))
-(defmacro ζΦ   [ζ]   '(~ζ 1))
-(defmacro ζΨ   [ζ]   '(~ζ 2))
-(defmacro ζλ   [ζ]   '(if (list? (ζΠ ~ζ)) (first (ζΠ ~ζ)) LIT$))
-(defmacro ζα   [ζ]   '(<= (ζΦ ~ζ) 0))
-(defmacro ζω   [ζ]   '(>= (ζΦ ~ζ) (count (ζΠ ~ζ))))
-(defmacro ζ++  [ζ]   '[(ζΠ ~ζ) (inc (ζΦ ~ζ)) (ζΨ ~ζ)])
-(defmacro ζ>>  [ζ]   '[(nth (ζΠ ~ζ) (ζΦ ~ζ)) 0 (push (ζΨ ~ζ) ~ζ)])
-(defmacro ζ<<  [ζ]   '[(ζΠ (top ζΨ)) (ζΦ (top ζΨ)) (pull ζΨ)])
+(defn top  [Ψ]      (last Ψ))
+(defn pull [Ψ]      (if Ψ (if-not (empty? Ψ) (pop Ψ))))
+(defn push [Ψ ζ]    (if Ψ (conj Ψ ζ)))
+(defn ζΣ   [ζ]      (if ζ (ζ 0)))
+(defn ζΔ   [ζ]      (if ζ (ζ 1)))
+(defn ζσ   [ζ]      (if ζ (ζ 2)))
+(defn ζδ   [ζ]      (if ζ (ζ 3)))
+(defn ζΠ   [ζ]      (if ζ (ζ 4)))
+(defn ζφ   [ζ]      (if ζ (ζ 5)))
+(defn ζΨ   [ζ]      (if ζ (ζ 6)))
+(defn ζα   [ζ]      (<= (ζφ ζ) 0))
+(defn ζω   [ζ]      (>= (ζφ ζ) (count (ζΠ ζ))))
+(defn ζλ   [ζ]      (cond
+                      (nil?        ζ) nil
+                      (nil?    (ζΠ ζ)) nil
+                      (string? (ζΠ ζ)) 'LIT$
+                      (list?   (ζΠ ζ)) (first (ζΠ ζ))
+                      (seq?    (ζΠ ζ)) (first (ζΠ ζ))
+                      true     (out ["lamda? " (type (ζΠ ζ)) (ζΠ ζ)])))
+(defn ζ↓   [ζ]      (let [[Σ Δ _ _ Π φ Ψ] ζ] [Σ Δ ε ε (nth Π φ) 1 (push Ψ ζ)]))
+(defn ζ↑  ([ζ σ δ]  (let [[Σ Δ _ _ _ _ Ψ] ζ] [Σ Δ σ δ (ζΠ (top Ψ)) (ζφ (top Ψ)) (pull Ψ)]))
+          ([ζ]      (let [[Σ Δ σ δ _ _ Ψ] ζ] [Σ Δ σ δ (ζΠ (top Ψ)) (ζφ (top Ψ)) (pull Ψ)])))
+(defn ζ→   [ζ]      (let [[_ _ σ δ Π φ Ψ] ζ] [σ δ ε ε Π (inc φ) Ψ]))
+(defn ζ←   [ζ]      (let [[Σ Δ _ _ Π φ Ψ] ζ] [Σ Δ ε ε Π (inc φ) Ψ]))
 ;---------------------------------------------------------------------------------------------------
-(defn     MATCH [Σ Δ Π]; ζ
-  (loop [action :proceed, Σ Σ, Δ Δ, ζ [Π 0 []] Ω []]
-    (let [Π (ζΠ ζ) λ (ζλ ζ)]
-      (println (format "%-14s %s %s" action λ ζ Ω))
+(defn MATCH [Σ Δ Π]
+  (loop [action :proceed, ζ [Σ Δ ε ε Π 1 []] Ω []]
+    (let [λ (ζλ ζ)]
+      (println (format "%-8s %2s %-5s %2s %-10s %2s %-10s %s %s"
+        action (count Ω) λ (ζΔ ζ) (apply str (ζΣ ζ)) (ζδ ζ) (apply str (ζσ ζ)) (ζφ ζ) (ζΠ ζ)))
       (case λ
-        nil   (case action      :proceed true  :recede  false
-                                :success true  :failure false)
-        ALT   (case action
-                :proceed
-                  (if (ζω ζ)    (recur :recede  Σ Δ (top Ω) (pull Ω))
-                                (recur :proceed Σ Δ (ζ>> ζ) Ω))
-                :recede         (recur :proceed Σ Δ (ζ++ ζ) Ω)
-                :success        (recur :success Σ Δ (ζ<< ζ) (push Ω ζ))
-                :failure        (recur :proceed Σ Δ (ζ++ ζ) Ω))
-        SEQ   (case action
-                :proceed
-                  (if (ζω ζ)    (recur :success Σ Δ (ζ<< ζ) Ω)
-                                (recur :proceed Σ Δ (ζ++ ζ) Ω))
-                :success        (recur :proceed Σ Δ (ζ++ ζ) Ω))
-        LIT$  (case action
-                :proceed
-                (let [[σ δ]
-                  (LIT$ Σ Δ Π)]
-                  (if (> δ 0)   (recur :success σ δ (ζ<< ζ) Ω)
-                                (recur :failure Σ Δ (ζ<< ζ) Ω))))
+        nil      (case action (:proceed :succeed) true (:recede :fail) false)
+        ALT      (case action ;---------------------------------------------------------------------
+                   :proceed
+                     (if (ζω ζ)    (recur :recede  (top Ω) (pull Ω))
+                                   (recur :proceed (ζ↓ ζ) Ω))
+                   :recede         (recur :proceed (ζ← ζ) Ω)
+                   :succeed        (recur :succeed (ζ↑ ζ) (push Ω ζ))
+                   :fail           (recur :proceed (ζ← ζ) Ω))
+        SEQ      (case action ;---------------------------------------------------------------------
+                   :proceed
+                     (if (ζω ζ)    (recur :succeed (ζ↑ ζ) Ω)
+                                   (recur :proceed (ζ↓ ζ) Ω))
+                   :succeed        (recur :proceed (ζ→ ζ) Ω)
+                   :fail           (recur :recede  (top Ω) (pull Ω)))
+        LIT$     (case action ;---------------------------------------------------------------------
+                   :proceed
+                   (let [[Σ Δ _ _ Π] ζ
+                             [σ δ] (LIT$ Σ Δ Π)]
+                     (if (>= δ 0)  (recur :succeed (ζ↑ ζ σ δ) Ω)
+                                   (recur :fail    (ζ↑ ζ Σ Δ) Ω))))
+      ; --------------------------------------------------------------------------------------------
+        FAIL!                      (recur :recede  (top Ω) (pull Ω))
+        SUCCEED!   (let [[Σ Δ] ζ]  (recur :succeed (ζ↑ ζ Σ Δ) Ω))
+        ARB!     nil
+        BAL!     nil
+        ARBNO!   nil
+        ABORT!   nil
       ))))
 ;===================================================================================================
 (defn INVOKE [op & args]
@@ -545,6 +559,7 @@
     POS      (POS (first args))
     RPOS     (RPOS (first args))
     BREAK    (BREAK (first args))
+    FAIL     FAIL
     ?        (let [[s p] args] (? (str s) p))
     =        (let [[N r] args]
                (if-not (list? r)         ; (apply 'def n r)
@@ -563,8 +578,7 @@
     REPLACE  (let [[s1 s2 s3] args] (REPLACE s1 s2 s3))
     EQ       (EQ (first args) (second args))
     Roman    ε;(apply Roman args)
-  )
-)
+))
 ;---------------------------------------------------------------------------------------------------
 (defn EVAL [E]
   (when E
@@ -666,4 +680,5 @@ END
               (println code)))))
   ))
 ;---------------------------------------------------------------------------------------------------
+(println (Math/pow 2 2))
 (defn -main "SNOBOL4/Clojure." [& args] (RUN 1))
