@@ -156,10 +156,6 @@ END
 ;---------------------------------------------------------------------------------------------------
 ;(definline skey [address] (let [[no label] address] (if label label no)))
 
-(is (= 4 (+ 2 2)))
-(is (thrown? ArithmeticException (/ 1 0)))
-(is (thrown-with-msg? ArithmeticException #"Divide by zero" (/ 1 0)))
-
 
 (def SNO [
    ""
