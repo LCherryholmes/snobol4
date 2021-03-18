@@ -44,9 +44,9 @@
  <subject>  ::=  uop
  <pattern>  ::=  (<'?' _>)? and
  <replace>  ::=  (<_> expr)?
-  jmp    ::=  target
-  sjmp   ::=  <'S'> target
-  fjmp   ::=  <'F'> target
+  jmp       ::=  target
+  sjmp      ::=  <'S'> target
+  fjmp      ::=  <'F'> target
  <target>   ::=  <'('> expr <')'>
   comment   ::=  <'*'> #'.*' <eol>
   control   ::=  <'-'> #'[^;\\n]*' <eos>
@@ -393,61 +393,6 @@
         (get (ns-map (find-ns (symbol "snobol4.core"))) (symbol (name N)))))))
 (defn $$ [N] (if-let [V (reference N)] (var-get V) ε)); (var-get (eval (list 'var N)))
 ;---------------------------------------------------------------------------------------------------
-(declare dq path part)
-(declare Roman n)
-(defn dq [_path] (binding [dq ε path _path part ε] (RUN :dq) dq));DEFINE('dq(path)part')
-(defn Roman-binding [_n] (binding [Roman ε n _n] (RUN :Roman) Roman))
-(defn Roman-save-restore [_n]
- '(let [_Roman ($$ 'Roman) __n ($$ 'n)]
-    (def Roman ε)
-    (def n _n)
-    (RUN :Roman)
-    (def n __n)
-    (let [__Roman Roman]
-      (def Roman _Roman)
-      __Roman)))
-;---------------------------------------------------------------------------------------------------
-(def LABELS-Roman {3 :Roman 6 :RomanEnd 8 :END})
-(def STMTNOS-Roman {:Roman 3 :RomanEnd 6 :END 8})
-(def CODE-Roman {
-1         ['(DEFINE "Roman(n)units")]
-2         ['(= romanXlat "0,1I,2II,3III,4IV,5V,6VI,7VII,8VIII,9IX,") {:G :RomanEnd}]
-:Roman    ['(?= n [(RPOS 1) (. (LEN 1) units)]) {:F :RETURN}]
-4         ['(? romanXlat [units (. (BREAK ",") units)]) {:F :FRETURN}]
-5         ['(= Roman [(REPLACE (Roman n) "IVXLCDM" "XLCDM**") units]) {:S :RETURN, :F :FRETURN}]
-:RomanEnd []
-7         ['(Roman "MMXXI")]
-:END      []
-})
-;---------------------------------------------------------------------------------------------------
-(def LABELS {1 :START 23 :END})
-(def STMTNOS {:START 1 :END 23})
-(def CODE {
-:START    []
-2         ['(= P [(| "Z" "Z" "Z") (| "9" "9") (FAIL)])]
-3         ['(? "Z9" P)]
-4         ['(= BD [(| "BE" "BO" "B") (| "AR" "A") (| "DS" "D")])]
-5         ['(? "BEARDS" BD)]
-6         ['(? "BEARD" BD)]
-7         ['(? "BEADS" BD)]
-8         ['(? "BEAD" BD)]
-9         ['(? "BARDS" BD)]
-10        ['(? "BARD" BD)]
-11        ['(? "BADS" BD)]
-12        ['(? "BAD" BD)]
-13        ['(? "BATS" BD)]
-14        ['(= BR [(| "B" "F" "L" "R") (| "E" "EA") (| "D" "DS")])]
-15        ['(? "BED" BR)]
-16        ['(? "BEDS" BR)]
-17        ['(? "BEAD" BR)]
-18        ['(? "BEADS" BR)]
-19        ['(? "RED" BR)]
-20        ['(? "REDS" BR)]
-21        ['(? "READ" BR)]
-22        ['(? "READS" BR)]
-:END      []
-})
-;---------------------------------------------------------------------------------------------------
 ; Scanners
 (defn ARB!     [Σ Δ Π]   [nil (err Δ)])
 (defn BAL!     [Σ Δ Π]   [nil (err Δ)])
@@ -458,62 +403,59 @@
 (defn ABORT!   [Σ Δ Π]   [nil (err Δ)])
 (defn SUCCEED! [Σ Δ Π]   [Σ Δ])
 (defn FAIL!    [Σ Δ Π]   [Σ (err Δ)])
-(defn POS#     [Σ Δ Π]   (if (equal Δ Π)         [Σ Δ]       [Σ (err Δ)]))
-(defn RPOS#    [Σ Δ Π]   (if (equal (count Σ) Π) [Σ Δ]       [Σ (err Δ)]))
+(defn POS#     [Σ Δ Π]   (if (equal Δ Π)         [Σ Δ]    [Σ (err Δ)]))
+(defn RPOS#    [Σ Δ Π]   (if (equal (count Σ) Π) [Σ Δ]    [Σ (err Δ)]))
 (defn ANY$     [Σ Δ Π]   (if (not (seq Σ))       [Σ (err Δ)] (if     (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (err Δ)])))
 (defn NOTANY$  [Σ Δ Π]   (if (not (seq Σ))       [Σ (err Δ)] (if-not (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (err Δ)])))
-(defn REM!     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (not (seq σ))    [σ δ] (recur (rest σ) (inc δ)))))
-(defn LIT$     [Σ Δ Π]   (loop [σ Σ δ Δ π Π]
-                           (if (not (seq π))     [σ δ]
-                              (if (not (seq σ))  [σ (err δ)]
-                                (if (not-equal (first σ) (first π)) [σ (err δ)]
-                                  (recur (rest σ) (inc δ) (rest π)))))))
-(defn LEN#     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= δ (add Δ Π)) [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
-(defn TAB#     [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= δ Π)         [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
-(defn RTAB#    [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (>= (count σ) Π) [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
-(defn SPAN$    [Σ Δ Π]   (loop [σ Σ δ Δ    ]
-                           (if (and (not (seq σ)) (identical? σ Σ)) [σ (err δ)]
-                             (if (and (not (contains? Π (first Σ))) (identical? σ Σ)) [σ (err δ)]
-                               (recur (rest σ) (inc δ))))))
-(defn BREAK$   [Σ Δ Π]   (loop [σ Σ δ Δ    ] (if (not (seq σ))    [σ (err δ)] (if (contains? Π (first Σ)) [σ δ] (recur (rest σ) (inc δ))))))
-(defn ALT      [Σ Δ & Π] (loop [        π Π]
-                           (if (not (seq π)) [Σ (err Δ)]
-                             (let [[σ δ] (MATCH Σ Δ (first π))]
-                               (if (>= δ 0) [σ δ]
-                                 (recur (rest π)))))))
-(defn SEQ      [Σ Δ & Π] (loop [σ Σ δ Δ π Π]
-                           (if (not (seq π)) [σ δ]
-                              (let [[σ δ] (MATCH σ δ (first π))]
-                                (if (< δ 0) [σ δ]
-                                  (recur σ δ (rest π)))))))
-(comment  MATCH    [Σ Δ Π] (cond
-                             (string? Π) (LIT$ Σ Δ Π)
-                             (seq? Π) (let [[λ & π] Π, λ ($$ λ)] (apply λ Σ Δ π))))
+(defn REM!     [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (not (seq σ))    [σ δ] (recur (rest σ) (inc δ)))))
+(defn LIT$     [Σ Δ Π]   (loop [σ Σ δ Δ π Π]     (if (not (seq π))    [σ δ]
+																		                                  (if (not (seq σ)) [σ (err δ)]
+																		                                    (if (not-equal (first σ) (first π)) [σ (err δ)]
+																		                                      (recur (rest σ) (inc δ) (rest π)))))))
+(defn LEN#     [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (>= δ (add Δ Π)) [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
+(defn TAB#     [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (>= δ Π)         [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
+(defn RTAB#    [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (>= (count σ) Π) [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
+(defn SPAN$    [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (and (not (seq σ)) (identical? σ Σ)) [σ (err δ)]
+																		                                 (if (and (not (contains? Π (first Σ))) (identical? σ Σ)) [σ (err δ)]
+																		                                   (recur (rest σ) (inc δ))))))
+(defn BREAK$   [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (not (seq σ)) [σ (err δ)]
+																		                                 (if (contains? Π (first Σ)) [σ δ]
+																		                                   (recur (rest σ) (inc δ))))))
+(defn ALT      [Σ Δ & Π] (loop [        π Π]     (if (not (seq π)) [Σ (err Δ)]
+																		                                 (let [[σ δ] (MATCH Σ Δ (first π))]
+																		                                   (if (>= δ 0) [σ δ]
+																		                                     (recur (rest π)))))))
+(defn SEQ      [Σ Δ & Π] (loop [σ Σ δ Δ π Π]     (if (not (seq π)) [σ δ]
+																		                                  (let [[σ δ] (MATCH σ δ (first π))]
+																		                                    (if (< δ 0) [σ δ]
+																		                                      (recur σ δ (rest π)))))))
+(defn MATCH!   [Σ Δ Π]   (cond (string? Π) (LIT$ Σ Δ Π)
+                               (seq? Π) (let [[λ & π] Π, λ ($$ λ)] (apply λ Σ Δ π))))
 ;===================================================================================================
-(defn top  [Ψ]      (last Ψ))
-(defn pull [Ψ]      (if Ψ (if-not (empty? Ψ) (pop Ψ))))
-(defn push [Ψ ζ]    (if Ψ (conj Ψ ζ)))
-(defn ζΣ   [ζ]      (if ζ (ζ 0)))
-(defn ζΔ   [ζ]      (if ζ (ζ 1)))
-(defn ζσ   [ζ]      (if ζ (ζ 2)))
-(defn ζδ   [ζ]      (if ζ (ζ 3)))
-(defn ζΠ   [ζ]      (if ζ (ζ 4)))
-(defn ζφ   [ζ]      (if ζ (ζ 5)))
-(defn ζΨ   [ζ]      (if ζ (ζ 6)))
-(defn ζα   [ζ]      (<= (ζφ ζ) 0))
-(defn ζω   [ζ]      (>= (ζφ ζ) (count (ζΠ ζ))))
-(defn ζλ   [ζ]      (cond
+(defn top  [Ψ]      (last Ψ)); using vector stack, make "first" if ever using list stack
+(defn pull [Ψ]      (if Ψ (if-not (empty? Ψ) (pop Ψ)))); protected pop, top is top for list or vector
+(defn push [Ψ ζ]    (if Ψ (conj Ψ ζ))); ZETA, zipper
+(defn ζΣ   [ζ]      (if ζ (ζ 0))); SIGMA, Subject, String Start, Sequence of characters
+(defn ζΔ   [ζ]      (if ζ (ζ 1))); DELTA, start position (Difference from start)
+(defn ζσ   [ζ]      (if ζ (ζ 2))); sigma, subject, string end
+(defn ζδ   [ζ]      (if ζ (ζ 3))); delta, end position
+(defn ζΠ   [ζ]      (if ζ (ζ 4))); PI, Pattern Internal
+(defn ζφ   [ζ]      (if ζ (ζ 5))); phi, part internal, pattern-piece iteration
+(defn ζΨ   [ζ]      (if ζ (ζ 6))); psi, parent stack internal
+(defn ζα   [ζ]      (<= (ζφ ζ) 0)); alpha, is the beginning?
+(defn ζω   [ζ]      (>= (ζφ ζ) (count (ζΠ ζ)))); omega, is the end?
+(defn ζλ   [ζ]      (cond; lamda, operation, function
                       (nil?        ζ) nil
                       (nil?    (ζΠ ζ)) nil
                       (string? (ζΠ ζ)) 'LIT$
                       (list?   (ζΠ ζ)) (first (ζΠ ζ))
                       (seq?    (ζΠ ζ)) (first (ζΠ ζ))
                       true     (out ["lamda? " (type (ζΠ ζ)) (ζΠ ζ)])))
-(defn ζ↓   [ζ]      (let [[Σ Δ _ _ Π φ Ψ] ζ] [Σ Δ ε ε (nth Π φ) 1 (push Ψ ζ)]))
-(defn ζ↑  ([ζ σ δ]  (let [[Σ Δ _ _ _ _ Ψ] ζ] [Σ Δ σ δ (ζΠ (top Ψ)) (ζφ (top Ψ)) (pull Ψ)]))
-          ([ζ]      (let [[Σ Δ σ δ _ _ Ψ] ζ] [Σ Δ σ δ (ζΠ (top Ψ)) (ζφ (top Ψ)) (pull Ψ)])))
-(defn ζ→   [ζ]      (let [[_ _ σ δ Π φ Ψ] ζ] [σ δ ε ε Π (inc φ) Ψ]))
-(defn ζ←   [ζ]      (let [[Σ Δ _ _ Π φ Ψ] ζ] [Σ Δ ε ε Π (inc φ) Ψ]))
+(defn ζ↓   [ζ]      (let [[Σ Δ _ _ Π φ Ψ] ζ] [Σ Δ ε ε (nth Π φ) 1 (push Ψ ζ)])); call down
+(defn ζ↑  ([ζ σ δ]  (let [[Σ Δ _ _ _ _ Ψ] ζ] [Σ Δ σ δ (ζΠ (top Ψ)) (ζφ (top Ψ)) (pull Ψ)])); return up scan
+          ([ζ]      (let [[Σ Δ σ δ _ _ Ψ] ζ] [Σ Δ σ δ (ζΠ (top Ψ)) (ζφ (top Ψ)) (pull Ψ)]))); retun up result
+(defn ζ→   [ζ]      (let [[_ _ σ δ Π φ Ψ] ζ] [σ δ ε ε Π (inc φ) Ψ])); proceed right
+(defn ζ←   [ζ]      (let [[Σ Δ _ _ Π φ Ψ] ζ] [Σ Δ ε ε Π (inc φ) Ψ])); receed left
 ;---------------------------------------------------------------------------------------------------
 (defn MATCH [Σ Δ Π]
   (loop [action :proceed, ζ [Σ Δ ε ε Π 1 []] Ω []]
@@ -524,26 +466,26 @@
         nil      (case action (:proceed :succeed) true (:recede :fail) false)
         ALT      (case action ;---------------------------------------------------------------------
                    :proceed
-                     (if (ζω ζ)    (recur :recede  (top Ω) (pull Ω))
-                                   (recur :proceed (ζ↓ ζ) Ω))
-                   :recede         (recur :proceed (ζ← ζ) Ω)
-                   :succeed        (recur :succeed (ζ↑ ζ) (push Ω ζ))
-                   :fail           (recur :proceed (ζ← ζ) Ω))
+                     (if (ζω ζ)    (recur :recede  (top Ω) (pull Ω))  ; no more alternatives, backtrack
+                                   (recur :proceed (ζ↓ ζ) Ω))         ; try alternate
+                   :recede         (recur :proceed (ζ← ζ) Ω)          ; try next alternate, keep left
+                   :succeed        (recur :succeed (ζ↑ ζ) (push Ω ζ)) ; generator suspend (return) match
+                   :fail           (recur :proceed (ζ← ζ) Ω))         ; try next alternative, keep left
         SEQ      (case action ;---------------------------------------------------------------------
                    :proceed
-                     (if (ζω ζ)    (recur :succeed (ζ↑ ζ) Ω)
-                                   (recur :proceed (ζ↓ ζ) Ω))
-                   :succeed        (recur :proceed (ζ→ ζ) Ω)
-                   :fail           (recur :recede  (top Ω) (pull Ω)))
+                     (if (ζω ζ)    (recur :succeed (ζ↑ ζ) Ω)          ; no more subsequents, succeed
+                                   (recur :proceed (ζ↓ ζ) Ω))         ; try subsequent
+                   :succeed        (recur :proceed (ζ→ ζ) Ω)          ; try next subsequent, go right
+                   :fail           (recur :recede  (top Ω) (pull Ω))) ; generator reentry, backtrack
         LIT$     (case action ;---------------------------------------------------------------------
                    :proceed
                    (let [[Σ Δ _ _ Π] ζ
-                             [σ δ] (LIT$ Σ Δ Π)]
-                     (if (>= δ 0)  (recur :succeed (ζ↑ ζ σ δ) Ω)
-                                   (recur :fail    (ζ↑ ζ Σ Δ) Ω))))
+                             [σ δ] (LIT$ Σ Δ Π)]                      ; scan literal string
+                     (if (>= δ 0)  (recur :succeed (ζ↑ ζ σ δ) Ω)      ; return match
+                                   (recur :fail    (ζ↑ ζ Σ Δ) Ω))))   ; signal failure
       ; --------------------------------------------------------------------------------------------
-        FAIL!                      (recur :recede  (top Ω) (pull Ω))
-        SUCCEED!   (let [[Σ Δ] ζ]  (recur :succeed (ζ↑ ζ Σ Δ) Ω))
+        FAIL!                      (recur :recede  (top Ω) (pull Ω))  ; signal failure, backtrack
+        SUCCEED!   (let [[Σ Δ] ζ]  (recur :succeed (ζ↑ ζ Σ Δ) Ω))     ; return epsilon match
         ARB!     nil
         BAL!     nil
         ARBNO!   nil
@@ -592,93 +534,35 @@
       (list? E)
         (let [[op & parms] E]
           (cond
-            (clojure.core/= op '.)  (let [[P N]   parms] (INVOKE '. (EVAL P) N))
-            (clojure.core/= op '$)  (let [[P N]   parms] (INVOKE '$ (EVAL P) N))
-            (clojure.core/= op '=)  (let [[N R]   parms] (INVOKE '= N (EVAL R)))
-            (clojure.core/= op '?=) (let [[N P R] parms] (INVOKE '?= N (EVAL P) R))
+            (equal op '.)  (let [[P N]   parms] (INVOKE '. (EVAL P) N))
+            (equal op '$)  (let [[P N]   parms] (INVOKE '$ (EVAL P) N))
+            (equal op '=)  (let [[N R]   parms] (INVOKE '= N (EVAL R)))
+            (equal op '?=) (let [[N P R] parms] (INVOKE '?= N (EVAL P) R))
             true (let [args (apply vector (map EVAL parms))]
                    (apply INVOKE op args))
         ))
       nil nil)))
 ;---------------------------------------------------------------------------------------------------
-(defn skey [address]   (let [[no label] address] (if label label no)))
-(defn saddr [at] (cond (keyword? at) [(STMTNOS at) at]
-                       (string?  at) [(STMTNOS at) at]
-                       (integer? at) [at (LABELS at)]))
-(defn              RUN [at]
-  (loop [      current (saddr at)]
-    (if-let [      key (skey current)]
-      (if-let [   stmt (CODE key)]
-        (let [   ferst (first stmt)
-                seqond (second stmt)
-                  goto (if (map? ferst) ferst seqond)
-                  body (if (map? ferst) seqond ferst)]
-                       (if (EVAL body)
-                         (if (contains? goto :G)   (recur (saddr (:G goto)))
-                           (if (contains? goto :S) (recur (saddr (:S goto)))
-                                                   (recur (saddr (inc (current 0))))))
-                         (if (contains? goto :G)   (recur (saddr (:G goto)))
-                           (if (contains? goto :F) (recur (saddr (:F goto)))
-                                                   (recur (saddr (inc (current 0))))))
-                       ))))))
+(defn                  RUN [at CODE LABELS STMTNOS]
+  (letfn [
+	  	(skey [address]   (let [[no label] address] (if label label no)))
+				(saddr [at]      (cond (keyword? at) [(STMTNOS at) at]
+				                       (string?  at) [(STMTNOS at) at]
+				                       (integer? at) [at (LABELS at)]))]
+		    (loop [      current (saddr at)]
+				    (if-let [      key (skey current)]
+				      (if-let [   stmt (CODE key)]
+				        (let [   ferst (first stmt)
+				                seqond (second stmt)
+				                  goto (if (map? ferst) ferst seqond)
+				                  body (if (map? ferst) seqond ferst)]
+				                       (if (EVAL body)
+				                         (if (contains? goto :G)   (recur (saddr (:G goto)))
+				                           (if (contains? goto :S) (recur (saddr (:S goto)))
+				                                                   (recur (saddr (inc (current 0))))))
+				                         (if (contains? goto :G)   (recur (saddr (:G goto)))
+				                           (if (contains? goto :F) (recur (saddr (:F goto)))
+				                                                   (recur (saddr (inc (current 0))))))
+                       )))))))
 ;---------------------------------------------------------------------------------------------------
-(defn files [directories]
-  (reduce (fn [files directory]
-    (reduce (fn [files file]
-      (let [filenm (str file)]
-        (if (re-find #"^.+\.(sno|spt|inc|SNO|SPT|INC)$" filenm)
-          (conj files filenm) files)))
-      files
-      (file-seq (io/file directory))))
-    []
-    directories))
-(def dirs ["./src/sno" "./src/inc" "./src/test ./src/rinky"])
-;---------------------------------------------------------------------------------------------------
-(def SNO [
-"copy OUTPUT = INPUT :S(copy)F(END)"
-" n = 0 ;copy OUTPUT = INPUT :F(done) ; n = n + 1 :(copy) ;done OUTPUT = \"Program copied \" n \" lines.\" ;END"
-" &TRIM = 1 ;nextl chars = chars + SIZE(INPUT) :F(done); lines = lines + 1 :(nextl) ;done OUTPUT = chars \" characters, \" +lines \" lines read.\" ;END"
-" &TRIM = 1
-  TERMINAL = 'Enter test lines, terminate with EOF'
-* Read input line, convert lower case to upper.
-loop s = REPLACE(TERMINAL, &LCASE, &UCASE) :F(END)
-* Check for palindrome:
-  TERMINAL = IDENT(s, REVERSE(s)) 'Palindrome!' :S(loop)
-  TERMINAL = 'No, try again.' :(loop)
-END
-"
-  " A = (X ? Y) (Q ? P)"
-  " IDENT(,, TERMINAL = 'Sneaky!')"
-])
-;---------------------------------------------------------------------------------------------------
-(defn re-cat [& regexs] (re-pattern (apply str regexs)))
-(def  eol     #"[\n]")
-(def  eos     #"[;\n]")
-(def  skip    #"[^\n]*")
-(def  fill    #"[^;\n]*")
-(def  komment (re-cat #"[*]" skip eol))
-(def  control (re-cat #"[-]" fill eos))
-(def  kode    (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
-(def  block   (re-cat komment "|" control "|" kode "|" eol))
-(defn doit []
-  (case 1
-    1 (doseq [s SNO] (compile-stmt s))
-    2 (doseq [filenm (files dirs)]
-        (let [program (slurp filenm)]
-          (println ";------------------------------------------------------ " filenm)
-          (doseq [command (re-seq block program)]
-            (let [cmd (first command)]
-                (cond
-                  (nil? cmd) nil
-                  (re-find #"^\*" cmd) nil
-                  (re-find #"^\-" cmd) nil
-                  true (compile-stmt cmd))))))
-    3 (doseq [filenm (files dirs)]
-        (with-open [rdr (io/reader filenm)]
-          (doseq [line (line-seq rdr)]
-            (let [ast (parse-command line) code (coder ast 1)]
-              (println code)))))
-  ))
-;---------------------------------------------------------------------------------------------------
-(println (Math/pow 2 2))
-(defn -main "SNOBOL4/Clojure." [& args] (RUN 1))
+(defn -main "SNOBOL4/Clojure." [& args])

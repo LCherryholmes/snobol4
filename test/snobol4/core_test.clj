@@ -4,6 +4,121 @@
 
 
 ;---------------------------------------------------------------------------------------------------
+(def LABELS {1 :START 23 :END})
+(def STMTNOS {:START 1 :END 23})
+(def CODE {
+:START    []
+2         ['(= P [(| "Z" "Z" "Z") (| "9" "9") (FAIL)])]
+3         ['(? "Z9" P)]
+4         ['(= BD [(| "BE" "BO" "B") (| "AR" "A") (| "DS" "D")])]
+5         ['(? "BEARDS" BD)]
+6         ['(? "BEARD" BD)]
+7         ['(? "BEADS" BD)]
+8         ['(? "BEAD" BD)]
+9         ['(? "BARDS" BD)]
+10        ['(? "BARD" BD)]
+11        ['(? "BADS" BD)]
+12        ['(? "BAD" BD)]
+13        ['(? "BATS" BD)]
+14        ['(= BR [(| "B" "F" "L" "R") (| "E" "EA") (| "D" "DS")])]
+15        ['(? "BED" BR)]
+16        ['(? "BEDS" BR)]
+17        ['(? "BEAD" BR)]
+18        ['(? "BEADS" BR)]
+19        ['(? "RED" BR)]
+20        ['(? "REDS" BR)]
+21        ['(? "READ" BR)]
+22        ['(? "READS" BR)]
+:END      []
+})
+;---------------------------------------------------------------------------------------------------
+(declare dq path part)
+(declare Roman n)
+(defn dq [_path] (binding [dq ε path _path part ε] (RUN :dq) dq));DEFINE('dq(path)part')
+(defn Roman-binding [_n] (binding [Roman ε n _n] (RUN :Roman) Roman))
+(defn Roman-save-restore [_n]
+ '(let [_Roman ($$ 'Roman) __n ($$ 'n)]
+    (def Roman ε)
+    (def n _n)
+    (RUN :Roman)
+    (def n __n)
+    (let [__Roman Roman]
+      (def Roman _Roman)
+      __Roman)))
+;---------------------------------------------------------------------------------------------------
+(def LABELS-Roman {3 :Roman 6 :RomanEnd 8 :END})
+(def STMTNOS-Roman {:Roman 3 :RomanEnd 6 :END 8})
+(def CODE-Roman {
+1         ['(DEFINE "Roman(n)units")]
+2         ['(= romanXlat "0,1I,2II,3III,4IV,5V,6VI,7VII,8VIII,9IX,") {:G :RomanEnd}]
+:Roman    ['(?= n [(RPOS 1) (. (LEN 1) units)]) {:F :RETURN}]
+4         ['(? romanXlat [units (. (BREAK ",") units)]) {:F :FRETURN}]
+5         ['(= Roman [(REPLACE (Roman n) "IVXLCDM" "XLCDM**") units]) {:S :RETURN, :F :FRETURN}]
+:RomanEnd []
+7         ['(Roman "MMXXI")]
+:END      []
+})
+;---------------------------------------------------------------------------------------------------
+(defn files [directories]
+  (reduce (fn [files directory]
+    (reduce (fn [files file]
+      (let [filenm (str file)]
+        (if (re-find #"^.+\.(sno|spt|inc|SNO|SPT|INC)$" filenm)
+          (conj files filenm) files)))
+      files
+      (file-seq (io/file directory))))
+    []
+    directories))
+(def dirs ["./src/sno" "./src/inc" "./src/test ./src/rinky"])
+;---------------------------------------------------------------------------------------------------
+(def SNO [
+"copy OUTPUT = INPUT :S(copy)F(END)"
+" n = 0 ;copy OUTPUT = INPUT :F(done) ; n = n + 1 :(copy) ;done OUTPUT = \"Program copied \" n \" lines.\" ;END"
+" &TRIM = 1 ;nextl chars = chars + SIZE(INPUT) :F(done); lines = lines + 1 :(nextl) ;done OUTPUT = chars \" characters, \" +lines \" lines read.\" ;END"
+" &TRIM = 1
+  TERMINAL = 'Enter test lines, terminate with EOF'
+* Read input line, convert lower case to upper.
+loop s = REPLACE(TERMINAL, &LCASE, &UCASE) :F(END)
+* Check for palindrome:
+  TERMINAL = IDENT(s, REVERSE(s)) 'Palindrome!' :S(loop)
+  TERMINAL = 'No, try again.' :(loop)
+END
+"
+  " A = (X ? Y) (Q ? P)"
+  " IDENT(,, TERMINAL = 'Sneaky!')"
+])
+;---------------------------------------------------------------------------------------------------
+(defn re-cat [& regexs] (re-pattern (apply str regexs)))
+(def  eol     #"[\n]")
+(def  eos     #"[;\n]")
+(def  skip    #"[^\n]*")
+(def  fill    #"[^;\n]*")
+(def  komment (re-cat #"[*]" skip eol))
+(def  control (re-cat #"[-]" fill eos))
+(def  kode    (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
+(def  block   (re-cat komment "|" control "|" kode "|" eol))
+(defn doit []
+  (case 1
+    1 (doseq [s SNO] (compile-stmt s))
+    2 (doseq [filenm (files dirs)]
+        (let [program (slurp filenm)]
+          (println ";------------------------------------------------------ " filenm)
+          (doseq [command (re-seq block program)]
+            (let [cmd (first command)]
+                (cond
+                  (nil? cmd) nil
+                  (re-find #"^\*" cmd) nil
+                  (re-find #"^\-" cmd) nil
+                  true (compile-stmt cmd))))))
+    3 (doseq [filenm (files dirs)]
+        (with-open [rdr (io/reader filenm)]
+          (doseq [line (line-seq rdr)]
+            (let [ast (parse-command line) code (coder ast 1)]
+              (println code)))))
+  ))
+;---------------------------------------------------------------------------------------------------
+(println (Math/pow 2 2))
+;---------------------------------------------------------------------------------------------------
 (comment
 
 		(def x 10)
