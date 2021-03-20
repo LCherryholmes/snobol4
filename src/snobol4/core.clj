@@ -7,31 +7,25 @@
   (:require [clojure.java.io :as io])
   (:require [clojure.tools.trace :refer :all])
   (:require [criterium.core :as criterium :refer :all])
-  (:require [instaparse.core :as insta :refer [defparser]]); Clojure
+  (:require [instaparse.core :as insta :refer [defparser]]); :refer-macros [defparser]]); ClojureScript
   (:refer-clojure :exclude [= + - * / num])
-; (:require [instaparse.core :as insta :refer-macros [defparser]]); ClojureScript
 )
 ;---------------------------------------------------------------------------------------------------
-(defn equal         [x y] (clojure.core/= x y))
-(defn not-equal     [x y] (clojure.core/not= x y))
-(defn err           [x]   (clojure.core/- -1 x))
-(defn add          ([x]   (clojure.core/+ x))  ([x y] (clojure.core/+ x y)))
-(defn subtract     ([x]   (clojure.core/- x))  ([x y] (clojure.core/- x y)))
-(defn multiply     ([x]   (clojure.core/* x))  ([x y] (clojure.core/* x y)))
-(defn divide        [x y] (clojure.core// x y))
-(declare CODE)
+(defn add         ([x] (clojure.core/+ x)) ([x y] (clojure.core/+ x y)))
+(defn subtract    ([x] (clojure.core/- x)) ([x y] (clojure.core/- x y)))
+(defn multiply    ([x] (clojure.core/* x)) ([x y] (clojure.core/* x y)))
+(defn divide     [x y] (clojure.core// x y))
+(defn equal      [x y] (clojure.core/= x y))
+(defn not-equal  [x y] (clojure.core/not= x y))
+;---------------------------------------------------------------------------------------------------
+(def out
+  (fn [item]
+      (binding [pp/*print-right-margin* 120, pp/*print-miser-width* 100]
+        (pp/pprint item))))
 (declare RUN)
 (declare EVAL); accepts string or unevaluated expression
 (declare INVOKE)
 (declare MATCH)
-;(declare ALT)
-;(declare SEQ)
-;---------------------------------------------------------------------------------------------------
-(defn bug [x] (println (type x) " " x) x)
-(defn re-quote [& ss]
-  (str "#'" (string/replace (apply str ss) #"(\\|')" #(str \\ (second %1))) "'"))
-(def label #"[0-9A-Za-z][^ \t\r\n]*")
-(def white  #"([ \t]+|\n\+|\n\.)")
 (def grammar
 " stmt      ::=  label? body? goto? <__> <eos?>
   label     ::=  #'[0-9A-Za-z][^ \\t\\r\\n]*'
@@ -89,14 +83,12 @@
   white     ::=  #'[ \\t]'
 ")
 ;---------------------------------------------------------------------------------------------------
-(defn coder [ast stmtno]
+(defn coder [ast no]
   (insta/transform
     { :comment   (fn comment     [cmt]   [:comment cmt])
       :control   (fn control     [ctl]   [:control ctl])
       ;--------------------------------------------------------------------------
-      :stmt      (fn stmt        [& ss]  (let [{L :label B :body G :goto} (apply conj ss)]
-                                           (apply vector ss)
-                                           {(if L L stmtno) [B G]}))
+      :stmt      (fn stmt        [& ss]  (apply conj ss))
       :label     (fn label       [L]     {:label (if (re-find #"^[0-9A-Z_a-z]+$" L) (keyword L) (str L))})
       :body      (fn body        [B]     {:body  B})
       :invoking  (fn invoking    [S    ] S)
@@ -143,29 +135,6 @@
       :I         edn/read-string
       :R         edn/read-string
     } ast))
-;---------------------------------------------------------------------------------------------------
-(def parse-command    (insta/parser grammar :start :command))
-(def parse-statement  (insta/parser grammar :start :stmt :total true))
-(def parse-expression (insta/parser grammar :start :expr))
-;---------------------------------------------------------------------------------------------------
-(def stmtno (atom 0))
-(def out
-  (fn [item]
-      (binding [pp/*print-right-margin* 120, pp/*print-miser-width* 100]
-        (pp/pprint item))))
-(defn compile-stmt [cmd]
-   (let [stmt1 (string/replace cmd #"[ \t]*\r?\n[+.][ \t]*" " ")
-         stmt2 (string/replace stmt1 #"\r?\n$" "")
-         stmtno (swap! stmtno inc)
-         ast (parse-statement stmt2)
-         code (coder ast stmtno)]
-     (if (and (map? code) (:reason code))
-       (let [line   (:line code)
-             column (:column code)
-             text   (:text code)
-             error  {stmtno [(list 'ERROR line column)]}]; text
-         (out error))
-       (out code))))
 ;---------------------------------------------------------------------------------------------------
 (def  ε          "")
 (def  η          ##NaN)
@@ -394,41 +363,42 @@
 (defn $$ [N] (if-let [V (reference N)] (var-get V) ε)); (var-get (eval (list 'var N)))
 ;---------------------------------------------------------------------------------------------------
 ; Scanners
-(defn ARB!     [Σ Δ Π]   [nil (err Δ)])
-(defn BAL!     [Σ Δ Π]   [nil (err Δ)])
-(defn ARBNO!   [Σ Δ Π]   [nil (err Δ)])
-(defn FENCE!   [Σ Δ Π]   [nil (err Δ)])
-(defn FENCE!!  [Σ Δ Π]   [nil (err Δ)])
-(defn BREAKX$  [Σ Δ Π]   [nil (err Δ)])
-(defn ABORT!   [Σ Δ Π]   [nil (err Δ)])
+(defn err      [Σ Δ]     [Σ (clojure.core/- -1 Δ)])
+(defn ARB!     [Σ Δ Π]   (err nil Δ))
+(defn BAL!     [Σ Δ Π]   (err nil Δ))
+(defn ARBNO!   [Σ Δ Π]   (err nil Δ))
+(defn FENCE!   [Σ Δ Π]   (err nil Δ))
+(defn FENCE!!  [Σ Δ Π]   (err nil Δ))
+(defn BREAKX$  [Σ Δ Π]   (err nil Δ))
+(defn ABORT!   [Σ Δ Π]   (err nil Δ))
 (defn SUCCEED! [Σ Δ Π]   [Σ Δ])
-(defn FAIL!    [Σ Δ Π]   [Σ (err Δ)])
-(defn POS#     [Σ Δ Π]   (if (equal Δ Π)         [Σ Δ]    [Σ (err Δ)]))
-(defn RPOS#    [Σ Δ Π]   (if (equal (count Σ) Π) [Σ Δ]    [Σ (err Δ)]))
-(defn ANY$     [Σ Δ Π]   (if (not (seq Σ))       [Σ (err Δ)] (if     (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (err Δ)])))
-(defn NOTANY$  [Σ Δ Π]   (if (not (seq Σ))       [Σ (err Δ)] (if-not (contains? Π (first Σ)) [(rest Σ) (inc Δ)] [Σ (err Δ)])))
+(defn FAIL!    [Σ Δ Π]   (err Σ Δ))
+(defn POS#     [Σ Δ Π]   (if (equal Δ Π)         [Σ Δ] (err Σ Δ)))
+(defn RPOS#    [Σ Δ Π]   (if (equal (count Σ) Π) [Σ Δ] (err Σ Δ)))
+(defn ANY$     [Σ Δ Π]   (if (not (seq Σ))       (err Σ Δ) (if     (contains? Π (first Σ)) [(rest Σ) (inc Δ)] (err Σ Δ))))
+(defn NOTANY$  [Σ Δ Π]   (if (not (seq Σ))       (err Σ Δ) (if-not (contains? Π (first Σ)) [(rest Σ) (inc Δ)] (err Σ Δ))))
 (defn REM!     [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (not (seq σ))    [σ δ] (recur (rest σ) (inc δ)))))
 (defn LIT$     [Σ Δ Π]   (loop [σ Σ δ Δ π Π]     (if (not (seq π))    [σ δ]
-																		                                  (if (not (seq σ)) [σ (err δ)]
-																		                                    (if (not-equal (first σ) (first π)) [σ (err δ)]
-																		                                      (recur (rest σ) (inc δ) (rest π)))))))
+                                                    (if (not (seq σ)) [σ (err δ)]
+                                                      (if (not-equal (first σ) (first π)) [σ (err δ)]
+                                                        (recur (rest σ) (inc δ) (rest π)))))))
 (defn LEN#     [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (>= δ (add Δ Π)) [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
 (defn TAB#     [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (>= δ Π)         [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
 (defn RTAB#    [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (>= (count σ) Π) [σ δ] (if (not (seq σ)) [σ (err δ)] (recur (rest σ) (inc δ))))))
 (defn SPAN$    [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (and (not (seq σ)) (identical? σ Σ)) [σ (err δ)]
-																		                                 (if (and (not (contains? Π (first Σ))) (identical? σ Σ)) [σ (err δ)]
-																		                                   (recur (rest σ) (inc δ))))))
+                                                   (if (and (not (contains? Π (first Σ))) (identical? σ Σ)) [σ (err δ)]
+                                                     (recur (rest σ) (inc δ))))))
 (defn BREAK$   [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (not (seq σ)) [σ (err δ)]
-																		                                 (if (contains? Π (first Σ)) [σ δ]
-																		                                   (recur (rest σ) (inc δ))))))
-(defn ALT      [Σ Δ & Π] (loop [        π Π]     (if (not (seq π)) [Σ (err Δ)]
-																		                                 (let [[σ δ] (MATCH Σ Δ (first π))]
-																		                                   (if (>= δ 0) [σ δ]
-																		                                     (recur (rest π)))))))
+                                                   (if (contains? Π (first Σ)) [σ δ]
+                                                     (recur (rest σ) (inc δ))))))
+(defn ALT      [Σ Δ & Π] (loop [        π Π]     (if (not (seq π)) (err Σ Δ)
+                                                   (let [[σ δ] (MATCH Σ Δ (first π))]
+                                                     (if (>= δ 0) [σ δ]
+                                                       (recur (rest π)))))))
 (defn SEQ      [Σ Δ & Π] (loop [σ Σ δ Δ π Π]     (if (not (seq π)) [σ δ]
-																		                                  (let [[σ δ] (MATCH σ δ (first π))]
-																		                                    (if (< δ 0) [σ δ]
-																		                                      (recur σ δ (rest π)))))))
+                                                    (let [[σ δ] (MATCH σ δ (first π))]
+                                                      (if (< δ 0) [σ δ]
+                                                        (recur σ δ (rest π)))))))
 (defn MATCH!   [Σ Δ Π]   (cond (string? Π) (LIT$ Σ Δ Π)
                                (seq? Π) (let [[λ & π] Π, λ ($$ λ)] (apply λ Σ Δ π))))
 ;===================================================================================================
@@ -457,7 +427,7 @@
 (defn ζ→   [ζ]      (let [[_ _ σ δ Π φ Ψ] ζ] [σ δ ε ε Π (inc φ) Ψ])); proceed right
 (defn ζ←   [ζ]      (let [[Σ Δ _ _ Π φ Ψ] ζ] [Σ Δ ε ε Π (inc φ) Ψ])); receed left
 ;---------------------------------------------------------------------------------------------------
-(defn MATCH [Σ Δ Π]
+(deftrace MATCH [Σ Δ Π]
   (loop [action :proceed, ζ [Σ Δ ε ε Π 1 []] Ω []]
     (let [λ (ζλ ζ)]
       (println (format "%-8s %2s %-5s %2s %-10s %2s %-10s %s %s"
@@ -485,14 +455,59 @@
                                    (recur :fail    (ζ↑ ζ Σ Δ) Ω))))   ; signal failure
       ; --------------------------------------------------------------------------------------------
         FAIL!                      (recur :recede  (top Ω) (pull Ω))  ; signal failure, backtrack
-        SUCCEED!   (let [[Σ Δ] ζ]  (recur :succeed (ζ↑ ζ Σ Δ) Ω))     ; return epsilon match
+        SUCCEED! (let [[Σ Δ] ζ]    (recur :succeed (ζ↑ ζ Σ Δ) Ω))     ; return epsilon match
         ARB!     nil
         BAL!     nil
         ARBNO!   nil
         ABORT!   nil
       ))))
 ;===================================================================================================
-(defn INVOKE [op & args]
+(def  eol               #"[\n]")
+(def  eos               #"[;\n]")
+(def  skip              #"[^\n]*")
+(def  fill              #"[^;\n]*")
+(defn re-cat [& rexes]  (re-pattern (apply str rexes)))
+(def  komment           (re-cat #"[*]" skip eol))
+(def  control           (re-cat #"[-]" fill eos))
+(def  kode              (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
+(def  block             (re-cat komment "|" control "|" kode "|" eol))
+(def  general-control-1 #"^-(ERRORS|EXECUTE|FAIL|OPTIMIZE|NOERRORS|NOEXECUTE|NOFAIL|NOOPTIMIZE)")
+(def  general-control-2 #"^-(CASE|COPY|INCLUDE|IN)")
+(def  listing-control-1 #"^-(EJECT|LIST|NOLIST|PRINT|NOPRINT|SINGLE|DOUBLE)")
+(def  listing-control-2 #"^-(LINE|SPACE|STITL|TITLE)")
+(def  parse-command     (insta/parser grammar :start :command))
+(def  parse-statement   (insta/parser grammar :start :stmt :total true))
+(def  parse-expression  (insta/parser grammar :start :expr))
+(defn ERROR [info]      (list 'ERROR (:line info) (:column info) (:text info)))
+(def  no                (atom 0))
+;---------------------------------------------------------------------------------------------------
+(defn CODE [S]
+  (let [blocks (re-seq block (str S "\n"))]
+    (loop [block blocks CODE {} NOS {} LABELS {}]
+      (let [command (first (first block))]
+        (cond
+          (nil? command) [CODE NOS LABELS]
+          (re-find #"^\*" command) nil
+          (re-find #"^\-" command) nil
+          true (let [   no (swap! no inc)
+                     stmt1 (string/replace command #"[ \t]*\r?\n[+.][ \t]*" " ")
+                     stmt2 (string/replace stmt1 #"\r?\n$" "")
+                       ast (parse-statement stmt2)
+                      code (coder ast no)]
+                 (if (and (map? code) (:reason code))
+                   (recur (rest block) (assoc CODE no (ERROR code)) NOS LABELS)
+                   (let [label  (:label code)
+                         body   (:body code)
+                         goto   (:goto code)
+                         code   (reduce #(conj %1 %2) [] [body goto])
+                         key    (if label label no)
+                         nos    (if (keyword? key) (assoc NOS no key) NOS)
+                         labels (if (keyword? key) (assoc LABELS key no) LABELS)
+                         ]
+                     (recur (rest block) (assoc CODE key code) nos labels)
+                   ))))))))
+;===================================================================================================
+(deftrace INVOKE [op & args]
   (case op
     |        (apply | args)
     $        (apply $ args)
@@ -522,47 +537,115 @@
     Roman    ε;(apply Roman args)
 ))
 ;---------------------------------------------------------------------------------------------------
-(defn EVAL [E]
+(deftrace EVAL [E]
   (when E
     (cond
-      (nil? E) E
-      (float? E) E
-      (string? E) E
+          (nil? E) E
+        (float? E) E
+       (string? E) E
       (integer? E) E
-      (symbol? E) ($$ E)
-      (vector? E) (apply list 'SEQ (map EVAL E))
-      (list? E)
-        (let [[op & parms] E]
-          (cond
-            (equal op '.)  (let [[P N]   parms] (INVOKE '. (EVAL P) N))
-            (equal op '$)  (let [[P N]   parms] (INVOKE '$ (EVAL P) N))
-            (equal op '=)  (let [[N R]   parms] (INVOKE '= N (EVAL R)))
-            (equal op '?=) (let [[N P R] parms] (INVOKE '?= N (EVAL P) R))
-            true (let [args (apply vector (map EVAL parms))]
-                   (apply INVOKE op args))
-        ))
-      nil nil)))
+       (symbol? E) ($$ E)
+       (vector? E) (apply list 'SEQ (map EVAL E))
+         (list? E) (let [[op & parms] E]
+                     (cond
+                       (equal op '.)  (let [[P N]   parms] (INVOKE '. (EVAL P) N))
+                       (equal op '$)  (let [[P N]   parms] (INVOKE '$ (EVAL P) N))
+                       (equal op '=)  (let [[N R]   parms] (INVOKE '= N (EVAL R)))
+                       (equal op '?=) (let [[N P R] parms] (INVOKE '?= N (EVAL P) R))
+                       true (let [args (apply vector (map EVAL parms))]
+                              (apply INVOKE op args))))
+             true  nil)))
 ;---------------------------------------------------------------------------------------------------
-(defn                  RUN [at CODE LABELS STMTNOS]
+(def  eol               #"[\n]")
+(def  eos               #"[;\n]")
+(def  skip              #"[^\n]*")
+(def  fill              #"[^;\n]*")
+(defn re-cat [& rexes]  (re-pattern (apply str rexes)))
+(def  komment           (re-cat #"[*]" skip eol))
+(def  control           (re-cat #"[-]" fill eos))
+(def  kode              (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
+(def  block             (re-cat komment "|" control "|" kode "|" eol))
+(def  general-control-1 #"^-(ERRORS|EXECUTE|FAIL|OPTIMIZE|NOERRORS|NOEXECUTE|NOFAIL|NOOPTIMIZE)")
+(def  general-control-2 #"^-(CASE|COPY|INCLUDE|IN)")
+(def  listing-control-1 #"^-(EJECT|LIST|NOLIST|PRINT|NOPRINT|SINGLE|DOUBLE)")
+(def  listing-control-2 #"^-(LINE|SPACE|STITL|TITLE)")
+(def  parse-command     (insta/parser grammar :start :command))
+(def  parse-statement   (insta/parser grammar :start :stmt :total true))
+(def  parse-expression  (insta/parser grammar :start :expr))
+(defn ERROR [info]      (list 'ERROR (:line info) (:column info) (:text info)))
+;---------------------------------------------------------------------------------------------------
+(defmacro comment? [command] (list 're-find #"^\*" command))
+(defmacro control? [command] (list 're-find #"^\-" command))
+(defn        CODE! [S]
+  (let             [blocks (re-seq block (str S "\n"))]
+    (loop          [block blocks NO 1 CODES {} NOS {} LABELS {}]
+      (let         [command (first (first block))]
+        (cond
+              (nil? command) [CODES NOS LABELS]
+          (comment? command) (recur (rest block) NO CODES NOS LABELS)
+          (control? command) (recur (rest block) NO CODES NOS LABELS)
+               true (let [ stmt (string/replace command #"[ \t]*\r?\n[+.][ \t]*" " ")
+                           stmt (string/replace stmt #"\r?\n$" "")
+                            ast (parse-statement stmt)
+                           code (coder ast no)]
+                      (if (and (map? code) (:reason code))
+                        (recur (rest block) (inc NO) (assoc CODE NO (ERROR code)) NOS LABELS)
+                        (let [label  (:label code)
+                              body   (:body code)
+                              goto   (:goto code)
+                              key    (if label label NO)
+                              code   (reduce #(conj %1 %2) [] [body goto])
+                              nos    (if (keyword? key) (assoc NOS key NO) NOS)
+                              labels (if (keyword? key) (assoc LABELS NO key) LABELS)]
+                          (recur (rest block) (inc NO) (assoc CODES key code) nos labels)
+                        ))))))))
+;---------------------------------------------------------------------------------------------------
+(def   STNO   (atom 0))
+(def  <STNO>  (atom {}))
+(def  <LABL>  (atom {}))
+(def  <CODE>  (atom {}))
+(defn  CODE   [S] (let [C (CODE! S) start (inc @STNO) codes (C 0) nos (C 1) labels (C 2)]
+                    (loop [NO 1]
+                      (if (> NO (count codes))
+                        (if (and (@<LABL> start) (@<CODE> (@<LABL> start)))
+                          (@<LABL> start)
+                          (if (@<CODE> start) start))
+                        (do
+                          (swap! STNO inc)
+                          (if-let [label (labels NO)]
+                            (do
+                              (swap! <CODE> #(assoc % label (codes label)))
+                              (swap! <LABL> #(assoc % @STNO label))
+                              (swap! <STNO> #(assoc % label @STNO)))
+                            (swap! <CODE> #(assoc % @STNO (codes NO))))
+                          (recur (inc NO)))))))
+;---------------------------------------------------------------------------------------------------
+(deftrace              RUN [at]
   (letfn [
-	  	(skey [address]   (let [[no label] address] (if label label no)))
-				(saddr [at]      (cond (keyword? at) [(STMTNOS at) at]
-				                       (string?  at) [(STMTNOS at) at]
-				                       (integer? at) [at (LABELS at)]))]
-		    (loop [      current (saddr at)]
-				    (if-let [      key (skey current)]
-				      (if-let [   stmt (CODE key)]
-				        (let [   ferst (first stmt)
-				                seqond (second stmt)
-				                  goto (if (map? ferst) ferst seqond)
-				                  body (if (map? ferst) seqond ferst)]
-				                       (if (EVAL body)
-				                         (if (contains? goto :G)   (recur (saddr (:G goto)))
-				                           (if (contains? goto :S) (recur (saddr (:S goto)))
-				                                                   (recur (saddr (inc (current 0))))))
-				                         (if (contains? goto :G)   (recur (saddr (:G goto)))
-				                           (if (contains? goto :F) (recur (saddr (:F goto)))
-				                                                   (recur (saddr (inc (current 0))))))
+    (skey [address]   (let [[no label] address] (if label label no)))
+    (saddr [at]      (cond (keyword? at) [(@<STNO> at) at]
+                           (string?  at) [(@<STNO> at) at]
+                           (integer? at) [at (@<LABL> at)]))]
+      (loop [      current (saddr at)]
+        (if-let [      key (skey current)]
+          (if-let [   stmt (@<CODE> key)]
+            (let [   ferst (first stmt)
+                    seqond (second stmt)
+                      goto (if (map? ferst) ferst seqond)
+                      body (if (map? ferst) seqond ferst)]
+                           (if (EVAL body)
+                             (if (contains? goto :G)   (recur (saddr (:G goto)))
+                               (if (contains? goto :S) (recur (saddr (:S goto)))
+                                                       (recur (saddr (inc (current 0))))))
+                             (if (contains? goto :G)   (recur (saddr (:G goto)))
+                               (if (contains? goto :F) (recur (saddr (:F goto)))
+                                                       (recur (saddr (inc (current 0))))))
                        )))))))
 ;---------------------------------------------------------------------------------------------------
-(defn -main "SNOBOL4/Clojure." [& args])
+(defn -main "SNOBOL4/Clojure." [& args]
+  (out (CODE "hello OUTPUT = 'Hello World!' :F(END)"))
+  (out (CODE "goodbye OUTPUT = 'Goodbye.' :(END)"))
+  (out @<CODE>)
+  (out @<LABL>)
+  (out @<STNO>)
+)

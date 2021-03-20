@@ -83,28 +83,13 @@ END
   " IDENT(,, TERMINAL = 'Sneaky!')"
 ])
 ;---------------------------------------------------------------------------------------------------
-(defn re-cat [& regexs] (re-pattern (apply str regexs)))
-(def  eol     #"[\n]")
-(def  eos     #"[;\n]")
-(def  skip    #"[^\n]*")
-(def  fill    #"[^;\n]*")
-(def  komment (re-cat #"[*]" skip eol))
-(def  control (re-cat #"[-]" fill eos))
-(def  kode    (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
-(def  block   (re-cat komment "|" control "|" kode "|" eol))
 (defn doit []
   (case 1
     1 (doseq [s SNO] (compile-stmt s))
     2 (doseq [filenm (files dirs)]
         (let [program (slurp filenm)]
           (println ";------------------------------------------------------ " filenm)
-          (doseq [command (re-seq block program)]
-            (let [cmd (first command)]
-                (cond
-                  (nil? cmd) nil
-                  (re-find #"^\*" cmd) nil
-                  (re-find #"^\-" cmd) nil
-                  true (compile-stmt cmd))))))
+          ))
     3 (doseq [filenm (files dirs)]
         (with-open [rdr (io/reader filenm)]
           (doseq [line (line-seq rdr)]
