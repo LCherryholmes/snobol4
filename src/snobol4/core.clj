@@ -11,9 +11,9 @@
   (:refer-clojure :exclude [= + - * / num])
 )
 ;---------------------------------------------------------------------------------------------------
-(defn add         ([x] (clojure.core/+ x)) ([x y] (clojure.core/+ x y)))
-(defn subtract    ([x] (clojure.core/- x)) ([x y] (clojure.core/- x y)))
-(defn multiply    ([x] (clojure.core/* x)) ([x y] (clojure.core/* x y)))
+(defn add       ([x y] (clojure.core/+ x y)) ([x] (clojure.core/+ x)))
+(defn subtract  ([x y] (clojure.core/- x y)) ([x] (clojure.core/- x)))
+(defn multiply  ([x y] (clojure.core/* x y)) ([x] (clojure.core/* x)))
 (defn divide     [x y] (clojure.core// x y))
 (defn equal      [x y] (clojure.core/= x y))
 (defn not-equal  [x y] (clojure.core/not= x y))
@@ -83,7 +83,7 @@
   white     ::=  #'[ \\t]'
 ")
 ;---------------------------------------------------------------------------------------------------
-(defn coder [ast no]
+(defn emitter [ast]
   (insta/transform
     { :comment   (fn comment     [cmt]   [:comment cmt])
       :control   (fn control     [ctl]   [:control ctl])
@@ -479,33 +479,6 @@
 (def  parse-statement   (insta/parser grammar :start :stmt :total true))
 (def  parse-expression  (insta/parser grammar :start :expr))
 (defn ERROR [info]      (list 'ERROR (:line info) (:column info) (:text info)))
-(def  no                (atom 0))
-;---------------------------------------------------------------------------------------------------
-(defn CODE [S]
-  (let [blocks (re-seq block (str S "\n"))]
-    (loop [block blocks CODE {} NOS {} LABELS {}]
-      (let [command (first (first block))]
-        (cond
-          (nil? command) [CODE NOS LABELS]
-          (re-find #"^\*" command) nil
-          (re-find #"^\-" command) nil
-          true (let [   no (swap! no inc)
-                     stmt1 (string/replace command #"[ \t]*\r?\n[+.][ \t]*" " ")
-                     stmt2 (string/replace stmt1 #"\r?\n$" "")
-                       ast (parse-statement stmt2)
-                      code (coder ast no)]
-                 (if (and (map? code) (:reason code))
-                   (recur (rest block) (assoc CODE no (ERROR code)) NOS LABELS)
-                   (let [label  (:label code)
-                         body   (:body code)
-                         goto   (:goto code)
-                         code   (reduce #(conj %1 %2) [] [body goto])
-                         key    (if label label no)
-                         nos    (if (keyword? key) (assoc NOS no key) NOS)
-                         labels (if (keyword? key) (assoc LABELS key no) LABELS)
-                         ]
-                     (recur (rest block) (assoc CODE key code) nos labels)
-                   ))))))))
 ;===================================================================================================
 (deftrace INVOKE [op & args]
   (case op
@@ -587,18 +560,18 @@
                true (let [ stmt (string/replace command #"[ \t]*\r?\n[+.][ \t]*" " ")
                            stmt (string/replace stmt #"\r?\n$" "")
                             ast (parse-statement stmt)
-                           code (coder ast no)]
+                           code (emitter ast)]
                       (if (and (map? code) (:reason code))
-                        (recur (rest block) (inc NO) (assoc CODE NO (ERROR code)) NOS LABELS)
+                        (recur (rest block) (inc NO) (assoc CODES NO (ERROR code)) NOS LABELS)
                         (let [label  (:label code)
                               body   (:body code)
                               goto   (:goto code)
                               key    (if label label NO)
                               code   (reduce #(conj %1 %2) [] [body goto])
                               nos    (if (keyword? key) (assoc NOS key NO) NOS)
-                              labels (if (keyword? key) (assoc LABELS NO key) LABELS)]
-                          (recur (rest block) (inc NO) (assoc CODES key code) nos labels)
-                        ))))))))
+                              labels (if (keyword? key) (assoc LABELS NO key) LABELS)
+                              codes  (assoc CODES key code)]
+                          (recur (rest block) (inc NO) codes nos labels)))))))))
 ;---------------------------------------------------------------------------------------------------
 (def   STNO   (atom 0))
 (def  <STNO>  (atom {}))
@@ -631,16 +604,15 @@
           (if-let [   stmt (@<CODE> key)]
             (let [   ferst (first stmt)
                     seqond (second stmt)
-                      goto (if (map? ferst) ferst seqond)
-                      body (if (map? ferst) seqond ferst)]
+                      body (if (map? ferst) seqond ferst)
+                      goto (if (map? ferst) ferst seqond)]
                            (if (EVAL body)
                              (if (contains? goto :G)   (recur (saddr (:G goto)))
                                (if (contains? goto :S) (recur (saddr (:S goto)))
                                                        (recur (saddr (inc (current 0))))))
                              (if (contains? goto :G)   (recur (saddr (:G goto)))
                                (if (contains? goto :F) (recur (saddr (:F goto)))
-                                                       (recur (saddr (inc (current 0))))))
-                       )))))))
+                                                       (recur (saddr (inc (current 0)))))))))))))
 ;---------------------------------------------------------------------------------------------------
 (defn -main "SNOBOL4/Clojure." [& args]
   (out (CODE "hello OUTPUT = 'Hello World!' :F(END)"))
