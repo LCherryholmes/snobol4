@@ -5,8 +5,8 @@
 ;(use-fixtures :each fixture1 fixture2 ...); :once
 
 (deftest match-1
- (let [ROOT "car"
-          PAT '[ROOT (| "s" "es" "")]]
+  (let [ROOT "car"
+         PAT '[ROOT (| "s" "es" "")]]
       (is (EVAL '(? "car" PAT)))
       (is (EVAL '(? "cars" PAT)))
       (is (EVAL '(? "cares" PAT)))
@@ -19,7 +19,33 @@
     (is      (EVAL '(? "fox" P)))
     (is (not (EVAL '(? "wolf" P))))))
 
-(deftest match (match-1) (match-2))
+(deftest match-3
+  (let [BD (EVAL '[(POS 0) (| "BE" "BO" "B") (| "AR" "A") (| "DS" "D") (RPOS 0)])]
+    (is (? "BEARDS" BD))
+    (is (? "BEARD"  BD))
+    (is (? "BEADS"  BD))
+    (is (? "BEAD"   BD))
+    (is (? "BARDS"  BD))
+    (is (? "BARD"   BD))
+    (is (? "BADS"   BD))
+    (is (? "BAD"    BD))
+    (is (not (? "BATS"   BD)))))
 
-(defn test-ns-hook []
-  (match))
+(deftest match-4
+  (let [BR (EVAL '[(POS 0) (| "B" "F" "L" "R") (| "E" "EA") (| "D" "DS") (RPOS 0)])]
+    (is (? "BED"    BR))
+    (is (? "BEDS"   BR))
+    (is (? "BEAD"   BR))
+    (is (? "BEADS"  BR))
+    (is (? "RED"    BR))
+    (is (? "REDS"   BR))
+    (is (? "READ"   BR))
+    (is (? "READS"  BR))
+    (is (? "READS"  BR))
+    (is (? "LEAD"   BR))
+    (is (not (? "LEADER" BR)))))
+
+(deftest match
+  (match-1) (match-2) (match-3) (match-4))
+
+(defn test-ns-hook [] (match-3) (match-4))
