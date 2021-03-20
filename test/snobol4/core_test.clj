@@ -5,19 +5,19 @@
 ;(use-fixtures :each fixture1 fixture2 ...); :once
 
 (deftest match-1
-		(let [ROOT "car"
-				      PAT '[ROOT (| "s" "es" "")]]
-						(is (EVAL '(? "car" PAT)))
-						(is (EVAL '(? "cars" PAT)))
-						(is (EVAL '(? "cares" PAT)))
-		))
+ (let [ROOT "car"
+          PAT '[ROOT (| "s" "es" "")]]
+      (is (EVAL '(? "car" PAT)))
+      (is (EVAL '(? "cars" PAT)))
+      (is (EVAL '(? "cares" PAT)))
+  ))
 
 (deftest match-2
-		(let [N 1
+  (let [N 1
         P '(| [(EQ N 1) "fox"]
               [(EQ N 2) "wolf"])]
-				(is      (EVAL '(? "fox" P)))
-				(is (not (EVAL '(? "wolf" P))))))
+    (is      (EVAL '(? "fox" P)))
+    (is (not (EVAL '(? "wolf" P))))))
 
 (deftest match (match-1) (match-2))
 
