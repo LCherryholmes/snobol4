@@ -433,44 +433,63 @@
 (defn ζ→   [ζ]      (let [[_ _ σ δ Π φ Ψ] ζ] [σ δ σ δ Π (inc φ) Ψ])); proceed right
 (defn ζ←   [ζ]      (let [[Σ Δ _ _ Π φ Ψ] ζ] [Σ Δ Σ Δ Π (inc φ) Ψ])); receed left
 ;---------------------------------------------------------------------------------------------------
+(defn preview
+  ([X] (preview X 0 0))
+  ([X pos depth]
+    (str
+      (if (> pos 0) " " "")
+      (cond
+            (nil? X) "nil"
+          (float? X) (str X)
+         (symbol? X) (str X)
+        (integer? X) (str X)
+         (string? X) (str "\"" X "\"")
+           (char? X) (str "\\" X)
+        (>= depth 3) "..."
+         (vector? X) (str "["  (reduce str (map #(preview %1 %2 (inc depth)) X (range))) "]")
+           (list? X) (str "("  (reduce str (map #(preview %1 %2 (inc depth)) X (range))) ")")
+            (set? X) (str "#{" (reduce str (map #(preview %1 %2 (inc depth)) X (range 8))) "}")
+            true (str " Yikes!!! " (type X))
+      ))))
+;---------------------------------------------------------------------------------------------------
 (defn MATCH [Σ Δ Π]
   (loop [action :proceed, ζ [Σ Δ ε ε Π 1 []] Ω []]
     (let [λ (ζλ ζ)]
       (println (format "%-8s %2s %2s %-5s %2s %-10s %2s %-10s %s %s"
-        action (count (ζΨ ζ)) (count Ω) λ (ζΔ ζ) (apply str (ζΣ ζ)) (ζδ ζ) (apply str (ζσ ζ)) (ζφ ζ) (ζΠ ζ)))
+        action (count (ζΨ ζ)) (count Ω) λ (ζΔ ζ) (apply str (ζΣ ζ)) (ζδ ζ) (apply str (ζσ ζ)) (ζφ ζ) (preview (ζΠ ζ))))
       (case λ
         nil  (do (println)
                  (case action (:proceed :succeed) true (:recede :fail) false))
         ALT      (case action ;---------------------------------------------------------------------
                    :proceed
                      (if (ζω ζ)    (recur :recede  (🡧🡡 Ω) (🡧🡧 Ω))   ; no more alternatives, also, :fail (ζ↑ ζ) (🡧 Ω)
-                                   (recur :proceed (ζ↓ ζ) (🡥 Ω ζ)))   ; try alternate
-                   :recede         (recur :proceed (ζ← ζ) Ω)          ; try next alternate, keep left
-                   :succeed        (recur :succeed (ζ↑ ζ) (🡧🡥 Ω ζ))  ; generator suspend (return) match
-                   :fail           (recur :recede  (🡡 Ω) (🡧 Ω)))     ; generator reentry, try next
+                                   (recur :proceed (ζ↓ ζ) (🡥 Ω ζ)))  ; try alternate
+                   :recede         (recur :proceed (ζ← ζ) Ω)         ; try next alternate, keep left
+                   :succeed        (recur :succeed (ζ↑ ζ) (🡧🡥 Ω ζ)) ; generator suspend (return) match
+                   :fail           (recur :recede  (🡡 Ω) (🡧 Ω)))    ; generator reentry, try next
         SEQ      (case action ;---------------------------------------------------------------------
                    :proceed
-                     (if (ζω ζ)    (recur :succeed (ζ↑ ζ) Ω)          ; no more subsequents, succeed
-                                   (recur :proceed (ζ↓ ζ) Ω))         ; try subsequent
-                   :succeed        (recur :proceed (ζ→ ζ) Ω)          ; try next subsequent, go right
-                   :fail           (recur :recede  (🡡 Ω) (🡧 Ω)))     ; generator reentry, backtrack
+                     (if (ζω ζ)    (recur :succeed (ζ↑ ζ) Ω)         ; no more subsequents, succeed
+                                   (recur :proceed (ζ↓ ζ) Ω))        ; try subsequent
+                   :succeed        (recur :proceed (ζ→ ζ) Ω)         ; try next subsequent, go right
+                   :fail           (recur :recede  (🡡 Ω) (🡧 Ω)))    ; generator reentry, backtrack
         LIT$      (case action ;---------------------------------------------------------------------
                    :proceed
                    (let [[Σ Δ _ _ Π] ζ
-                             [σ δ] (LIT$ Σ Δ Π)]                      ; scan literal
-                     (if (>= δ 0)  (recur :succeed (ζ↑ ζ σ δ) Ω)      ; return match
-                                   (recur :fail    (ζ↑ ζ Σ Δ) Ω))))   ; signal failure
+                             [σ δ] (LIT$ Σ Δ Π)]                     ; scan literal
+                     (if (>= δ 0)  (recur :succeed (ζ↑ ζ σ δ) Ω)     ; return match
+                                   (recur :fail    (ζ↑ ζ Σ Δ) Ω))))  ; signal failure
        ;--------------------------------------------------------------------------------------------
        (ANY$ NOTANY$ SPAN$ BREAK$ BREAKX$ POS# RPOS#)
                  (case action
                    :proceed
                    (let [[Σ Δ _ _ Π] ζ
-                             [σ δ] (($$ λ) Σ Δ (second Π))]           ; scan with primitive pattern
-                     (if (>= δ 0)  (recur :succeed (ζ↑ ζ σ δ) Ω)      ; return match
-                                   (recur :fail    (ζ↑ ζ Σ Δ) Ω))))   ; signal failure
+                             [σ δ] (($$ λ) Σ Δ (second Π))]          ; scan with primitive pattern
+                     (if (>= δ 0)  (recur :succeed (ζ↑ ζ σ δ) Ω)     ; return match
+                                   (recur :fail    (ζ↑ ζ Σ Δ) Ω))))  ; signal failure
       ; --------------------------------------------------------------------------------------------
-        FAIL!                      (recur :recede  (🡡 Ω) (🡧 Ω))      ; signal failure, backtrack
-        SUCCEED! (let [[Σ Δ] ζ]    (recur :succeed (ζ↑ ζ Σ Δ) Ω))     ; return epsilon match
+        FAIL!                      (recur :recede  (🡡 Ω) (🡧 Ω))     ; signal failure, backtrack
+        SUCCEED! (let [[Σ Δ] ζ]    (recur :succeed (ζ↑ ζ Σ Δ) Ω))    ; return epsilon match
         ARB!     nil
         BAL!     nil
         ARBNO!   nil
@@ -532,7 +551,7 @@
 ))
 ;---------------------------------------------------------------------------------------------------
 (deftrace EVAL [X] (cond (string? X) (EVAL! (first (emitter (parse-expression X)))), true (EVAL! X)))
-(deftrace EVAL! [E]; Needs to handle failure
+(defn EVAL! [E]; Needs to handle failure
   (when E
     (cond
           (nil? E) E
