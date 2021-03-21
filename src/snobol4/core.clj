@@ -400,9 +400,17 @@
 (defn MATCH!   [Σ Δ Π]   (cond (string? Π) (LIT$ Σ Δ Π)
                                (seq? Π) (let [[λ & π] Π, λ ($$ λ)] (apply λ Σ Δ π))))
 ;===================================================================================================
-(defn top  [Ψ]      (last Ψ)); using vector stack, make "first" if ever using list stack
-(defn pull [Ψ]      (if Ψ (if-not (empty? Ψ) (pop Ψ)))); protected pop, top is top for list or vector
-(defn push [Ψ ζ]    (if Ψ (conj Ψ ζ))); ZETA, zipper
+(defn top  [Ψ]   (last Ψ)); using vector stack, make "first" if ever using list stack
+(defn pull [Ψ]   (if Ψ (if-not (empty? Ψ) (pop Ψ)))); protected pop, top is top for list or vector
+(defn push [Ψ ζ] (if Ψ (conj Ψ ζ))); ZETA, zipper
+(defn 🡡 [Ω]     (top Ω))
+(defn 🡥 [Ω ζ]   (push Ω ζ))
+(defn 🡧 [Ω]     (pull Ω))
+(defn 🡧🡡 [Ω]    (top (pull Ω)))
+(defn 🡧🡥 [Ω ζ]  (push (pull Ω) ζ))
+(defn 🡧🡧 [Ω]    (pull (pull Ω)))
+(comment Ω⭳ Ω⭱ Ω↥ Ω↧ Ω⭶ Ω⭸ Ω⭷ Ω⭹)
+;---------------------------------------------------------------------------------------------------
 (defn ζΣ   [ζ]      (if ζ (ζ 0))); SIGMA, Subject, String Start, Sequence of characters
 (defn ζΔ   [ζ]      (if ζ (ζ 1))); DELTA, start position (Difference from start)
 (defn ζσ   [ζ]      (if ζ (ζ 2))); sigma, subject, string end
@@ -419,9 +427,9 @@
                       (list?   (ζΠ ζ)) (first (ζΠ ζ))
                       (seq?    (ζΠ ζ)) (first (ζΠ ζ))
                       true     (out ["lamda? " (type (ζΠ ζ)) (ζΠ ζ)])))
-(defn ζ↓   [ζ]      (let [[Σ Δ _ _ Π φ Ψ] ζ] [Σ Δ Σ Δ (nth Π φ) 1 (push Ψ ζ)])); call down
-(defn ζ↑  ([ζ σ δ]  (let [[Σ Δ _ _ _ _ Ψ] ζ] [Σ Δ σ δ (ζΠ (top Ψ)) (ζφ (top Ψ)) (pull Ψ)])); return up scan
-          ([ζ]      (let [[Σ Δ σ δ _ _ Ψ] ζ] [Σ Δ σ δ (ζΠ (top Ψ)) (ζφ (top Ψ)) (pull Ψ)]))); retun up result
+(defn ζ↓   [ζ]      (let [[Σ Δ _ _ Π φ Ψ] ζ] [Σ Δ Σ Δ (nth Π φ) 1 (🡥 Ψ ζ)])); call down
+(defn ζ↑  ([ζ σ δ]  (let [[Σ Δ _ _ _ _ Ψ] ζ] [Σ Δ σ δ (ζΠ (🡡 Ψ)) (ζφ (🡡 Ψ)) (🡧 Ψ)])); return up scan
+          ([ζ]      (let [[Σ Δ σ δ _ _ Ψ] ζ] [Σ Δ σ δ (ζΠ (🡡 Ψ)) (ζφ (🡡 Ψ)) (🡧 Ψ)]))); retun up result
 (defn ζ→   [ζ]      (let [[_ _ σ δ Π φ Ψ] ζ] [σ δ σ δ Π (inc φ) Ψ])); proceed right
 (defn ζ←   [ζ]      (let [[Σ Δ _ _ Π φ Ψ] ζ] [Σ Δ Σ Δ Π (inc φ) Ψ])); receed left
 ;---------------------------------------------------------------------------------------------------
@@ -435,17 +443,17 @@
                  (case action (:proceed :succeed) true (:recede :fail) false))
         ALT      (case action ;---------------------------------------------------------------------
                    :proceed
-                     (if (ζω ζ)    (recur :recede  (top (pull Ω)) (pull (pull Ω)))  ; no more alternatives, backtrack
-                                   (recur :proceed (ζ↓ ζ) (push Ω ζ)))              ; try alternate
-                   :recede         (recur :proceed (ζ← ζ) Ω)                        ; try next alternate, keep left
-                   :succeed        (recur :succeed (ζ↑ ζ) (push (pull Ω) ζ))        ; generator suspend (return) match
-                   :fail           (recur :recede  (top Ω) (pull Ω)))               ; generator reentry, try next
+                     (if (ζω ζ)    (recur :recede  (🡧🡡 Ω) (🡧🡧 Ω))   ; no more alternatives, also, :fail (ζ↑ ζ) (🡧 Ω)
+                                   (recur :proceed (ζ↓ ζ) (🡥 Ω ζ)))   ; try alternate
+                   :recede         (recur :proceed (ζ← ζ) Ω)          ; try next alternate, keep left
+                   :succeed        (recur :succeed (ζ↑ ζ) (🡧🡥 Ω ζ))  ; generator suspend (return) match
+                   :fail           (recur :recede  (🡡 Ω) (🡧 Ω)))     ; generator reentry, try next
         SEQ      (case action ;---------------------------------------------------------------------
                    :proceed
                      (if (ζω ζ)    (recur :succeed (ζ↑ ζ) Ω)          ; no more subsequents, succeed
                                    (recur :proceed (ζ↓ ζ) Ω))         ; try subsequent
                    :succeed        (recur :proceed (ζ→ ζ) Ω)          ; try next subsequent, go right
-                   :fail           (recur :recede  (top Ω) (pull Ω))) ; generator reentry, backtrack
+                   :fail           (recur :recede  (🡡 Ω) (🡧 Ω)))     ; generator reentry, backtrack
         LIT$      (case action ;---------------------------------------------------------------------
                    :proceed
                    (let [[Σ Δ _ _ Π] ζ
@@ -461,7 +469,7 @@
                      (if (>= δ 0)  (recur :succeed (ζ↑ ζ σ δ) Ω)      ; return match
                                    (recur :fail    (ζ↑ ζ Σ Δ) Ω))))   ; signal failure
       ; --------------------------------------------------------------------------------------------
-        FAIL!                      (recur :recede  (top Ω) (pull Ω))  ; signal failure, backtrack
+        FAIL!                      (recur :recede  (🡡 Ω) (🡧 Ω))      ; signal failure, backtrack
         SUCCEED! (let [[Σ Δ] ζ]    (recur :succeed (ζ↑ ζ Σ Δ) Ω))     ; return epsilon match
         ARB!     nil
         BAL!     nil
