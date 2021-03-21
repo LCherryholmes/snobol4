@@ -45,7 +45,49 @@
     (is (? "LEAD"   BR))
     (is (not (? "LEADER" BR)))))
 
-(deftest match
-  (match-1) (match-2) (match-3) (match-4))
+(deftest match-5
+  (let [A (EVAL '[(POS 0) (ANY "BFLR") (SPAN "EA") "D" (RPOS 0)])]
+    (is (? "BED"    A))
+    (is (? "FAD"    A))
+    (is (? "LEED"   A))
+    (is (? "READ"   A))
+    (is (? "RAD"    A))
+    (is (not (? "IED" A)))
+    (is (not (? "JED" A)))
+    (is (not (? "BID" A)))))
 
-(defn test-ns-hook [] (match-3) (match-4))
+(deftest match-real
+  (def epsilon "")
+  (def digits "0123456789")
+  (let [real (EVAL (str
+         "POS(0)"
+        " SPAN(digits)"
+        " (  ('.' FENCE(SPAN(digits) | epsilon) | epsilon)"
+        "    ('E' | 'e')"
+        "    ('+' | '-' | epsilon)"
+        "    SPAN(digits)"
+        " |  '.' FENCE(SPAN(digits) | epsilon)"
+         ")"
+        " RPOS(0)"))]
+    (is (? "1." real))
+    (is (? "1.6" real))
+    (is (? "1.61" real))
+    (is (? "1.6E2" real))
+    (is (? "1.6e-1" real))
+    (is (? "1.61e+2" real))
+    (is (? "1.618e+3" real))
+    (is (? "1.618e+10" real))
+    (is (not (? "1" real)))
+    (is (not (? "1.6E" real)))
+    (is (not (? "1.6e" real)))
+    (is (not (? "1.6E-" real)))
+    (is (not (? "1.6e-" real)))
+    (is (not (? "1.6E+" real)))
+    (is (not (? "1.6e+" real)))
+  ))
+
+(deftest match
+  (match-1) (match-2) (match-3) (match-4)
+  (match-5) (match-real))
+
+(defn test-ns-hook [] (match-real))

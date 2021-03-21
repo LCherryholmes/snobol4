@@ -1,31 +1,6 @@
 ;---------------------------------------------------------------------------------------------------
-(def LABELS {1 :START 23 :END})
-(def STMTNOS {:START 1 :END 23})
-(def CODE {
-:START    []
-2         ['(= P [(| "Z" "Z" "Z") (| "9" "9") (FAIL)])]
-3         ['(? "Z9" P)]
-4         ['(= BD [(| "BE" "BO" "B") (| "AR" "A") (| "DS" "D")])]
-5         ['(? "BEARDS" BD)]
-6         ['(? "BEARD" BD)]
-7         ['(? "BEADS" BD)]
-8         ['(? "BEAD" BD)]
-9         ['(? "BARDS" BD)]
-10        ['(? "BARD" BD)]
-11        ['(? "BADS" BD)]
-12        ['(? "BAD" BD)]
-13        ['(? "BATS" BD)]
-14        ['(= BR [(| "B" "F" "L" "R") (| "E" "EA") (| "D" "DS")])]
-15        ['(? "BED" BR)]
-16        ['(? "BEDS" BR)]
-17        ['(? "BEAD" BR)]
-18        ['(? "BEADS" BR)]
-19        ['(? "RED" BR)]
-20        ['(? "REDS" BR)]
-21        ['(? "READ" BR)]
-22        ['(? "READS" BR)]
-:END      []
-})
+  (out (CODE "hello OUTPUT = 'Hello World!' :F(END)"))
+  (out (CODE "goodbye OUTPUT = 'Goodbye.' :(END)"))
 ;---------------------------------------------------------------------------------------------------
 (declare dq path part)
 (declare Roman n)
