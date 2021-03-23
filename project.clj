@@ -9,6 +9,8 @@
   ; [org.clojure/math.numeric-tower "0.0.4"]
   ; [aysylu/loom "1.0.2"]
     [instaparse "1.4.10"]
+    [net.mikera/core.matrix "0.62.0"]
+  ; [expresso "0.2.2"]
     [criterium "0.4.6"]]
   :main ^:skip-aot snobol4.core
   :target-path "target/%s"

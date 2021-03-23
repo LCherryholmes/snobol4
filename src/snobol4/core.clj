@@ -5,13 +5,16 @@
   (:require [clojure.pprint :as pp])
   (:require [clojure.string :as string])
   (:require [clojure.java.io :as io])
+; (:require [clojure.core.matrix :refer :all])
+; (:require [clojure.core.matrix.operators :refer :all])
   (:require [clojure.tools.trace :refer :all])
-  (:require [criterium.core :as criterium :refer :all])
+; (:require [criterium.core :as criterium :refer :all])
   (:require [instaparse.core :as insta :refer [defparser]]); :refer-macros [defparser]]); ClojureScript
   (:refer-clojure :exclude [= + - * / num])
+; (:refer-clojure :exclude [* - + == / < <= > >= not= = min max])
 )
 ;---------------------------------------------------------------------------------------------------
-(defn add       ([x y] (clojure.core/+ x y)) ([x] (clojure.core/+ x)))
+(defn Σ+        ([x y] (clojure.core/+ x y)) ([x] (clojure.core/+ x)))
 (defn subtract  ([x y] (clojure.core/- x y)) ([x] (clojure.core/- x)))
 (defn multiply  ([x y] (clojure.core/* x y)) ([x] (clojure.core/* x)))
 (defn divide     [x y] (clojure.core// x y))
@@ -154,12 +157,13 @@
 (def  &UCASE     (atom "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
 ;---------------------------------------------------------------------------------------------------
 ; Arrays and Tables
-(defn ARRAY      [A] ε)
+(defn ARRAY      [proto] (object-array 10))
 (defn ITEM       [])
 (defn PROTOTYPE  [])
-(defn SORT       [])
+(defn SORT       [A])
 (defn RSORT      [A])
-(defn TABLE      [T] ε)
+(defn TABLE      [] (hash-map))
+(defn SET        [] (hash-set))
 ;---------------------------------------------------------------------------------------------------
 ; Function control
 (defn APPLY      [])
@@ -181,7 +185,7 @@
 (defn INPUT      [] ε)
 (defn OUTPUT     [] ε)
 (defn REWIND     [] ε)
-(defn SET        [] ε)
+;(defn SET        [] ε); WHoops conflict with new SET feature. Hmm?
 ;---------------------------------------------------------------------------------------------------
 ; Memory
 (defn CLEAR      [] ε)
@@ -191,8 +195,6 @@
 ; Miscellaneous
 (defn CHAR       [] ε)
 (defn CONVERT    [] ε)
-(defn CONVERT    [] ε)
-(defn DATATYPE   [])
 (defn DATE       [])
 (defn SIZE       [s] 0)
 (defn TIME       [])
@@ -209,7 +211,6 @@
 (defmacro strcvt [x] `(str ~x))
 ;---------------------------------------------------------------------------------------------------
 ; Operators
-(defn assign        [n x]       nil)
 (defn annihilate    [x]         nil)
 (defn match-replace [n s p]     nil)
 (defn keyword-value [n]         nil)
@@ -217,16 +218,32 @@
 (defn dot-name      [n]        `(if (list? ~n) ~n (list 'identity ~n)))
 (defn $=            [p n])
 (defn .=            [p n])
-(defn negate        [p]        `(if (nil? ~p) ε nil))
+(defn lie           [p]        `(if (nil? ~p) ε nil))
 (defn x-2           [op x y]    (list op x y))
 (defn x-n           [op x y Ω]  (apply list (conj Ω y x op)))
 (defn n-1           [op x]      (list op (numcvt x)))
 (defn n-2           [op x y]    (list op (numcvt x) (numcvt y)))
 (defn n-n           [op x y Ω]  (apply list op (map ncvt (conj Ω y x))))
 (defmacro uneval [x]           `(if (list? ~x) ~x (list 'identity ~x)))
+;---------------------------------------------------------------------------------------------------
+(defn reference [N]
+  (if-let [ns-name (namespace N)]
+    (do (comment "ns-name: " ns-name " " N)
+      (when-let [ns-ref (or (get (ns-aliases *ns*) (symbol ns-name))
+                            (find-ns (symbol ns-name)))]
+        (do (comment "ns-ref: " ns-ref)
+          (get (ns-publics ns-ref) (symbol (name N))))))
+    (do (comment N)
+      (if-let [user-ref  (get (ns-map *ns*)                         (symbol (name N)))] user-ref
+        (if-let [sno-ref (get (ns-map (find-ns 'snobol4.core))      (symbol (name N)))] sno-ref
+                         (get (ns-map (find-ns 'snobol4.core-test)) (symbol (name N))))))))
+(defn $$ [N] (if-let [V (reference N)] (var-get V) ε)); (var-get (eval (list 'var N)))
+;---- ----- -------------------------------------------- ------- -- ----- ----------------------------------------------
+(definterface &NAME (n []) (n [_]))
+(deftype NAME [^:unsynchronized-mutable n] &NAME (n [this] n) (n [this _] (set! n _)))
 ;---- ----- -------------------------------------------- ------- -- ----- ----------------------------------------------
 (defn =     ([x]        ##NaN)                   ; unary            programable
-            ([n x]      (assign n x)))           ; binary   0 right assignment
+            ([n x]      (list '= n x)))          ; binary   0 right assignment
 (defn ?     ([x]        (annihilate x))          ; unary            interrogation value annihilation
             ([s p]      (MATCH (seq s) 0 p))     ; binary   1 right match pattern
             ([n s p]    (match-replace n s p)))  ; tertiary 1 right match pattern then replace
@@ -238,9 +255,9 @@
             ([x y & zs] (x-n 'ALT x y zs)))      ; multi    3 right pattern, alternation
 (defn at    ([n]        (list 'cursor n))        ; unary            pattern, assign cursor position
             ([x y]      ##NaN))                  ; binary   4 right programable
-(defn +     ([x]        (n-1 add x))             ; unary            addition
-            ([x y]      (n-2 add x y))           ; binary   6 left  addition
-            ([x y & zs] (n-n add x y zs)))       ; multi    6 left  addition
+(defn +     ([x]        (n-1 Σ+ x))              ; unary            addition
+            ([x y]      (n-2 Σ+ x y))            ; binary   6 left  addition
+            ([x y & zs] (n-n Σ+ x y zs)))        ; multi    6 left  addition
 (defn -     ([x]        (n-1 subtract x))        ; unary            subtraction
             ([x y]      (n-2 subtract x y))      ; binary   6 left  subtraction
             ([x y & zs] (n-n subtract x y zs)))  ; multi    6 left  subtraction
@@ -256,13 +273,13 @@
 (defn !     ([x]        ##NaN)                   ; unary            programable
             ([x y]      (n-2 'Math/pow x y)))    ; binary  11 right exponentiation
 (defn **    ([x y]      (n-2 'Math/pow x y)))    ; binary  11 right exponentiation
-(defn $     ([n]        (dollar-value n))        ; unary            indirection
+(defn $     ([n]        ($$ n))                  ; unary            indirection
             ([x y]      (x-2 $= x y))            ; binary  12 left  immediate assignment
             ([x y & zs] (x-n $= x y zs)))        ; multi   12 left  immediate assignment
-(defn .     ([x]        (dot-name x))            ; unary            name
+(defn .     ([x]        (NAME. x))               ; unary            name
             ([x y]      (x-2 .= x y))            ; binary  12 left  conditional assignment
             ([x y & zs] (x-n .= x y zs)))        ; multi   12 left  conditional assignment
-(defn tilde ([x]        (list 'negate x))        ; unary            pattern, negates failure or success
+(defn tilde ([x]        (list 'lie x))           ; unary            pattern, negates failure or success
             ([x y]      ##NaN))                  ; binary  13 left  programable
 ;---------------------------------------------------------------------------------------------------
 ; Comparison
@@ -331,14 +348,68 @@
 (defn TRACE      [])
 ;---------------------------------------------------------------------------------------------------
 ; Program-defined datatype
-(defn DATA       [])
-(defn FIELD      [])
-(defn DATATYPE   [])
+(def proto-data-name  #"^([A-Za-z][0-9-.A-Z_a-z]+)\((.*)$")
+(def proto-data-field #"^([0-9-.A-Z_a-z]+)[,)](.*)$")
+(defn proto-data [S]
+  (let [[_ name rem] (re-find proto-data-name S)]
+    (loop [rem rem fields []]
+      (if (equal rem ε) [(symbol name) fields]
+        (let [[_ field rem] (re-find proto-data-field rem)]
+          (recur rem (conj fields (symbol field))))))))
+;---------------------------------------------------------------------------------------------------
+(defn DATA! [S]
+  (let [[name fields] (proto-data S)]
+    (list 'do
+      (apply list 'defprotocol (symbol (str \& name))
+        (reduce #(conj %1 (list %2 ['this] ['this '_])) [] fields))
+      (apply list 'deftype name
+        (reduce #(conj %1 (with-meta %2 {:unsynchronized-mutable true})) [] fields)
+        (symbol (str \& name))
+        (reduce
+          #(conj %1
+            (list %2 ['this] %2)
+            (list %2 ['this '_] (list 'set! %2 '_))) [] fields)))))
+(defn DATA [S] (let [data (DATA! S)] (binding [*print-meta* true] (out data)) (eval data) ε))
+(defn FIELD [])
+;---------------------------------------------------------------------------------------------------
+(comment   A=Always, U=Usually
+           S I R A T P N E C Σ ;
+    STRING . U U     A A U U   ;
+   INTEGER A . A     A A A     ;
+      REAL A U .     A A A     ;
+     ARRAY       . U         A ;
+     TABLE       A .         A ;
+   PATTERN           .         ;
+      NAME U U U     U . U U   ;
+EXPRESSION               .     ;
+      CODE                 .   ;
+   (Σ) SET       A A         . ;
+)
+;---------------------------------------------------------------------------------------------------
+(defmulti  DATATYPE (fn [X] (str (class X)))); dispatch function
+(defmethod DATATYPE "class java.lang.Character"                   [X] "STRING")
+(defmethod DATATYPE "class java.lang.String"                      [X] "STRING")
+(defmethod DATATYPE "class java.lang.Long"                        [X] "INTEGER")
+(defmethod DATATYPE "class java.lang.Double"                      [X] "REAL")
+(defmethod DATATYPE "class [Ljava.lang.Object;"                   [X] "ARRAY")
+(defmethod DATATYPE "class [LLjava.lang.Object;"                  [X] "ARRAY")
+(defmethod DATATYPE "class clojure.lang.PersistentArrayMap"       [X] "TABLE"); (hash-map), {}, for SPITBOL TABLE()
+(defmethod DATATYPE "class clojure.lang.PersistentVector"         [X] "PATTERN")
+(defmethod DATATYPE "class clojure.lang.Symbol"                   [X] "NAME"); also snobol4.core.NAME in :default dispatch
+(defmethod DATATYPE "class clojure.lang.PersistentList"           [X] "EXPRESSION")
+(defmethod DATATYPE "class clojure.lang.PersistentList$EmptyList" [X] "EXPRESSION")
+(defmethod DATATYPE "class clojure.lang.PersistentTreeMap"        [X] "CODE"); (sorted-map), also SNOBOL4 TABLE()
+(defmethod DATATYPE "class clojure.lang.Keyword"                  [X] "CODE")
+(defmethod DATATYPE "class clojure.lang.PersistentHashSet"        [X] "SET"); (hash-set), #{}
+(defmethod DATATYPE "class clojure.lang.PersistentTreeSet"        [X] "SET"); (sorted-set)
+(defmethod DATATYPE "class java.util.regex.Pattern"               [X] "REGEX")
+(defmethod DATATYPE "class java.lang.Class"                       [X] "DATA")
+(defmethod DATATYPE :default                                      [X] ((re-find #"class snobol4\.core\.(.*)" (str (class X))) 1))
 ;---------------------------------------------------------------------------------------------------
 ; Synthesis (string, pattern, and object)
 (defn DUPL       [x i]); using string concat or pattern sequence
 (defn LPAD       [])
-(defn REPLACE    [s1 s2 s3] "")
+(defn REPLACE    [s1 s2 s3] ε)
 (defn REVERSE    [])
 (defn RPAD       [])
 (defn SUBSTR     [])
@@ -346,19 +417,6 @@
 (defn COPY       [x]); Object creation
 ;---------------------------------------------------------------------------------------------------
 (defn LEN$$ [s len] (if (<= len 0) s (if (not (seq s)) nil (lazy-seq (cons (first s) (LEN$$ (rest s) (dec len)))))))
-;---------------------------------------------------------------------------------------------------
-(defn reference [N]
-  (if-let [ns-name (namespace N)]
-    (do (comment "ns-name: " ns-name " " N)
-      (when-let [ns-ref (or (get (ns-aliases *ns*) (symbol ns-name))
-                            (find-ns (symbol ns-name)))]
-        (do (comment "ns-ref: " ns-ref)
-          (get (ns-publics ns-ref) (symbol (name N))))))
-    (do (comment N)
-      (if-let [user-ref  (get (ns-map *ns*)                         (symbol (name N)))] user-ref
-        (if-let [sno-ref (get (ns-map (find-ns 'snobol4.core))      (symbol (name N)))] sno-ref
-                         (get (ns-map (find-ns 'snobol4.core-test)) (symbol (name N))))))))
-(defn $$ [N] (if-let [V (reference N)] (var-get V) ε)); (var-get (eval (list 'var N)))
 ;---------------------------------------------------------------------------------------------------
 ; Scanners
 (defn err      [Σ Δ]     [Σ (clojure.core/- -1 Δ)])
@@ -380,7 +438,7 @@
                                                     (if (not (seq σ)) (err σ δ)
                                                       (if (not-equal (first σ) (first π)) (err σ δ)
                                                         (recur (rest σ) (inc δ) (rest π)))))))
-(defn LEN#     [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (>= δ (add Δ Π)) [σ δ] (if (not (seq σ)) (err σ δ) (recur (rest σ) (inc δ))))))
+(defn LEN#     [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (>= δ (Σ+ Δ Π))  [σ δ] (if (not (seq σ)) (err σ δ) (recur (rest σ) (inc δ))))))
 (defn TAB#     [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (>= δ Π)         [σ δ] (if (not (seq σ)) (err σ δ) (recur (rest σ) (inc δ))))))
 (defn RTAB#    [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (>= (count σ) Π) [σ δ] (if (not (seq σ)) (err σ δ) (recur (rest σ) (inc δ))))))
 (defn SPAN$    [Σ Δ Π]   (loop [σ Σ δ Δ    ]     (if (not (contains? Π (first σ)))
@@ -434,29 +492,58 @@
 (defn ζ←   [ζ]      (let [[Σ Δ _ _ Π φ Ψ] ζ] [Σ Δ Σ Δ Π (inc φ) Ψ])); receed left
 ;---------------------------------------------------------------------------------------------------
 (defn preview
-  ([X] (preview X 0 0))
-  ([X pos depth]
+  ([action X φ] (preview action X 0 0 φ))
+  ([action X pos depth φ]
     (str
       (if (> pos 0) " " "")
       (cond
             (nil? X) "nil"
-          (float? X) (str X)
-         (symbol? X) (str X)
-        (integer? X) (str X)
-         (string? X) (str "\"" X "\"")
            (char? X) (str "\\" X)
-        (>= depth 3) "..."
-         (vector? X) (str "["  (reduce str (map #(preview %1 %2 (inc depth)) X (range))) "]")
-           (list? X) (str "("  (reduce str (map #(preview %1 %2 (inc depth)) X (range))) ")")
-            (set? X) (str "#{" (reduce str (map #(preview %1 %2 (inc depth)) X (range 8))) "}")
+         (string? X) (str "\"" X "\"")
+        (integer? X) (str X)
+         (symbol? X) (str X)
+          (float? X) (str X)
+        (>= depth 3) "?"
+         (vector? X) (str "[" (reduce str (map #(preview action %1 %2 (inc depth) 0) X (range))) "]")
+           (list? X) (str "("
+                       (reduce str
+                         (map
+                           #(cond
+                               (equal %2 0) (str %1 " ")
+                               (> φ 0)
+                                 (cond
+                                   (< %2 φ) "."
+                                   (> %2 (Σ+ φ 2)) "?"
+                                   (>= %2 (Σ+ φ 2)) " ?"
+                                   (and (equal %2 φ) (identical? action :succeed)) "."
+                                   true (preview action %1 (dec %2) (inc depth) 0)
+                                 )
+                               true (preview action %1 (dec %2) (inc depth) 0)
+                           )
+                           X (range)))
+                       ")")
+            (set? X) (str "\"" (apply str X) "\"")
             true (str " Yikes!!! " (type X))
       ))))
+;---------------------------------------------------------------------------------------------------
+(defn animate [action λ Σ ζ]
+  (if (and Σ ζ)
+    (println
+      (format "%16s %3d %16s %-9s %s"
+        (str "\"" (apply str (take (ζΔ ζ) Σ)) "\"")
+        (ζΔ ζ)
+        (str "\"" (apply str (reverse (ζΣ ζ))) "\"")
+        (str " " action)
+        (preview action (ζΠ ζ) (ζφ ζ))
+      ))))
+(defn mtrace  [action λ ζ Ω]
+  (println (format "%-8s %2s %2s %-5s %2s %-10s %2s %-10s %s %s"
+    action (count (ζΨ ζ)) (count Ω) λ (ζΔ ζ) (apply str (ζΣ ζ)) (ζδ ζ) (apply str (ζσ ζ)) (ζφ ζ) (preview (ζΠ ζ)))))
 ;---------------------------------------------------------------------------------------------------
 (defn MATCH [Σ Δ Π]
   (loop [action :proceed, ζ [Σ Δ ε ε Π 1 []] Ω []]
     (let [λ (ζλ ζ)]
-      (println (format "%-8s %2s %2s %-5s %2s %-10s %2s %-10s %s %s"
-        action (count (ζΨ ζ)) (count Ω) λ (ζΔ ζ) (apply str (ζΣ ζ)) (ζδ ζ) (apply str (ζσ ζ)) (ζφ ζ) (preview (ζΠ ζ))))
+      (animate action λ Σ ζ)
       (case λ
         nil  (do (println)
                  (case action (:proceed :succeed) true (:recede :fail) false))
@@ -499,11 +586,11 @@
 (def  eol               #"[\n]")
 (def  eos               #"[;\n]")
 (def  skip              #"[^\n]*")
-(def  fill              #"[^;\n]*")
+(def  tokens            #"[^;\n]*")
 (defn re-cat [& rexes]  (re-pattern (apply str rexes)))
 (def  komment           (re-cat #"[*]" skip eol))
-(def  control           (re-cat #"[-]" fill eos))
-(def  kode              (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
+(def  control           (re-cat #"[-]" tokens eos))
+(def  kode              (re-cat #"[^;\n.+*-]" tokens "(" #"\n[.+]" tokens ")*" eos))
 (def  block             (re-cat komment "|" control "|" kode "|" eol))
 (def  general-control-1 #"^-(ERRORS|EXECUTE|FAIL|OPTIMIZE|NOERRORS|NOEXECUTE|NOFAIL|NOOPTIMIZE)")
 (def  general-control-2 #"^-(CASE|COPY|INCLUDE|IN)")
@@ -550,43 +637,28 @@
     Roman    ε;(apply Roman args)
 ))
 ;---------------------------------------------------------------------------------------------------
-(deftrace EVAL [X] (cond (string? X) (EVAL! (first (emitter (parse-expression X)))), true (EVAL! X)))
+;(comment "Conway's game of life" : life { _ } ←{ ↑ 1 ⍵ ∨ . ∧ 3 4 = + / , -1 0 1 ∘ . ⊖  -1 0 1 ∘ . ⌽ ⊂ ⍵ } ;)
+(defn EVAL  [X] (cond (string? X) (EVAL! (first (emitter (parse-expression X)))) true (EVAL! X)))
 (defn EVAL! [E]; Needs to handle failure
   (when E
     (cond
           (nil? E) E
+         (char? E) E
         (float? E) E
        (string? E) E
       (integer? E) E
        (symbol? E) ($$ E)
-       (vector? E) (apply list 'SEQ (map EVAL! E)); Needs to handle NULL concatentaion logic
          (list? E) (let [[op & parms] E]
                      (cond
                        (equal op '.)  (let [[P N]   parms] (INVOKE '. (EVAL! P) N))
                        (equal op '$)  (let [[P N]   parms] (INVOKE '$ (EVAL! P) N))
                        (equal op '=)  (let [[N R]   parms] (INVOKE '= N (EVAL! R)))
                        (equal op '?=) (let [[N P R] parms] (INVOKE '?= N (EVAL! P) R))
+                       (equal op '&)  (let [[N]     parms] @($$ (symbol (str "&" N))))
                        true (let [args (apply vector (map EVAL! parms))]
                               (apply INVOKE op args))))
-             true  "Yikes! What is E?")))
-;---------------------------------------------------------------------------------------------------
-(def  eol               #"[\n]")
-(def  eos               #"[;\n]")
-(def  skip              #"[^\n]*")
-(def  fill              #"[^;\n]*")
-(defn re-cat [& rexes]  (re-pattern (apply str rexes)))
-(def  komment           (re-cat #"[*]" skip eol))
-(def  control           (re-cat #"[-]" fill eos))
-(def  kode              (re-cat #"[^;\n.+*-]" fill "(" #"\n[.+]" fill ")*" eos))
-(def  block             (re-cat komment "|" control "|" kode "|" eol))
-(def  general-control-1 #"^-(ERRORS|EXECUTE|FAIL|OPTIMIZE|NOERRORS|NOEXECUTE|NOFAIL|NOOPTIMIZE)")
-(def  general-control-2 #"^-(CASE|COPY|INCLUDE|IN)")
-(def  listing-control-1 #"^-(EJECT|LIST|NOLIST|PRINT|NOPRINT|SINGLE|DOUBLE)")
-(def  listing-control-2 #"^-(LINE|SPACE|STITL|TITLE)")
-(def  parse-command     (insta/parser grammar :start :command))
-(def  parse-statement   (insta/parser grammar :start :stmt :total true))
-(def  parse-expression  (insta/parser grammar :start :expr))
-(defn ERROR [info]      (list 'ERROR (:line info) (:column info) (:text info)))
+       (vector? E) (apply list 'SEQ E)
+              true "Yikes! What is E?")))
 ;---------------------------------------------------------------------------------------------------
 (defmacro comment? [command] (list 're-find #"^\*" command))
 (defmacro control? [command] (list 're-find #"^\-" command))

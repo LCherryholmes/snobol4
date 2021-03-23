@@ -1,6 +1,78 @@
+; (:require [core.matrix :as matrix])
+; (:require [numeric.expresso.core])
+; (:require [clojure.core.matrix.operators :as matrix])
+; (:require [clojure.core.match :as match])
+; (:require [clojure.core.logic :as logic])
+; numeric tower
+;---------------------------------------------------------------------------------------------------
+(instance? Class expr)
+;---------------------------------------------------------------------------------------------------
+(def proto-data-name  #"^([A-Za-z][0-9-.A-Z_a-z]+)\((.*)$")
+(def proto-data-field #"^([0-9-.A-Z_a-z]+)[,)](.*)$")
+(defn proto-data [S]
+  (let [[_ name rem] (re-find proto-data-name S)]
+    (loop [rem rem fields []]
+      (if (= rem "") [(symbol name) fields]
+        (let [[_ field rem] (re-find proto-data-field rem)]
+          (recur rem (conj fields (symbol field))))))))
+(defn DATA! [S]
+  (let [[name fields] (proto-data S)]
+    (list 'do
+      (apply list 'defprotocol (symbol (str \& name))
+        (reduce #(conj %1 (list %2 ['this] ['this '_])) [] fields))
+      (apply list 'deftype name
+        (reduce #(conj %1 (with-meta %2 {:unsynchronized-mutable true})) [] fields)
+        (symbol (str \& name))
+        (reduce
+          #(conj %1
+            (list %2 ['this] %2)
+            (list %2 ['this '_] (list 'set! %2 '_))) [] fields)))))
+(defn DATA [S] (let [data (DATA! S)] (binding [*print-meta* true] (out data)) (eval data)))
+(DATA "tree(t,v,n,c)")
+(def x (tree. \+ nil 2 [3 4]))
+(t x)
+(t x \-)
+(t x)
+;---------------------------------------------------------------------------------------------------
+(for [s (re-seq proto_data "tree(t,v,n,c)")] (println s))
+;---------------------------------------------------------------------------------------------------
+(deftype A [x y z]); ClojureScript
+(def a (A. 1 2))
+(.-x a)
+(set! (.-x a) 19)
+
+(defprotocol &A (x [this] [this _]) (y [this] [this _]))
+(deftype A
+  [^:unsynchronized-mutable x ^:volatile-mutable y]
+  &A (x [this] x)
+     (x [this _] (set! x _))
+     (y [this] x)
+     (y [this _] (set! y _)))
+(def a (A. 1 2))
+(x a)
+(y a)
+(x a 19)
+(y a 19)
+
+(definterface &NAME (n []) (n [_]))
+(deftype NAME [^:unsynchronized-mutable n] &NAME (n [this] n) (n [this _] (set! n _)))
+(def N (NAME. 'Roman))
+(pprint N)
+(.x a)
+(.y a)
+(.x a 19)
+(.y a 19)
 ;---------------------------------------------------------------------------------------------------
   (out (CODE "hello OUTPUT = 'Hello World!' :F(END)"))
   (out (CODE "goodbye OUTPUT = 'Goodbye.' :(END)"))
+;---------------------------------------------------------------------------------------------------
+(comment (array (for [i (range 3)] (for [j (range 3)] (str i j))))); core.matrix
+
+(let [π = 3.141592653589793])
+(defn rotataion [turns]
+  (let [a (* 2.0 π turns)]
+    [[   (cos a)  (sin a)]
+     [(- (sin a)) (cos a)]]))
 ;---------------------------------------------------------------------------------------------------
 (declare dq path part)
 (declare Roman n)
