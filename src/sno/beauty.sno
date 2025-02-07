@@ -26,7 +26,7 @@ START
 -INCLUDE 'omega.inc'
 -INCLUDE 'trace.inc'
 
- 			&FULLSCAN      =  1
+                  &FULLSCAN      =  1
                   &MAXLNGTH      =  524288
 *
 *                 Four tab-stops defined for the pretty-print routine.
