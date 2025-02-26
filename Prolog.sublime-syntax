@@ -1,0 +1,327 @@
+%YAML 1.2
+---
+# This is the first rewrite of the prolog syntax before SBNF was created.
+# I've left this here as a comparison to the compiled syntax definition.
+# http://www.sublimetext.com/docs/3/syntax.html
+name: SWI-Prolog
+comment: SWI-Prolog Language
+file_extensions: [pl, pro]
+first_line_match: ^#!.*\bswipl\b.
+scope: source.swi-prolog
+variables:
+  number_lookahead: (?=[+-]?[0-9])
+  atom_lookahead: (?=[a-z'])
+  predicate_lookahead: (?=:-|\.)
+
+  simple_atom: \b[a-z][[:alpha:]0-9_]*\b
+  variable: \b[A-Z_][[:alpha:]0-9_]*\b
+  operator: '\bis\b|>>|\^|=\.\.|=?<|>=?|==?|\*\*?|\+|->?|/|#=|\\='
+
+  escape_sequence: '\\([abcefnrstv''\"`\n\\]|x\h\h+\\?|u\h{4}|U\h{8})'
+
+contexts:
+  prototype:
+    - include: comment-in
+
+  main:
+    - match: '^#!'
+      scope: punctuation.definition.comment.number-sign.swi-prolog
+      push:
+        - meta_include_prototype: false
+        - meta_scope: comment.line.number-sign.swi-prolog
+        - match: '$\n?'
+          pop: true
+    - include: predicate-in
+
+  predicate-in:
+    - match: '{{predicate_lookahead}}'
+      push: predicate-body
+    - match: '{{atom_lookahead}}'
+      push: [meta-function, predicate-body, maybe-parameter-list, atom-entity]
+  predicate-body:
+    - match: ':-'
+      scope: keyword.operator.definition.begin.swi-prolog
+      set: [predicate-body-end, group]
+    - match: '\.'
+      scope: keyword.operator.definition.end.swi-prolog
+      pop: true
+    - include: not-whitespace-illegal-pop
+  predicate-body-end:
+    - match: '\.'
+      scope: keyword.operator.definition.end.swi-prolog
+      pop: true
+    - include: not-whitespace-illegal-pop
+
+  atom:
+    - meta_scope: constant.character.atom.swi-prolog
+    - match: ''
+      push: atom-cont
+  atom-entity:
+    - meta_scope: entity.name.predicate.swi-prolog
+    - match: ''
+      push: atom-cont
+  atom-predicate:
+    - meta_scope: variable.function.swi-prolog
+    - match: ''
+      push: atom-cont
+  atom-cont:
+    - match: '{{simple_atom}}'
+      pop: 2
+    - match: \'
+      set:
+        - meta_include_prototype: false
+        - match: '{{escape_sequence}}'
+          scope: constant.character.escape.swi-prolog
+        - match: \'
+          pop: 2
+    - include: not-whitespace-illegal-pop
+
+
+  maybe-parameter-list:
+    - match: \(
+      scope: punctuation.section.parens.begin.swi-prolog
+      set: parameter-list-begin
+    - match: (?=\S)
+      pop: true
+  parameter-list:
+    - match: \(
+      scope: punctuation.section.parens.begin.swi-prolog
+      set: parameter-list-begin
+    - include: not-whitespace-illegal-pop
+  parameter-list-begin:
+    - match: \)
+      scope: punctuation.section.parens.end.swi-prolog
+      pop: true
+    - match: (?=\S)
+      set: [parameter-list-cont, value]
+  parameter-list-cont:
+    - match: \)
+      scope: punctuation.section.parens.end.swi-prolog
+      pop: true
+    - match: ','
+      scope: punctuation.separator.sequence.swi-prolog
+      push: value
+    - include: not-whitespace-illegal-pop
+
+  group:
+    - match: ''
+      set: [group-cont, group-value]
+  group-cont:
+    - match: ','
+      scope: keyword.operator.logical.and.swi-prolog
+      push: group-value
+    - match: ';'
+      scope: keyword.operator.logical.or.swi-prolog
+      push: group-value
+    - match: '->'
+      scope: keyword.operator.logical.if.swi-prolog
+      push: group-value
+    - match: '(?=\S)'
+      pop: true
+  group-value:
+    - match: \(
+      scope: punctuation.section.block.begin.swi-prolog
+      set: [group-cont, group-value-block-end, group]
+    - match: '\\\+'
+      scope: keyword.control.swi-prolog
+      set: value
+    - include: value
+  group-value-block-end:
+    - match: \)
+      scope: punctuation.section.block.end.swi-prolog
+      pop: true
+    - include: not-whitespace-illegal-pop
+
+  value:
+    - match: (?=\")
+      set: [value-after, string]
+    - match: '!'
+      scope: keyword.control.swi-prolog
+      pop: true
+    - match: '{{variable}}'
+      scope: variable.parameter.swi-prolog
+      set: value-after
+    - match: '{{atom_lookahead}}'
+      set: [value-after, value-atom-call]
+    - match: '{{number_lookahead}}'
+      set: [value-after, number]
+    - match: '(?=\[)'
+      set: [value-after, list]
+    - match: '(?={)'
+      set: [value-after, set]
+    - match: \(
+      scope: punctuation.section.group.begin.swi-prolog
+      set: [value-after, value-group-end, group]
+    - match: '([~^&*\-+=|\\/<>][~^&*\-+=|\\/<>.,]*)(\()'
+      captures:
+        1: constant.character.swi-prolog
+        2: punctuation.section.parens.begin.swi-prolog
+      set: [value-after, parameter-list-begin]
+    - match: '[+-]'
+      scope: keyword.operator.arithmetic.swi-prolog
+    - include: not-whitespace-illegal-pop
+  value-group-end:
+    - match: \)
+      scope: punctuation.section.group.end.swi-prolog
+      pop: true
+    - include: not-whitespace-illegal-pop
+  value-after:
+    - match: '{{operator}}'
+      scope: keyword.operator.swi-prolog
+      set: value
+    - match: '(?=\S)'
+      pop: true
+  value-atom-call:
+    - match: ''
+      branch_point: atom-call
+      branch:
+        - value-after-branch-atom-call
+        - value-after-branch-atom-no-call
+  value-after-branch-atom-call:
+    - match: ''
+      push: [pop-3, meta-function-call, value-after-branch-atom-call-after, atom-predicate]
+  value-after-branch-atom-call-after:
+    - match: (?=\()
+      set: parameter-list
+    - match: '\S'
+      fail: atom-call
+  value-after-branch-atom-no-call:
+    - match: ''
+      push: [pop-3, atom]
+
+  set:
+    - match: \{
+      scope: punctuation.section.set.begin.swi-prolog
+      set:
+        - match: (?=})
+          set: set-end
+        - match: (?=\S)
+          set: [set-cont, value]
+    - include: not-whitespace-illegal-pop
+  set-cont:
+    - match: ','
+      scope: punctuation.separator.sequence.swi-prolog
+      set: [set-cont, value]
+    - include: set-end
+  set-end:
+    - match: \}
+      scope: punctuation.section.set.end.swi-prolog
+      pop: true
+    - include: not-whitespace-illegal-pop
+
+  list:
+    - match: \[
+      scope: punctuation.section.brackets.begin.swi-prolog
+      set:
+        - match: (?=\])
+          set: list-end
+        - match: '(?=\S)'
+          set: [list-cont, value]
+    - include: not-whitespace-illegal-pop
+  list-cont:
+    - match: \|
+      scope: punctuation.separator.sequence.swi-prolog
+      set: [list-end, value]
+    - match: ','
+      scope: punctuation.separator.sequence.swi-prolog
+      set: [list-cont, value]
+    - include: list-end
+  list-end:
+    - match: \]
+      scope: punctuation.section.brackets.end.swi-prolog
+      pop: true
+    - include: not-whitespace-illegal-pop
+
+  string-in:
+    - match: (?=\")
+      push: string
+  string:
+    - match: \"
+      scope: punctuation.definition.string.begin.swi-prolog
+      set:
+        - meta_scope: meta.string.swi-prolog string.quoted.double.swi-prolog
+        - meta_include_prototype: false
+        - match: '{{escape_sequence}}'
+          scope: constant.character.escape.swi-prolog
+        - match: \"
+          scope: punctuation.definition.string.end.swi-prolog
+          pop: true
+    - include: not-whitespace-illegal-pop
+
+  number:
+    - match: '(0b)[01_]+'
+      scope: constant.numeric.integer.binary.swi-prolog
+      captures:
+        1: punctuation.definition.number.base.swi-prolog
+      pop: true
+    - match: '(0x)[\h_]+'
+      scope: constant.numeric.integer.hexadecimal.swi-prolog
+      captures:
+        1: punctuation.definition.number.base.swi-prolog
+      pop: true
+    - match: '(0o)[0-7_]+'
+      scope: constant.numeric.integer.octal.swi-prolog
+      captures:
+        1: punctuation.definition.number.base.swi-prolog
+      pop: true
+    - match: '([0-9]{1,2})('')[0-9a-z]+'
+      scope: constant.numeric.integer.swi-prolog
+      captures:
+        1: punctuation.definition.number.base.swi-prolog
+        2: punctuation.separator.base.swi-prolog
+      pop: true
+    - match: '[0-9]+\.[0-9]+'
+      scope: constant.numeric.float.swi-prolog
+      pop: true
+    - match: '[+-]?[0-9_]+'
+      scope: constant.numeric.integer.swi-prolog
+      set:
+        - match: '[0-9_]+'
+          scope: constant.numeric.integer.swi-prolog
+        - match: '(?=\S)'
+          pop: true
+    - include: not-whitespace-illegal-pop
+
+  comment-in:
+    - match: '(%+).*\n?'
+      scope: comment.line.percentage.swi-prolog
+      captures:
+        1: punctuation.definition.comment.swi-prolog
+    - include: nested-comment-in
+  nested-comment-in:
+    - match: /\*(\*(?!/))?
+      scope: punctuation.definition.comment.swi-prolog
+      push:
+        - meta_scope: comment.block.nested.swi-prolog
+        - match: \*/
+          scope: punctuation.definition.comment.swi-prolog
+          pop: true
+        - match: ^\s*(\*)(?!/)
+          captures:
+            1: punctuation.definition.comment.swi-prolog
+        - include: nested-comment-in
+
+  not-whitespace-illegal:
+    - match: '\S'
+      scope: invalid.illegal.swi-prolog
+  not-whitespace-illegal-pop:
+    - match: '\S'
+      scope: invalid.illegal.swi-prolog
+      pop: true
+
+  pop-2:
+    - match: ''
+      pop: 2
+  pop-3:
+    - match: ''
+      pop: 3
+
+  meta-function:
+    - meta_scope: meta.function.swi-prolog
+    - match: ''
+      pop: true
+
+  meta-function-call:
+    - meta_scope: meta.function-call.swi-prolog
+    - match: ''
+      pop: true

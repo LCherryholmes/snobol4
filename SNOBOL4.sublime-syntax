@@ -1,0 +1,464 @@
+%YAML 1.2
+---
+# See http://www.sublimetext.com/docs/3/syntax.html
+name: SNOBOL4
+file_extensions: [sno, spt, inc]
+first_line_match: START
+
+scope: source.sno
+variables:
+  variable: '[A-Z_a-z][-0-9\.A-Z_a-z]*'
+  indirect_squote_variable: \$\'([^\']*)\'
+  indirect_dquote_variable: \$\"([^\"]*)\"
+  control_label: \b(START|[^ ]*(END|End|end))\b
+  control_flow: \b(ABORT|CONTINUE|FRETURN|NRETURN|RETURN|SCONTINUE|START|(?:{{variable}})?(END|End|end))\b
+  keyword_protected: \b(ABORT|ALPHABET|ARB|BAL|FAIL|FENCE|FILE|FNCLEVEL|LASTFILE|LASTLINE|LASTNO|LCASE|LINE|REM|RTNTYPE|STCOUNT|STNO|SUCCEED|UCASE)\b
+  keyword_unprotected: \b(ABEND|ANCHOR|CASE|CODE|COMPARE|DUMP|ERRLIMIT|ERRTEXT|ERRTYPE|FTRACE|INPUT|MAXLNGTH|OUTPUT|PROFILE|STLIMIT|TRACE|TRIM|FULLSCAN)\b
+  io_variable: \b(INPUT|OUTPUT|TERMINAL)\b
+  pattern_variable: \b(ARB|BAL|FAIL|FENCE|REM|epsilon)\b
+  user_constant_general: \b(NULL|TRUE|FALSE|digits)\b
+  user_constant_character: \b(bSlash|bksp|bs|cr|fSlash|ff|ht|lf|nl|nul|tab|vt)\b
+  pattern_function: \b(ANY|ARBNO|BREAK|BREAKX|FENCE|LEN|NOTANY|POS|RPOS|RTAB|SPAN|TAB)\b
+  compiler_function: \b(CODE|EVAL)\b
+  datatype_function: \b(ARRAY|CONVERT|COPY|DATA|FIELD|ITEM|PROTOTYPE|RSORT|SORT|TABLE)\b
+  math_function: \b(ATAN|CHOP|COS|EXP|LN|REMDR|SIN|SQRT|TAN)\b
+  primitive_function: \b(DIFFER|IDENT|INTEGER|LT|LE|GT|GE|EQ|NE|LLT|LLE|LGT|LGE|LEQ|LNE)\b
+  io_function: \b(BACKSPACE|DETACH|EJECT|ENDFILE|INPUT|OUTPUT|REWIND|SET)\b
+  memory_function: \b(CLEAR|COLLECT|DUMP)\b
+  misc_function: \b(DATE|EXIT|HOST|SETEXIT|STOPTR|TIME|TRACE)\b
+  program_function: \b(APPLY|ARG|DATATYPE|DEFINE|LOAD|LOCAL|OPSYN|UNLOAD)\b
+  string_function: \b(CHAR|DUPL|LPAD|REPLACE|REVERSE|RPAD|SIZE|SUBSTR|TRIM)\b
+  library_function: \b(assign|match|not_match|nInc|nDec|nPush|nPop|Push|Pop|Top|PushCounter|PopCounter|TopCounter|IncCounter|DecCounter|UTFLEN|UTFSUBSTR)\b
+  user_function: '{{variable}}'
+  builtin_function: |-
+    (?x:
+      {{compiler_function}}
+    | {{datatype_function}}
+    | {{math_function}}
+    | {{primitive_function}}
+    | {{io_function}}
+    | {{memory_function}}
+    | {{misc_function}}
+    | {{program_function}}
+    | {{string_function}}
+    )
+
+contexts:
+  terminator:
+    - match: (^|;)(\*)
+      captures:
+        1: punctuation.terminator.sno
+        2: punctuation.definition.comment.sno
+      set: line_comment
+
+    - match: (^|;)(\-)
+      captures:
+        1: punctuation.terminator.sno
+        2: punctuation.definition.keyword.begin.sno
+      set: control_statement
+
+    - match: (^|;)({{control_label}})[ \t]*$
+      captures:
+        1: punctuation.terminator.sno
+        2: keyword.control.sno
+      set: main
+
+    - match: (^|;)([^ +\t]+)
+      captures:
+        1: punctuation.terminator.sno
+        2: entity.name.function.sno # (green) entity.name.label.sno (white) # entity.name.tag.sno (pink) # entity.name.section.sno (white) # variable.language.sno
+      set: main
+
+    - match: ;
+      scope: punctuation.terminator.sno
+      set: main
+
+  continuation:
+    - match: (^|;)(\+)
+      captures:
+        1: punctuation.terminator.sno
+        2: punctuation.separator.continuation.sno
+      set: main
+
+  line_comment:
+    - meta_scope: comment.line.semi-colon.sno
+    - match: $
+      pop: true
+
+################################################################################
+  term:
+    - match: '(\&){{keyword_protected}}\b'
+      scope: constant.language.sno
+      captures:
+        1: punctuation.definition.keyword.begin.sno
+
+    - match: '(\&){{keyword_unprotected}}\b'
+      scope: constant.other.sno # variable.language.sno (orange slanted) #
+      captures:
+        1: punctuation.definition.variable.begin.sno
+
+    - match: \b({{pattern_function}})\(
+      captures:
+        1: variable.language.sno # (orange slanted) variable.function.sno (blue) # storage.type.sno (blue slanted)
+      push: brackets
+
+    - match: \b({{builtin_function}})\(
+      captures:
+        1: support.function.sno # entity.name.function.sno
+      push: brackets
+
+    - match: \b({{library_function}})\(
+      captures:
+        1: entity.name.class.forward-decl.sno # support.function.sno (blue) # variable.function.sno (blue) # variable.language.sno (orange) # entity.other.sno (green) #
+      push: brackets
+
+    - match: \b({{user_function}})\(
+      captures:
+        1: entity.name.class.forward-decl.sno # entity.other.sno (white) # support.function.sno (blue) # variable.function.sno (blue) # variable.language.sno (orange)
+      push: brackets
+
+    - match: \b{{io_variable}}\b
+      scope: support.function.sno (blue) # support.module.sno (white) # entity.name.interface.sno (green)
+
+    - match: \b{{pattern_variable}}\b
+      scope: variable.language.sno # (orange slanted) storage.type.sno (blue slanted)
+
+    - match: \b{{user_constant_general}}\b
+      scope: constant.language.sno # support.constant.sno #
+
+    - match: \b{{user_constant_character}}\b
+      scope: constant.character.sno # (purple) support.type.sno # (blue slanted)
+
+    - match: \b{{variable}}\b
+      scope: variable.other.sno # variable.other.sno
+
+    - match: \b[0-9]+\.[0-9]+\b
+      scope: constant.numeric.float.sno
+
+    - match: \b[0-9]+\b
+      scope: constant.numeric.integer.sno
+
+    - match: '(^|[ \t]+)([\=])([ \t]+|$)'
+      captures:
+        2: keyword.operator.assignment.sno
+
+    - match: '(^|[ \t]+)([\?])([ \t]+|$)'
+      captures:
+        2: keyword.operator.logical.sno
+
+#   - match: '[\=\?\&\|\#\/\*\%\^\!\@\~]'
+#     scope: keyword.operator.sno
+
+  indirect_squote_variable:
+    - match: '{{indirect_squote_variable}}'
+      scope: string.quoted.single.sno # constant.other.sno # variable.other.sno
+
+  indirect_dquote_variable:
+    - match: '{{indirect_dquote_variable}}'
+      scope: string.quoted.double.sno # constant.other.sno # variable.other.sno
+
+################################################################################
+  string:
+    - match: \"
+      scope: punctuation.definition.string.begin.sno
+      push: double_quoted_string
+    - match: \'
+      scope: punctuation.definition.string.begin.sno
+      push: single_quoted_string
+
+  double_quoted_string:
+    - meta_scope: string.quoted.double.sno
+    - match: \"
+      scope: punctuation.definition.string.end.sno
+      pop: true
+#   - match: $
+#     pop: true
+
+  single_quoted_string:
+    - meta_scope: string.quoted.single.sno
+    - match: \'
+      scope: punctuation.definition.string.end.sno
+      pop: true
+#   - match: $
+#     pop: true
+
+################################################################################
+  proto_string: # includable
+    - match: \"
+      scope: punctuation.definition.annotation.begin.sno
+      push: proto_double_quoted_string
+    - match: \'
+      scope: punctuation.definition.annotation.begin.sno
+      push: proto_single_quoted_string
+
+  proto_single_quoted_string:
+    - meta_scope: string.interpolated.sno # string.quoted.single.sno #
+    - include: term
+    - include: indirect_dquote_variable
+    - match: \"
+      scope: string.other.double.sno
+      set: proto_embedded_double_quoted_string
+    - match: \'
+      scope: punctuation.definition.annotation.end.sno
+      pop: true
+#   - match: $
+#     pop: true
+
+  proto_embedded_double_quoted_string:
+    - meta_content_scope: string.interpolated.sno string.other.double.sno
+    - match: \"
+      set: proto_single_quoted_string
+    - match: \'
+      scope: string.interpolated.sno punctuation.definition.annotation.end.sno
+      pop: true
+    - match: $
+      set: proto_single_quoted_string # pop: true
+
+  proto_double_quoted_string:
+    - meta_scope: string.interpolated.sno # string.quoted.double.sno #
+    - include: term
+    - include: indirect_squote_variable
+    - match: \'
+      scope: string.other.single.sno
+      set: proto_embedded_single_quoted_string
+    - match: \"
+      scope: punctuation.definition.annotation.end.sno
+      pop: true
+#   - match: $
+#     pop: true
+
+  proto_embedded_single_quoted_string:
+    - meta_content_scope: string.interpolated.sno string.other.single.sno
+    - match: \'
+      set: proto_double_quoted_string
+    - match: \"
+      scope: string.interpolated.sno punctuation.definition.annotation.end.sno
+      pop: true
+    - match: $
+      set: proto_double_quoted_string # pop: true
+
+################################################################################
+  data_proto_string:
+    - match: \"
+      scope: punctuation.definition.annotation.begin.sno
+      push: data_proto_double_quoted_string
+    - match: \'
+      scope: punctuation.definition.annotation.begin.sno
+      push: data_proto_single_quoted_string
+
+  data_proto_double_quoted_string:
+    - match: ({{variable}})\(
+      captures:
+        1: entity.name.function.sno # variable.parameter.sno
+    - match: \b{{variable}}\b
+      scope: entity.name.function.sno
+    - include: term
+    - match: \"
+      scope: punctuation.definition.annotation.end.sno
+      pop: true
+#   - match: $
+#     pop: true
+
+  data_proto_single_quoted_string:
+    - match: ({{variable}})(\()
+      captures:
+        1: entity.name.function.sno # variable.parameter.sno
+    - match: \b{{variable}}\b
+      scope: entity.name.function.sno
+    - include: term
+    - match: \'
+      scope: punctuation.definition.annotation.end.sno
+      pop: true
+#   - match: $
+#     pop: true
+
+################################################################################
+  function_proto_string:
+    - match: \"
+      scope: punctuation.definition.annotation.begin.sno
+      push: function_proto_double_quoted_string
+    - match: \'
+      scope: punctuation.definition.annotation.begin.sno
+      push: function_proto_single_quoted_string
+
+  function_proto_double_quoted_string:
+    - match: ({{variable}})\(
+      captures:
+        1: entity.name.function.sno # variable.parameter.sno
+    - match: \b{{variable}}\b
+      scope: variable.other.sno
+    - include: term
+    - match: \"
+      scope: punctuation.definition.annotation.end.sno
+      pop: true
+#   - match: $
+#     pop: true
+
+  function_proto_single_quoted_string:
+    - match: ({{variable}})(\()
+      captures:
+        1: entity.name.function.sno # variable.parameter.sno
+    - match: \b{{variable}}\b
+      scope: variable.other.sno
+    - include: term
+    - match: \'
+      scope: punctuation.definition.annotation.end.sno
+      pop: true
+#   - match: $
+#     pop: true
+
+################################################################################
+  brackets:
+    - match: \)
+      pop: true
+    - include: string
+    - include: term
+    - match: \(
+      push: brackets
+
+  prototype_brackets:
+    - match: \)
+      pop: true
+    - include: proto_string
+    - include: term
+    - match: \(
+      push: prototype_brackets
+
+  data_prototype_brackets:
+    - match: \)
+      pop: true
+    - include: data_proto_string
+    - include: term
+    - match: \(
+      push: data_prototype_brackets
+
+  function_prototype_brackets:
+    - match: \)
+      pop: true
+    - include: function_proto_string
+    - include: term
+    - match: \(
+      push: function_prototype_brackets
+
+################################################################################
+  main:
+    - include: continuation
+    - include: terminator
+    - include: string
+
+    - match: ':'
+      scope: punctuation.separator.sno
+      set: goto_area
+
+    - match: \b(ARRAY|CODE|EVAL)(\()
+      captures:
+        1: support.function.sno # entity.name.struct.sno (green)
+        2: punctuation.definition.generic.begin.sno
+      push:
+        - match: \)
+          scope: punctuation.definition.generic.end.sno
+          pop: true
+        - include: proto_string
+        - include: term
+        - include: indirect_squote_variable
+        - include: indirect_dquote_variable
+        - match: \(
+          push: prototype_brackets
+
+    - match: \b(DATA)(\()
+      captures:
+        1: support.function.sno # entity.name.function.sno
+        2: punctuation.definition.generic.begin.sno
+      push:
+        - match: \)
+          scope: punctuation.definition.generic.end.sno
+          pop: true
+        - include: data_proto_string
+        - include: term
+        - include: indirect_squote_variable
+        - include: indirect_dquote_variable
+        - match: \(
+          push: data_prototype_brackets
+
+    - match: \b(DEFINE)(\()
+      captures:
+        1: support.function.sno # entity.name.function.sno
+        2: punctuation.definition.generic.begin.sno
+      push:
+        - match: \)
+          scope: punctuation.definition.generic.end.sno
+          pop: true
+        - include: function_proto_string
+        - include: term
+        - include: indirect_squote_variable
+        - include: indirect_dquote_variable
+        - match: \(
+          push: function_prototype_brackets
+
+    - include: term
+    - include: indirect_squote_variable
+    - include: indirect_dquote_variable
+
+  control_statement:
+    - include: continuation
+    - include: terminator
+    - include: string
+    - match: \b(COPY|INCLUDE)\b
+      scope: keyword.other.sno
+    - match: \b(DOUBLE|EJECT|LINE|LIST|NOLIST|NOPRINT|PRINT|SINGLE|SPACE|TITLE)\b
+      scope: keyword.other.sno
+    - match: \b(CASE|ERRORS|EXECUTE|NOEXECUTE|FAIL|IN|NOFAIL|NOERRORS|NOOPTIMIZE|OPTIMIZE)\b
+      scope: keyword.other.sno
+    - match: ':'
+      scope: invalid.illegal.sno
+    - include: term
+    - match: $
+      set: main
+
+  goto_area:
+    - include: continuation
+    - include: terminator
+    - include: string
+
+    - match: ([SF]?)(\()({{control_flow}})(\))
+      captures:
+        1: keyword.control.flow.goto.sno
+        2: '' # punctuation.section.parens.begin.sno # keyword.control.flow.sno
+        3: keyword.control.sno
+        6: '' # punctuation.section.parens.end.sno # keyword.control.flow.sno
+
+    - match: ([SF]?)(\()({{variable}})(\))
+      captures:
+        1: keyword.control.flow.goto.sno
+        2: '' # punctuation.section.parens.begin.sno # keyword.control.flow.sno
+        3: entity.name.class.forward-decl.sno # (green) constant.other.label.sno (purple) # variable.function.sno (blue) # variable.other.constant.sno (white)
+        4: '' # punctuation.section.parens.end.sno # keyword.control.flow.sno
+
+    - match: ([SF]?)<({{variable}})>
+      captures:
+        1: keyword.control.flow.goto.sno
+        2: variable.other.sno
+
+    - match: ([SF]?)(\(){{indirect_squote_variable}}(\))
+      captures:
+        1: keyword.control.flow.goto.sno
+        2: '' # punctuation.section.parens.begin.sno # keyword.control.flow.sno
+        3: entity.name.class.forward-decl.sno # (green) variable.other.sno # variable.language.sno (orange)
+        4: '' # punctuation.section.parens.end.sno # keyword.control.flow.sno
+
+    - match: ([SF]?)(\(){{indirect_dquote_variable}}(\))
+      captures:
+        1: keyword.control.flow.goto.sno
+        2: '' # punctuation.section.parens.begin.sno # keyword.control.flow.sno
+        3: entity.name.class.forward-decl.sno # (green) variable.other.sno # variable.language.sno (orange)
+        4: '' # punctuation.section.parens.end.sno # keyword.control.flow.sno
+
+    - match: ([SF]?)\(
+      captures:
+        1: keyword.control.flow.goto.sno
+
+    - match: ':'
+      scope: invalid.illegal.sno
+
+    - match: $
+      set: main

@@ -1,0 +1,22 @@
+// These settings override both User and Default settings for the SNOBOL4 syntax
+{
+    "word_separators": "/\\()\"':,;<>~!@#$%^*|+=[]{}`~?",
+    "translate_tabs_to_spaces": true,
+    "tab_size": 4,
+    "draw_centered": false,
+    "draw_minimap_border": true,
+    "always_show_minimap_viewport": true,
+    "highlight_line": false,
+    "caret_extra_top": 1,
+    "caret_extra_bottom": 1,
+    "match_selection": true,
+    "scroll_past_end": false,
+    "trim_trailing_white_space_on_save": true,
+    "ensure_newline_at_eof_on_save": true,
+    "show_definitions": true,
+    "auto_complete_selector": "meta.tag - punctuation.definition.tag.begin, source - comment - string.quoted.double.block - string.quoted.single.block - string.unquoted.heredoc",
+    "auto_complete_triggers": [ {"selector": "text.html", "characters": "<"} ],
+    "auto_complete_commit_on_tab": false,
+    "scroll_speed": 1.0,
+    "show_tab_close_buttons": true
+}

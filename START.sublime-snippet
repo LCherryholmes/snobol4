@@ -1,0 +1,18 @@
+<snippet>
+	<content><![CDATA[
+START
+-INCLUDE 'global.inc'
+-INCLUDE 'assign.inc'
+-INCLUDE 'match.inc'
+-INCLUDE 'tree.inc'
+-INCLUDE 'ReadWrite.inc'
+-INCLUDE 'Qize.inc'
+-INCLUDE 'Gen.inc'
+-INCLUDE 'TDump.inc'
+-INCLUDE 'XDump.inc'
+*---------- ----------------- ----- -------------------------------------------------------- ---------------------------
+
+]]></content>
+	<tabTrigger>START</tabTrigger>
+	<scope>source.sno</scope>
+</snippet>

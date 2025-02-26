@@ -1,0 +1,18 @@
+{
+//  "cmd": ["C:/cygwin/bin/sh", "-c", "C:/LegalEarth/spitbol.exe", "-bfl", "-t1024", "-s4m", "-d256m", "-i32m", "\"$file_name\""],
+//  "cmd": ["C:/mksnt/sh", "-c", "C:/LegalEarth/spitbol.exe", "-bfl", "-t1024", "-s4m", "-d256m", "-i32m", "\"$file_name\""],
+//  "cmd": ["spitbol.exe", "-bfl", "-t1024", "-s4m", "-d256m", "-i32m", "\"$file_name\""],
+//  "shell": true,
+    "path": "C:\\LegalEarth",
+    "shell_cmd": "spitbol.exe -bfl -t1024 -s4m -d256m -i32m \"$project_base_name.sno\" > \"$project_base_name.out\"", //  -w -n
+//  "shell_cmd": "C:/cygwin/bin/sh -c C:/LegalEarth/spitbol.exe -bfl -t1024 -s4m -d256m -i32m -k \"$file_name\"", //  -w -n
+    "file_regex": "^([^\\(]+)\\(([0-9]+),([0-9]+)\\) : (Error [0-9]+.*$)",
+//  "quiet": false,
+//  "encoding": "utf-8",
+//  "working_dir": "C:\\LegalEarth",
+    "env": {"DEBUGLIST": "$file_base_name.lst", "SNOLIB": "C:\\LegalEarth"},
+    "target": "exec",
+    "cancel": {"kill": true},
+    "selector": "source.sno",
+    "file_patterns": ["*.sno", "*.spt", "*.inc"],
+}

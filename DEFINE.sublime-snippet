@@ -1,0 +1,10 @@
+<snippet>
+	<content><![CDATA[
+*---------- ----------------- ----- -------------------------------------------------------- ---------------------------
+            DEFINE('${1:Function}(${2})${3}') :(${1/\*//}End)
+${1/\*//} ${1/\*//} = ${4} :(RETURN)
+${1/\*//}End
+]]></content>
+	<tabTrigger>DEFINE</tabTrigger>
+	<scope>source.sno</scope>
+</snippet>
